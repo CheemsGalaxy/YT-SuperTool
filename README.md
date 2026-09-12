@@ -1,6 +1,6 @@
 # YT SuperTool
 
-> Chrome Extension All-in-One tối ưu trải nghiệm YouTube — chặn quảng cáo, hiện dislike, ẩn Shorts, tăng tốc phát, PiP, chụp ảnh, tải video.
+> Chrome Extension All-in-One tối ưu trải nghiệm YouTube — hiện dislike, ẩn Shorts, tăng tốc phát, PiP, chụp ảnh, tải video.
 
 ![Manifest](https://img.shields.io/badge/Manifest-V2-blue)
 ![Chrome](https://img.shields.io/badge/Chrome-100%2B-green)
@@ -10,8 +10,7 @@
 
 ## ✨ Tính năng
 
-### 🚫 Chặn & Làm sạch
-- **Adblock** — Chặn quảng cáo YouTube ở cả network (webRequest) và DOM (CSS hide). Ẩn banner, feed ads, sidebar ads, và popup chống adblock.
+### 🚫 Làm sạch giao diện
 - **No Shorts** — Ẩn Shorts khỏi sidebar, trang chủ, kết quả tìm kiếm. Hoạt động cả desktop và mobile DOM.
 - **Clean Homepage** — Ẩn Playables, Movies & TV, Gaming, Live, Premium banner và inline survey khỏi trang chủ.
 
@@ -57,16 +56,15 @@
 
 ## 🏗️ Kiến trúc
 
-```
+
 yt-supertool/
 ├── manifest.json
 ├── background/
-│   └── background.js          # Adblock network + dislike API proxy
+│   └── background.js          # Dislike API proxy, tab management
 ├── content/
 │   ├── main.js                # Orchestrator — đọc settings, apply features
 │   ├── observer.js            # MutationObserver chung, debounce
 │   └── features/
-│       ├── adblock.js         # CSS hide element quảng cáo
 │       ├── dislike.js         # Fetch + render số dislike
 │       ├── no-shorts.js       # Ẩn Shorts
 │       ├── clean-homepage.js  # Ẩn shelf rác trang chủ
@@ -129,8 +127,7 @@ yt-supertool/
 
 ## 🐛 Bug đã biết
 
-- **Adblock không chặn được SSAI** — Server-Side Ad Insertion nhúng quảng cáo vào cùng stream video → không có request riêng để chặn. Đây là giới hạn của MV2 + webRequest.
-- **Manifest V2 sẽ bị Chrome khai tử** — Cần port sang MV3 trong tương lai (chuyển webRequest → declarativeNetRequest, background persistent → service worker).
+- **Manifest V2 sẽ bị Chrome khai tử** — Cần port sang MV3 trong tương lai (background persistent → service worker).
 
 ---
 
