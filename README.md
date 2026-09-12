@@ -1,4 +1,3 @@
-```markdown
 # YT SuperTool
 
 > Chrome Extension All-in-One tối ưu trải nghiệm YouTube — chặn quảng cáo, hiện dislike, ẩn Shorts, tăng tốc phát, PiP, chụp ảnh, tải video.
