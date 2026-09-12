@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="light dark">
+	<title>YT SuperTool</title>
+	<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+	<main class="popup-shell">
+		<header class="popup-header">
+			<div class="brand-mark" aria-hidden="true">YT</div>
+			<div class="brand-copy">
+				<p class="eyebrow">YouTube enhancer</p>
+				<h1>YT SuperTool</h1>
+			</div>
+			<span class="manifest-badge">MV2</span>
+		</header>
+
+		<section class="feature-panel" aria-labelledby="settings-title">
+			<div class="section-heading">
+				<div>
+					<p class="section-kicker">Controls</p>
+					<h2 id="settings-title">Features</h2>
+				</div>
+				<span id="feature-count" class="feature-count"></span>
+			</div>
+			<form id="settings" class="toggle-list"></form>
+		</section>
+
+		<footer class="popup-footer">
+			<span class="sync-dot" aria-hidden="true"></span>
+			<span id="sync-status" role="status">Settings saved locally</span>
+			<a href="https://returnyoutubedislike.com/" target="_blank" rel="noopener">Dislike data from Return YouTube Dislike API</a>
+		</footer>
+	</main>
+	<script src="popup.js"></script>
+</body>
+</html>
