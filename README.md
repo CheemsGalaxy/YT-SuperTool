@@ -113,9 +113,8 @@ Vào `chrome://extensions/`, gạt toggle của YT SuperTool sang phải để b
 | **SponsorBlock** | Tự động bỏ qua sponsor, intro, outro, tự quảng cáo trong video | [Chrome Web Store](https://chromewebstore.google.com/detail/sponsorblock-for-youtube/mnjggcdmjocbbbhaepdhchncahnbgone) |
 
 **Tại sao không tích hợp vào YT SuperTool?**
-- **uBO Lite** là extension chuyên dụng về adblock, được maintain bởi đội ngũ uBlock Origin. Tích hợp vào YT SuperTool sẽ trùng lặp và kém hiệu quả hơn.
+- **uBO Lite** là extension chuyên dụng về adblock, được duy trì bởi đội ngũ uBlock Origin. Tích hợp vào YT SuperTool sẽ trùng lặp và kém hiệu quả hơn.
 - **SponsorBlock** cần server cộng đồng để vote timestamp — không thể tự làm trong extension nhỏ.
-- **YT SuperTool** tập trung vào UI/UX của YouTube, không cạnh tranh với 2 extension trên.
 
 ## 💡 Đóng góp & Liên hệ
 
@@ -246,7 +245,6 @@ For the best YouTube experience, we recommend installing these 2 extensions alon
 **Why not integrate them into YT SuperTool?**
 - **uBO Lite** is a dedicated adblock extension maintained by the uBlock Origin team. Integrating it would be redundant and less effective.
 - **SponsorBlock** requires a community server to vote timestamps — not feasible for a small extension.
-- **YT SuperTool** focuses on YouTube UI/UX and does not compete with the 2 extensions above.
 
 ## 💡 Contributing & Contact
 
