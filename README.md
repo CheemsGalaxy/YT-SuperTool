@@ -115,13 +115,6 @@ Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể 
 
 ### v2.0.0 — 14/09/2026
 - ✨ Chuyển sang Manifest V3
-- ✨ Thêm 8 tính năng: No Shorts, Clean Homepage, Return Dislike, Auto Continue, Playback Speed, PiP, Screenshot, Downloader
-- 🐛 Fix lỗi "Extension context invalidated"
-- 🗑️ Bỏ tính năng Adblock
-
-### v1.0.0 — 01/09/2026
-- 🎉 Phiên bản đầu tiên
-
 ---
 
 [⬆️ **Back to top**](#)
@@ -226,12 +219,6 @@ If you need support or want to chat directly, you can join Discord:
 
 ### v2.0.0 — 2026-09-14
 - ✨ Migrated to Manifest V3
-- ✨ Added 8 features: No Shorts, Clean Homepage, Return Dislike, Auto Continue, Playback Speed, PiP, Screenshot, Downloader
-- 🐛 Fixed "Extension context invalidated" error
-- 🗑️ Removed Adblock feature
-
-### v1.0.0 — 2026-09-01
-- 🎉 Initial release
 
 ---
 
