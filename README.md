@@ -1,149 +1,53 @@
-# YT SuperTool
+# 🇻🇳 Tiếng Việt
 
-> Chrome Extension All-in-One tối ưu trải nghiệm YouTube — hiện dislike, ẩn Shorts, tăng tốc phát, PiP, chụp ảnh, tải video.
+## 🛠 Giới thiệu
 
-![Manifest](https://img.shields.io/badge/Manifest-V2-blue)
-![Chrome](https://img.shields.io/badge/Chrome-100%2B-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+**YT SuperTool** là một công cụ giúp nâng cao trải nghiệm sử dụng **YouTube**, cung cấp một số tính năng và công cụ hữu ích đang chờ bạn khám phá.
 
----
+## 📌 Hướng dẫn cài đặt
 
-## ✨ Tính năng
+Do chính sách mới của Google đối với tiện ích mở rộng Chrome, việc cài đặt trực tiếp file `.crx` theo cách thông thường không còn được hỗ trợ như trước.
 
-### 🚫 Làm sạch giao diện
-- **No Shorts** — Ẩn Shorts khỏi sidebar, trang chủ, kết quả tìm kiếm. Hoạt động cả desktop và mobile DOM.
-- **Clean Homepage** — Ẩn Playables, Movies & TV, Gaming, Live, Premium banner và inline survey khỏi trang chủ.
+Hiện tại, vì **YT SuperTool chưa được phát hành trên Chrome Web Store**, bạn có thể sử dụng **CRXLauncher** để cài đặt tiện ích.
 
-### 📊 Cải thiện nội dung
-- **Return Dislike** — Hiển thị số dislike ước tính từ [Return YouTube Dislike API](https://returnyoutubedislike.com/), chèn trực tiếp vào segmented pill `[👍 | 233K 👎]` giống UI YouTube native.
-- **Auto Continue** — Tự động đóng popup "Video paused. Continue watching?" và resume video.
+> ⚠️ **Lưu ý:** Đây là giải pháp tạm thời để sử dụng YT SuperTool trong thời gian tiện ích chưa có mặt trên Chrome Web Store. Mình xin lỗi vì sự bất tiện này và sẽ cố gắng đưa tiện ích lên Chrome Web Store trong thời gian tới.
 
-### 🎮 Điều khiển player
-- **Playback Speed** — Thêm thanh điều khiển tốc độ (0.25x–10x) với slider + preset chip, đồng bộ với UI YouTube Material 3.
-- **Picture in Picture** — Nút PiP trên thanh player, sử dụng API PiP native của trình duyệt.
-- **Screenshot** — Chụp frame hiện tại thành PNG độ phân giải tối đa 1920px.
-- **Downloader** — Mở tab dịch vụ tải video bên thứ ba (không bypass DRM).
+### 🔧 Các bước cài đặt
 
----
+**Bước 1:** Cài đặt tiện ích **CRXLauncher** từ Chrome Web Store.
 
-## 📦 Cài đặt
+[CRXLauncher – Chrome Web Store](https://chromewebstore.google.com/detail/crxlauncher/kiilhncajadbgbmdbdcopdpnmdhlbdle?utm)
 
-### Cách 1 — Load unpacked (dev)
-1. Clone hoặc tải repo này về máy.
-2. Mở `chrome://extensions/`.
-3. Bật **Developer mode** (góc phải trên).
-4. Nhấn **Load unpacked**, chọn thư mục chứa `manifest.json`.
-5. Icon extension xuất hiện trên toolbar Chrome.
+**Bước 2:** Tải xuống file `.crx` của **YT SuperTool** được cung cấp trong dự án.
 
-### Cách 2 — Chrome Web Store
-> *(đang chờ duyệt)*
+**Bước 3:** Mở menu **Extensions (Tiện ích mở rộng)** trên Chrome và chọn **CRXLauncher**.
+
+**Bước 4:** Trong giao diện CRXLauncher, nhấn **Choose file**.
+
+**Bước 5:** Chọn file `.crx` của YT SuperTool mà bạn vừa tải xuống.
+
+**Bước 6:** Nhấn **Open** → chọn **Allow permissions** → **Allow** để cấp các quyền cần thiết.
+
+🎉 **Hoàn tất!**
+
+Từ bây giờ, bạn có thể mở **Extensions → CRXLauncher** để truy cập và sử dụng YT SuperTool.
 
 ---
 
-## 🎯 Sử dụng
+## 💡 Đóng góp & Liên hệ
 
-1. Mở YouTube.
-2. Click icon **YT SuperTool** trên toolbar để mở popup.
-3. Bật/tắt từng tính năng bằng toggle.
-4. Settings lưu tự động vào `chrome.storage.local`.
+Bạn có thể hỗ trợ dự án bằng cách:
 
-### Phím tắt
-- `>` — Tăng tốc phát 0.25x
-- `<` — Giảm tốc phát 0.25x
-- `Double-click slider` — Reset về 1x
+* 🐛 Báo cáo lỗi hoặc các vấn đề bạn gặp phải.
+* 💡 Gửi phản hồi và đề xuất tính năng mới.
+* ⭐ Ủng hộ dự án bằng cách đánh giá hoặc chia sẻ dự án.
 
----
+### 📬 Liên hệ
 
-## 🏗️ Kiến trúc
+Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể tham gia Discord:
 
-
-yt-supertool/
-├── manifest.json
-├── background/
-│   └── background.js          # Dislike API proxy, tab management
-├── content/
-│   ├── main.js                # Orchestrator — đọc settings, apply features
-│   ├── observer.js            # MutationObserver chung, debounce
-│   └── features/
-│       ├── dislike.js         # Fetch + render số dislike
-│       ├── no-shorts.js       # Ẩn Shorts
-│       ├── clean-homepage.js  # Ẩn shelf rác trang chủ
-│       ├── nonstop.js         # Auto-continue
-│       ├── speed.js           # Playback speed UI
-│       ├── downloader.js      # Nút download
-│       ├── pip.js             # Nút PiP
-│       └── screenshot.js      # Nút screenshot
-├── popup/
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js               # Toggle UI + storage
-└── assets/
-    └── icons/
-        ├── icon16.png
-        ├── icon48.png
-        └── icon128.png
-```
-
-### Nguyên tắc thiết kế
-
-- **Modular** — Mỗi feature là 1 file độc lập, export `initX/stopX/updateX` qua `window.YTSuperTool.<name>`.
-- **Observer chung** — 1 `ObserverManager` duy nhất, debounce 300ms, tất cả feature đăng ký callback.
-- **Lifecycle rõ ràng** — `main.js` đọc settings, apply/dừng từng feature khi user đổi toggle.
-- **Không phá UI YouTube** — Nút custom style giống native, không đè lên control gốc.
-- **Auto-recovery** — MutationObserver riêng cho từng feature, tự re-attach khi YouTube re-render.
+[Tham gia Discord](https://discord.gg/EZx5UWd7CX?utm)
 
 ---
 
-## 🔧 Phát triển
-
-### Yêu cầu
-- Chrome 100+
-- Không cần build tool — code ES6 chạy trực tiếp
-
-### Workflow
-1. Sửa file trong `content/features/`.
-2. Vào `chrome://extensions/` → nhấn **Reload** ở extension.
-3. Tab YouTube tự F5 (nhờ `chrome.runtime.onInstalled` listener trong background).
-4. Debug qua DevTools Console — filter `[YT SuperTool]`.
-
-### Thêm feature mới
-1. Tạo `content/features/my-feature.js`:
-   ```js
-   (function () {
-     window.YTSuperTool = window.YTSuperTool || {};
-     window.YTSuperTool.myFeature = {
-       initMyFeature(player) { /* ... */ },
-       updateMyFeature(mutations) { /* ... */ },
-       stopMyFeature() { /* ... */ }
-     };
-   })();
-   ```
-2. Thêm key vào `defaults` trong `main.js`.
-3. Thêm toggle vào mảng `settings` trong `popup.js`.
-4. Thêm file vào `content_scripts.js` trong `manifest.json`.
-5. Reload extension.
-
----
-
-## 🐛 Bug đã biết
-
-- **Manifest V2 sẽ bị Chrome khai tử** — Cần port sang MV3 trong tương lai (background persistent → service worker).
-
----
-
-## 📄 License
-
-MIT License — xem [LICENSE](LICENSE).
-
-## 🙏 Credits
-
-- Dislike data từ [Return YouTube Dislike](https://returnyoutubedislike.com/) — independent implementation, không copy source code.
-- Icon và UI inspired by YouTube Material Design.
-
----
-
-## 📮 Liên hệ
-
-- **Issues**: [GitHub Issues](../../issues)
-- **Pull requests**: Welcome!
-```
+[⬆️ **Back to top**](#)
