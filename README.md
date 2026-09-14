@@ -1,3 +1,20 @@
+🇬🇧 [English](#-english) | 🇻🇳 [Tiếng Việt](#-tiếng-việt)
+
+<div align="center">
+
+### ☕ Support This Project
+
+[![Donate MoMo](https://img.shields.io/badge/Donate-MoMo-pink?style=for-the-badge&logo=momo&logoColor=white)](https://me.momo.vn/chimchimkl28)
+
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://me.momo.vn/chimchimkl28" alt="MoMo QR Code" width="180"/>
+
+</div>
+# Hide-YouTube-Shorts
+Hide YouTube Shorts on the web using uBlock Origin.
+
+---
+
+
 # 🇻🇳 Tiếng Việt
 
 ## 🛠 Giới thiệu
