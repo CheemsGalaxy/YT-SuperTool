@@ -1,5 +1,10 @@
 🇬🇧 [English](#-english) | 🇻🇳 [Tiếng Việt](#-tiếng-việt)
 
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Chrome](https://img.shields.io/badge/Chrome-100%2B-green)
+![Manifest](https://img.shields.io/badge/Manifest-V3-orange)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
 <div align="center">
 
 ### ☕ Support This Project
@@ -9,6 +14,8 @@
 <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://me.momo.vn/chimchimkl28" alt="MoMo QR Code" width="180"/>
 
 </div>
+
+---
 
 # 🇻🇳 Tiếng Việt
 
@@ -46,12 +53,12 @@ Mở link bên dưới → nhấn **Add to Chrome** → **Add extension**.
 **Bước 2: Tải và giải nén file cài đặt**
 
 - Tải file nén từ link bên dưới.
-- Giải nén file `.zip` để lấy file `YTSuperTool.MV3.crx` bên trong.
+- Giải nén file `.zip` để lấy file `YTSuperTool(MV3).crx` bên trong.
   - **Windows:** Chuột phải file `.zip` → **Extract All**.
   - **Mac:** Double-click file `.zip`.
   - **Linux:** `unzip YTSuperTool.MV3.zip`
 
-Tải xuống và giải nén [YTSuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/YTSuperTool.MV3.zip)
+Tải xuống và giải nén [YTSuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YTSuperTool.MV3.zip)
 
 **Bước 3: Mở Extensions**
 
@@ -104,6 +111,19 @@ Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể 
 
 ---
 
+## 📝 Lịch sử cập nhật
+
+### v2.0.0 — 14/09/2026
+- ✨ Chuyển sang Manifest V3
+- ✨ Thêm 8 tính năng: No Shorts, Clean Homepage, Return Dislike, Auto Continue, Playback Speed, PiP, Screenshot, Downloader
+- 🐛 Fix lỗi "Extension context invalidated"
+- 🗑️ Bỏ tính năng Adblock
+
+### v1.0.0 — 01/09/2026
+- 🎉 Phiên bản đầu tiên
+
+---
+
 [⬆️ **Back to top**](#)
 
 ---
@@ -149,7 +169,7 @@ Open the link below → click **Add to Chrome** → **Add extension**.
   - **Mac:** Double-click the `.zip` file.
   - **Linux:** `unzip YTSuperTool.MV3.zip`
 
-[Download and extract YTSuperTool(MV3).zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YTSuperTool.MV3.zip)
+[Download and extract YTSuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YTSuperTool.MV3.zip)
 
 **Step 3: Open Extensions**
 
@@ -199,6 +219,19 @@ You can support the project by:
 If you need support or want to chat directly, you can join Discord:
 
 [Join Discord](https://discord.gg/EZx5UWd7CX?utm)
+
+---
+
+## 📝 Changelog
+
+### v2.0.0 — 2026-09-14
+- ✨ Migrated to Manifest V3
+- ✨ Added 8 features: No Shorts, Clean Homepage, Return Dislike, Auto Continue, Playback Speed, PiP, Screenshot, Downloader
+- 🐛 Fixed "Extension context invalidated" error
+- 🗑️ Removed Adblock feature
+
+### v1.0.0 — 2026-09-01
+- 🎉 Initial release
 
 ---
 
