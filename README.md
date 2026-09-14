@@ -19,6 +19,16 @@
 
 # 🇻🇳 Tiếng Việt
 
+## 📑 Mục lục
+
+- [Giới thiệu](#-giới-thiệu)
+- [Tính năng](#-tính-năng)
+- [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
+- [Không cài được?](#-không-cài-được)
+- [Bộ công cụ gợi ý](#-bộ-công-cụ-gợi-ý)
+- [Đóng góp & Liên hệ](#-đóng-góp--liên-hệ)
+- [Lịch sử cập nhật](#-lịch-sử-cập-nhật)
+
 ## 🛠 Giới thiệu
 
 **YT SuperTool** là một công cụ giúp nâng cao trải nghiệm sử dụng **YouTube**, cung cấp một số tính năng và công cụ hữu ích đang chờ bạn khám phá.
@@ -93,7 +103,19 @@ Vào `chrome://extensions/`, gạt toggle của YT SuperTool sang phải để b
 **Popup bị thừa to:**
 Đây là bug của CRXLauncher (không phải extension). Đợi bản cập nhật hoặc dùng cách **Load unpacked**.
 
----
+## 🎯 Bộ công cụ gợi ý
+
+Để có trải nghiệm YouTube tốt nhất, mình gợi ý cài thêm 2 extension sau bên cạnh **YT SuperTool**:
+
+| Extension | Chức năng | Link |
+|---|---|---|
+| **uBlock Origin Lite** | Chặn quảng cáo YouTube hiệu quả nhất hiện nay | [Chrome Web Store](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) |
+| **SponsorBlock** | Tự động bỏ qua sponsor, intro, outro, tự quảng cáo trong video | [Chrome Web Store](https://chromewebstore.google.com/detail/sponsorblock-for-youtube/mnjggcdmjocbbbhaepdhchncahnbgone) |
+
+**Tại sao không tích hợp vào YT SuperTool?**
+- **uBO Lite** là extension chuyên dụng về adblock, được maintain bởi đội ngũ uBlock Origin. Tích hợp vào YT SuperTool sẽ trùng lặp và kém hiệu quả hơn.
+- **SponsorBlock** cần server cộng đồng để vote timestamp — không thể tự làm trong extension nhỏ.
+- **YT SuperTool** tập trung vào UI/UX của YouTube, không cạnh tranh với 2 extension trên.
 
 ## 💡 Đóng góp & Liên hệ
 
@@ -109,12 +131,17 @@ Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể 
 
 [Tham gia Discord](https://discord.gg/EZx5UWd7CX?utm)
 
----
-
 ## 📝 Lịch sử cập nhật
 
 ### v2.0.0 — 14/09/2026
 - ✨ Chuyển sang Manifest V3
+- ✨ Thêm 8 tính năng: No Shorts, Clean Homepage, Return Dislike, Auto Continue, Playback Speed, PiP, Screenshot, Downloader
+- 🐛 Fix lỗi "Extension context invalidated"
+- 🗑️ Bỏ tính năng Adblock
+
+### v1.0.0 — 01/09/2026
+- 🎉 Phiên bản đầu tiên
+
 ---
 
 [⬆️ **Back to top**](#)
@@ -122,6 +149,16 @@ Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể 
 ---
 
 # 🇬🇧 English
+
+## 📑 Table of Contents
+
+- [Introduction](#-introduction)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Can't install?](#-cant-install)
+- [Recommended Setup](#-recommended-setup)
+- [Contributing & Contact](#-contributing--contact)
+- [Changelog](#-changelog)
 
 ## 🛠 Introduction
 
@@ -197,7 +234,19 @@ Go to `chrome://extensions/`, toggle YT SuperTool to the right to enable it.
 **Popup is oversized:**
 This is a CRXLauncher bug (not the extension). Wait for an update or use the **Load unpacked** method.
 
----
+## 🎯 Recommended Setup
+
+For the best YouTube experience, we recommend installing these 2 extensions alongside **YT SuperTool**:
+
+| Extension | Purpose | Link |
+|---|---|---|
+| **uBlock Origin Lite** | The most effective YouTube ad blocker available | [Chrome Web Store](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) |
+| **SponsorBlock** | Automatically skip sponsors, intros, outros, and self-promos in videos | [Chrome Web Store](https://chromewebstore.google.com/detail/sponsorblock-for-youtube/mnjggcdmjocbbbhaepdhchncahnbgone) |
+
+**Why not integrate them into YT SuperTool?**
+- **uBO Lite** is a dedicated adblock extension maintained by the uBlock Origin team. Integrating it would be redundant and less effective.
+- **SponsorBlock** requires a community server to vote timestamps — not feasible for a small extension.
+- **YT SuperTool** focuses on YouTube UI/UX and does not compete with the 2 extensions above.
 
 ## 💡 Contributing & Contact
 
@@ -213,12 +262,16 @@ If you need support or want to chat directly, you can join Discord:
 
 [Join Discord](https://discord.gg/EZx5UWd7CX?utm)
 
----
-
 ## 📝 Changelog
 
 ### v2.0.0 — 2026-09-14
 - ✨ Migrated to Manifest V3
+- ✨ Added 8 features: No Shorts, Clean Homepage, Return Dislike, Auto Continue, Playback Speed, PiP, Screenshot, Downloader
+- 🐛 Fixed "Extension context invalidated" error
+- 🗑️ Removed Adblock feature
+
+### v1.0.0 — 2026-09-01
+- 🎉 Initial release
 
 ---
 
