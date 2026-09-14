@@ -40,6 +40,32 @@
     return button?.closest('dislike-button-view-model, ytd-toggle-button-renderer') || button;
   }
 
+  async function fetchDislike(id) {
+    if (!isExtensionAlive()) return { value: '—', time: Date.now() };
+    return new Promise(resolve => {
+      try {
+        chrome.runtime.sendMessage({ type: 'fetchDislike', videoId: id }, response => {
+          if (!isExtensionAlive()) {
+            resolve({ value: '—', time: Date.now() });
+            return;
+          }
+          if (chrome.runtime.lastError) {
+            console.warn('[YT SuperTool] lastError:', chrome.runtime.lastError.message);
+            resolve({ value: '—', time: Date.now() });
+            return;
+          }
+          console.log('[YT SuperTool] response:', response);
+          resolve(response?.ok
+            ? { value: response.dislikes, time: Date.now() }
+            : { value: '—', time: Date.now() });
+        });
+      } catch (error) {
+        console.warn('[YT SuperTool] sendMessage threw:', error.message);
+        resolve({ value: '—', time: Date.now() });
+      }
+    });
+  }
+
   function removeRenderedCount() {
     document.querySelectorAll('.yt-supertool-dislike-count, .yt-supertool-dislike-badge').forEach(element => element.remove());
   }
@@ -48,7 +74,29 @@
     const badge = document.createElement('div');
 
     badge.className = 'yt-supertool-dislike-count yt-supertool-dislike-badge';
-    badge.style.cssText = 'display:inline-flex!important;align-items:center;height:36px;padding:0 10px;background:none!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important;color:var(--yt-spec-text-primary,#fff)!important;font:500 14px/1 Roboto,sans-serif;cursor:default;user-select:none;flex-shrink:0;position:static!important;z-index:auto!important;white-space:nowrap;border-left:1px solid var(--yt-spec-10-percent-layer,rgba(255,255,255,.12));';
+    badge.style.cssText = `
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      align-self: center !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      padding: 0 12px !important;
+      margin: 0 !important;
+      background: transparent !important;
+      background-color: transparent !important;
+      border: 0 !important;
+      color: var(--yt-spec-text-primary, #fff) !important;
+      font: 500 14px/36px Roboto, sans-serif !important;
+      cursor: default !important;
+      user-select: none !important;
+      flex-shrink: 0 !important;
+      white-space: nowrap !important;
+      position: static !important;
+      z-index: auto !important;
+      box-sizing: border-box !important;
+      vertical-align: middle !important;
+    `;
     badge.setAttribute('aria-label', 'Dislikes');
     badge.setAttribute('aria-live', 'polite');
     badge.setAttribute('data-yt-supertool', 'dislike');
@@ -107,24 +155,7 @@
     let item = cache.get(id);
     removeRenderedCount();
     if (!item || Date.now() - item.time > 60000) {
-      if (!isExtensionAlive()) return;
-      item = await new Promise(resolve => {
-        try {
-          chrome.runtime.sendMessage({ type: 'fetchDislike', videoId: id }, response => {
-            if (!isExtensionAlive()) {
-              resolve({ value: '—', time: Date.now() });
-              return;
-            }
-            if (chrome.runtime.lastError) {
-              resolve({ value: '—', time: Date.now() });
-              return;
-            }
-            resolve(response?.ok ? { value: response.dislikes, time: Date.now() } : { value: '—', time: Date.now() });
-          });
-        } catch {
-          resolve({ value: '—', time: Date.now() });
-        }
-      });
+      item = await fetchDislike(id);
       if (item.value !== '—') cache.set(id, item);
     }
 

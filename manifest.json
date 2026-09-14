@@ -1,12 +1,16 @@
 {
-	"manifest_version": 2,
+	"manifest_version": 3,
 	"name": "YT SuperTool",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"description": "All-in-One YouTube enhancer.",
-	"permissions": ["storage", "*://*.youtube.com/*", "https://returnyoutubedislikeapi.com/*", "https://ssyoutube.com/*"],
-	"optional_permissions": [],
-	"background": { "scripts": ["background/background.js"], "persistent": true },
-	"browser_action": { "default_title": "YT SuperTool", "default_popup": "popup/popup.html" },
+	"permissions": ["storage", "tabs"],
+	"host_permissions": ["*://*.youtube.com/*", "https://returnyoutubedislikeapi.com/*", "https://ssyoutube.com/*"],
+	"background": { "service_worker": "background/background.js" },
+	"action": {
+		"default_title": "YT SuperTool",
+		"default_popup": "popup/popup.html",
+		"default_icon": { "16": "assets/icons/icon16.png", "48": "assets/icons/icon48.png", "128": "assets/icons/icon128.png" }
+	},
 	"content_scripts": [{
 		"matches": ["*://*.youtube.com/*"],
 		"js": ["content/features/dislike.js", "content/features/no-shorts.js", "content/features/clean-homepage.js", "content/features/nonstop.js", "content/features/speed.js", "content/features/downloader.js", "content/features/pip.js", "content/features/screenshot.js", "content/observer.js", "content/main.js"],

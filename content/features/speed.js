@@ -31,7 +31,10 @@
 	function saveSpeed(speed) {
 		clearTimeout(saveTimer);
 		saveTimer = setTimeout(() => {
-			chrome.storage.local.set({ playbackSpeed: speed });
+			try {
+				// MV3: ignore writes after the extension context is invalidated.
+				if (chrome.runtime?.id) chrome.storage.local.set({ playbackSpeed: speed });
+			} catch (error) {}
 		}, SAVE_DEBOUNCE);
 	}
 
@@ -382,10 +385,15 @@
 		};
 		document.addEventListener('keydown', onKeydown);
 
-		chrome.storage.local.get({ playbackSpeed: DEFAULT_SPEED }, result => {
-			const saved = Number(result.playbackSpeed);
-			if (saved >= MIN_SPEED && saved <= MAX_SPEED) applySpeed(saved, false);
-		});
+		try {
+			// MV3: storage may fail while the extension is being reloaded.
+			if (chrome.runtime?.id) {
+				chrome.storage.local.get({ playbackSpeed: DEFAULT_SPEED }, result => {
+					const saved = Number(result.playbackSpeed);
+					if (saved >= MIN_SPEED && saved <= MAX_SPEED) applySpeed(saved, false);
+				});
+			}
+		} catch (error) {}
 	}
 
 	function stopSpeed() {

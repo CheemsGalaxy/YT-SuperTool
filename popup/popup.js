@@ -54,14 +54,22 @@ settings.forEach(setting => root.append(createToggle(setting)));
 root.addEventListener('change', event => {
   const input = event.target;
   if (input.type !== 'checkbox') return;
-  chrome.storage.local.set({ [input.id]: input.checked }, () => {
-    syncStatus.textContent = chrome.runtime.lastError ? 'Unable to save setting' : 'Settings saved locally';
-  });
+  try {
+    chrome.storage.local.set({ [input.id]: input.checked }, () => {
+      syncStatus.textContent = chrome.runtime.lastError ? 'Unable to save setting' : 'Settings saved locally';
+    });
+  } catch (error) {
+    syncStatus.textContent = 'Extension reloaded, please close popup';
+  }
 });
 document.getElementById('feature-count').textContent = `${settings.length} tools`;
 
-chrome.storage.local.get(defaults, values => {
-  settings.forEach(({ key }) => {
-    document.getElementById(key).checked = Boolean(values[key]);
+try {
+  // MV3: guard storage access while the extension is being reloaded.
+  chrome.storage.local.get(defaults, values => {
+    settings.forEach(({ key }) => {
+      const element = document.getElementById(key);
+      if (element) element.checked = Boolean(values[key]);
+    });
   });
-});
+} catch (error) {}

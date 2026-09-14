@@ -2,6 +2,10 @@
 
 (function () {
   if (location.hostname !== 'youtube.com' && !location.hostname.endsWith('.youtube.com')) return;
+  // MV3: content scripts can outlive an updated extension context.
+  function isExtensionAlive() {
+    try { return Boolean(chrome.runtime?.id); } catch (error) { return false; }
+  }
 
   const defaults = { dislike: true, noShorts: true, cleanHomepage: true, nonstop: true, speed: true, downloader: false, pip: true, screenshot: true };
   const modules = window.YTSuperTool;
@@ -67,12 +71,18 @@
     if (active) { apply(); observer.start(); } else { observer.stop(); }
   };
   const observer = new window.YTSuperTool.ObserverManager(document.body, 300).add(handleMutations);
-  chrome.storage.local.get(defaults, value => { settings = { ...defaults, ...value }; if (active) { apply(); observer.start(); } });
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'local') return;
-    Object.keys(changes).forEach(key => { if (key in defaults) settings[key] = changes[key].newValue; });
-    scheduleApply();
-  });
+  if (isExtensionAlive()) {
+    chrome.storage.local.get(defaults, value => {
+      if (!isExtensionAlive()) return;
+      settings = { ...defaults, ...value };
+      if (active) { apply(); observer.start(); }
+    });
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'local' || !isExtensionAlive()) return;
+      Object.keys(changes).forEach(key => { if (key in defaults) settings[key] = changes[key].newValue; });
+      scheduleApply();
+    });
+  }
   document.addEventListener('yt-navigate-finish', scheduleApply, { passive: true });
   document.addEventListener('visibilitychange', handleVisibility, { passive: true });
 })();
