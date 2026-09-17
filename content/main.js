@@ -1,8 +1,5 @@
-// content/main.js
-
 (function () {
   if (location.hostname !== 'youtube.com' && !location.hostname.endsWith('.youtube.com')) return;
-  // MV3: content scripts can outlive an updated extension context.
   function isExtensionAlive() {
     try { return Boolean(chrome.runtime?.id); } catch (error) { return false; }
   }
@@ -11,6 +8,9 @@
   const modules = window.YTSuperTool;
   let settings = { ...defaults };
   let refreshTimer = 0;
+  let playerRetryTimer = 0;
+  let playerRetryCount = 0;
+  const PLAYER_RETRY_MAX = 20;
   let cachedPlayer = null;
   let cachedAt = 0;
   let active = !document.hidden;
@@ -18,14 +18,29 @@
   const getPlayer = () => {
     const now = performance.now();
     if (cachedPlayer?.isConnected && now - cachedAt < 2000) return cachedPlayer;
-    cachedPlayer = document.querySelector('.html5-video-player');
-    cachedAt = now;
-    return cachedPlayer;
+    const player = document.querySelector('.html5-video-player');
+    if (player) {
+      cachedPlayer = player;
+      cachedAt = now;
+    } else {
+      cachedPlayer = null;
+    }
+    return player;
   };
-  const initPlayerFeatures = () => {
+  const initPlayerFeaturesWithRetry = () => {
     if (!active) return;
     const player = getPlayer();
-    if (!player) return;
+    if (!player) {
+      if (playerRetryCount < PLAYER_RETRY_MAX) {
+        clearTimeout(playerRetryTimer);
+        playerRetryCount += 1;
+        playerRetryTimer = setTimeout(initPlayerFeaturesWithRetry, 500);
+      }
+      return;
+    }
+    clearTimeout(playerRetryTimer);
+    playerRetryTimer = 0;
+    playerRetryCount = 0;
     if (settings.pip) modules.pip?.initPiP(player);
     if (settings.screenshot) modules.screenshot?.initScreenshot(player);
     if (settings.downloader) modules.downloader?.initDownloader(player);
@@ -44,7 +59,7 @@
           stopFn?.();
         }
       });
-      initPlayerFeatures();
+      initPlayerFeaturesWithRetry();
     } catch (error) { console.warn('YT SuperTool apply:', error); }
   };
   const scheduleApply = () => {
@@ -57,14 +72,16 @@
     if (settings.dislike) modules.dislike?.updateDislike(mutations);
     if (settings.noShorts) modules.noShorts?.updateNoShorts(mutations);
     if (settings.nonstop) modules.nonstop?.updateNonstop(mutations);
-    const playerRelated = mutations.some(mutation =>
-      mutation.target?.closest?.('.html5-video-player') ||
-      [...mutation.addedNodes].some(node => node.nodeType === Node.ELEMENT_NODE && (
-        node.matches?.('.html5-video-player, .ytp-right-controls, ytd-segmented-like-dislike-button-renderer') ||
-        node.querySelector?.('.ytp-right-controls')
-      ))
-    );
-    if (playerRelated) initPlayerFeatures();
+    const playerRelated = mutations.some(mutation => {
+      if (mutation.target?.closest?.('.html5-video-player')) return true;
+      if (mutation.target?.matches?.('#player, #movie_player, .html5-video-player')) return true;
+      return [...mutation.addedNodes].some(node => {
+        if (node.nodeType !== Node.ELEMENT_NODE) return false;
+        if (node.matches?.('.html5-video-player, #movie_player, #player, .ytp-right-controls, ytd-segmented-like-dislike-button-renderer')) return true;
+        return node.querySelector?.('.html5-video-player, #movie_player, #player, .ytp-right-controls');
+      });
+    });
+    if (playerRelated) initPlayerFeaturesWithRetry();
   };
   const handleVisibility = () => {
     active = !document.hidden;
@@ -83,6 +100,13 @@
       scheduleApply();
     });
   }
-  document.addEventListener('yt-navigate-finish', scheduleApply, { passive: true });
+  document.addEventListener('yt-navigate-finish', () => {
+    playerRetryCount = 0;
+    clearTimeout(playerRetryTimer);
+    playerRetryTimer = 0;
+    cachedPlayer = null;
+    cachedAt = 0;
+    scheduleApply();
+  }, { passive: true });
   document.addEventListener('visibilitychange', handleVisibility, { passive: true });
 })();

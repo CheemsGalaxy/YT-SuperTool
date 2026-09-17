@@ -1,5 +1,3 @@
-// Removes YouTube's "Video paused. Continue watching?" interruption.
-
 (function () {
   const POPUP_SELECTORS = [
     '.yt-confirm-dialog-renderer',
@@ -10,9 +8,13 @@
   ];
   const POPUP_SELECTOR = POPUP_SELECTORS.join(',');
   const PAUSE_TEXT = /continue\s+watching|video\s+paused/i;
+  const PLAYBACK_ERROR_TEXT = /sự cố gây gián đoạn|gặp sự cố|playback.*interrupted|something went wrong/i;
   let removed = new WeakSet();
 
-  const containsPauseText = element => PAUSE_TEXT.test(element.textContent || '');
+  const containsPauseText = element => {
+    const text = element.textContent || '';
+    return PAUSE_TEXT.test(text) || PLAYBACK_ERROR_TEXT.test(text);
+  };
 
   function findPopup(root) {
     if (!root?.querySelectorAll) return [];
@@ -22,12 +24,10 @@
       if (containsPauseText(element)) matches.push(element);
     });
 
-    // YouTube sometimes only exposes a generic #dialog host.
     root.querySelectorAll('#dialog').forEach(element => {
       if (containsPauseText(element)) matches.push(element);
     });
 
-    // Fallback for UI revisions that keep the text but change all classes.
     root.querySelectorAll('[role="dialog"], ytd-popup-container').forEach(element => {
       if (containsPauseText(element)) matches.push(element);
     });
@@ -42,13 +42,15 @@
     popup.style.opacity = '0';
     popup.style.pointerEvents = 'none';
 
-    // Remove the closest dialog host too when it is only a wrapper for this prompt.
     const host = popup.closest('#dialog, ytd-popup-container, tp-yt-paper-dialog');
     if (host && host !== popup && containsPauseText(host)) host.remove();
     else popup.remove();
 
-    const video = document.querySelector('video');
-    if (video?.paused) video.play().catch(() => {});
+    const text = popup.textContent || '';
+    if (PAUSE_TEXT.test(text)) {
+      const video = document.querySelector('video');
+      if (video?.paused) video.play().catch(() => {});
+    }
   }
 
   function removeExistingPopups() {
@@ -69,7 +71,6 @@
       });
     },
     stopNonstop() {
-      // No persistent observer or global styles are left by this module.
       removed = new WeakSet();
     }
   };

@@ -1,5 +1,3 @@
-// content/features/screenshot.js
-
 (function () {
   const CAMERA_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7.5h3l1.4-2h5.2l1.4 2h3A2 2 0 0 1 21 9.5v8A2 2 0 0 1 19 19.5H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13.5" r="3.25"/></svg>';
 

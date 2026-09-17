@@ -1,5 +1,3 @@
-// content/features/dislike.js
-
 (function () {
   const cache = new Map();
   let lastVideoId = '';
@@ -14,15 +12,23 @@
     }
   }
 
-  const getVideoId = () => new URLSearchParams(location.search).get('v') || location.pathname.match(/\/shorts\/([^/?]+)/)?.[1] || '';
-  const format = value => new Intl.NumberFormat('vi-VN', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  const getVideoId = () =>
+    new URLSearchParams(location.search).get('v')
+    || location.pathname.match(/\/shorts\/([^/?]+)/)?.[1]
+    || '';
+
+  const format = value =>
+    new Intl.NumberFormat('vi-VN', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 
   function findSegmented() {
     const segmented = document.querySelector('ytd-segmented-like-dislike-button-renderer');
     if (segmented) return segmented;
 
-    const legacyButton = document.querySelector('ytd-menu-renderer #top-level-buttons-computed ytd-toggle-button-renderer');
-    return legacyButton?.closest('#top-level-buttons-computed') || document.querySelector('#top-level-buttons-computed');
+    const legacyButton = document.querySelector(
+      'ytd-menu-renderer #top-level-buttons-computed ytd-toggle-button-renderer'
+    );
+    return legacyButton?.closest('#top-level-buttons-computed')
+      || document.querySelector('#top-level-buttons-computed');
   }
 
   function findDislikeButton(segmented) {
@@ -45,34 +51,27 @@
     return new Promise(resolve => {
       try {
         chrome.runtime.sendMessage({ type: 'fetchDislike', videoId: id }, response => {
-          if (!isExtensionAlive()) {
+          if (!isExtensionAlive() || chrome.runtime.lastError) {
             resolve({ value: '—', time: Date.now() });
             return;
           }
-          if (chrome.runtime.lastError) {
-            console.warn('[YT SuperTool] lastError:', chrome.runtime.lastError.message);
-            resolve({ value: '—', time: Date.now() });
-            return;
-          }
-          console.log('[YT SuperTool] response:', response);
           resolve(response?.ok
             ? { value: response.dislikes, time: Date.now() }
             : { value: '—', time: Date.now() });
         });
-      } catch (error) {
-        console.warn('[YT SuperTool] sendMessage threw:', error.message);
+      } catch {
         resolve({ value: '—', time: Date.now() });
       }
     });
   }
 
   function removeRenderedCount() {
-    document.querySelectorAll('.yt-supertool-dislike-count, .yt-supertool-dislike-badge').forEach(element => element.remove());
+    document.querySelectorAll('.yt-supertool-dislike-count, .yt-supertool-dislike-badge')
+      .forEach(element => element.remove());
   }
 
   function createCount(value, videoId) {
     const badge = document.createElement('div');
-
     badge.className = 'yt-supertool-dislike-count yt-supertool-dislike-badge';
     badge.style.cssText = `
       display: inline-flex !important;
@@ -113,7 +112,7 @@
 
     if (background && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)') {
       badge.style.setProperty('background-color', background, 'important');
-    } else {
+    } else if (container) {
       const containerBackground = getComputedStyle(container).backgroundColor;
       if (containerBackground && containerBackground !== 'transparent') {
         badge.style.setProperty('background-color', containerBackground, 'important');
@@ -123,13 +122,11 @@
   }
 
   function insertBadge(container, segmented, value, videoId) {
-    // Xóa badge cũ trước khi tạo badge mới để tránh chồng lớp.
     const badge = createCount(value, videoId);
     const dislikeHost = findDislikeHost(segmented);
     const parent = dislikeHost?.parentElement || segmented;
 
     if (dislikeHost && parent) {
-      // Chèn ngay trước icon Dislike, bên trong segmented pill gốc.
       parent.insertBefore(badge, dislikeHost);
     } else if (segmented && segmented !== container) {
       segmented.appendChild(badge);
@@ -138,7 +135,6 @@
     }
 
     syncBadgeColors(badge, segmented, dislikeHost, container);
-
   }
 
   async function render() {
@@ -173,7 +169,8 @@
       if (!mutation.addedNodes.length) continue;
       for (const node of mutation.addedNodes) {
         if (node.nodeType !== Node.ELEMENT_NODE) continue;
-        if (node.id === 'top-level-buttons-computed' || node.querySelector?.('#top-level-buttons-computed')) return true;
+        if (node.id === 'top-level-buttons-computed'
+          || node.querySelector?.('#top-level-buttons-computed')) return true;
       }
     }
     return false;
@@ -196,7 +193,10 @@
         return;
       }
 
-      if (hasButtonsContainerMutation(mutations) && !document.querySelector(`.yt-supertool-dislike-count[data-video-id="${getVideoId()}"]`)) {
+      if (
+        hasButtonsContainerMutation(mutations)
+        && !document.querySelector(`.yt-supertool-dislike-count[data-video-id="${videoId}"]`)
+      ) {
         scheduleRender();
       }
     },

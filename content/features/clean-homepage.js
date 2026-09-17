@@ -1,10 +1,7 @@
-// content/features/clean-homepage.js
-
 (function () {
   let cleanHomepageObserver = null;
 
   const isCleanHomepageSection = section => {
-    // Inline survey: "Bạn nghĩ gì về video này?"
     if (section.querySelector('ytd-inline-survey-renderer')) return true;
     if (section.querySelector('ytd-statement-banner-renderer')) return true;
     if (section.querySelector('ytd-mini-game-card-view-model, mini-game-card-view-model')) return true;
@@ -17,7 +14,21 @@
       text.includes('Gaming') || text.includes('Trò chơi') || text.includes('Trực tiếp');
   };
 
+  function hideMealbarPromo(root = document) {
+    const promos = root.matches?.('yt-mealbar-promo-renderer')
+      ? [root]
+      : root.querySelectorAll?.('yt-mealbar-promo-renderer') || [];
+
+    promos.forEach(promo => {
+      if (!promo.isConnected) return;
+      const dialog = promo.closest('tp-yt-paper-dialog, ytd-popup-container');
+      (dialog || promo).remove();
+    });
+  }
+
   function hideCleanHomepageSections(root = document) {
+    hideMealbarPromo(root);
+
     const sections = root.matches?.('ytd-rich-section-renderer')
       ? [root]
       : root.querySelectorAll?.('ytd-rich-section-renderer') || [];

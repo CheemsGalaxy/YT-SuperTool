@@ -1,15 +1,10 @@
-// popup/popup.js
-
 const settings = [
-  // CHẶN & LÀM SẠCH
   { key: 'noShorts', label: 'No Shorts', description: 'Hide Shorts shelves and navigation', defaultValue: true },
   { key: 'cleanHomepage', label: 'Clean Homepage', description: 'Hide Premium promos and Playables', defaultValue: true },
 
-  // CẢI THIỆN NỘI DUNG
   { key: 'dislike', label: 'Return Dislike', description: 'Show estimated dislike counts', defaultValue: true },
   { key: 'nonstop', label: 'Auto Continue', description: 'Remove the continue watching interruption', defaultValue: true },
 
-  // ĐIỀU KHIỂN PLAYER
   { key: 'speed', label: 'Playback Speed', description: 'Add speed controls to the player', defaultValue: true },
   { key: 'pip', label: 'Picture in Picture', description: 'Watch video in a floating window', defaultValue: true },
   { key: 'screenshot', label: 'Screenshot', description: 'Capture the current video frame', defaultValue: true },
@@ -65,7 +60,6 @@ root.addEventListener('change', event => {
 document.getElementById('feature-count').textContent = `${settings.length} tools`;
 
 try {
-  // MV3: guard storage access while the extension is being reloaded.
   chrome.storage.local.get(defaults, values => {
     settings.forEach(({ key }) => {
       const element = document.getElementById(key);

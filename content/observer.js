@@ -1,5 +1,3 @@
-// content/observer.js
-
 class ObserverManager {
   constructor(target = document.body, delay = 300) {
     this.target = target;

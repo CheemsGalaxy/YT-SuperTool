@@ -1,5 +1,3 @@
-// content/features/pip.js
-
 (function () {
   const PIP_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><rect x="12" y="12" width="6" height="4" rx=".5"/></svg>';
   let cleanup = null;

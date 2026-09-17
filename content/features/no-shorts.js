@@ -1,16 +1,11 @@
-// content/features/no-shorts.js
-
 (function () {
   let shortsObserver = null;
 
-  // Selector không cần mô phỏng :has.
   const SHORTS_SELECTORS = [
-    // Desktop YouTube.
     'ytd-rich-shelf-renderer[is-shorts]',
     'ytd-reel-shelf-renderer',
     'ytm-shorts-lockup-view-model',
     '[tab-title="Shorts"]',
-    // Mobile YouTube.
     '.pivot-shorts',
     'a[href="/shorts"]',
     '.reel-shelf-renderer',
@@ -18,16 +13,13 @@
     'ytm-shorts-lockup-view-model-v2'
   ];
 
-  // Rule parent/child thay cho selector :has của uBlock Origin.
   const SHORTS_HAS_RULES = [
-    // Desktop YouTube.
     { parent: 'ytd-guide-entry-renderer', child: 'a[title="Shorts"]' },
     { parent: 'ytd-mini-guide-entry-renderer', child: 'a[title="Shorts"]' },
     { parent: 'ytd-rich-section-renderer', child: 'ytd-rich-shelf-renderer[is-shorts]' },
     { parent: 'ytd-rich-item-renderer', child: 'a[href^="/shorts/"]' },
     { parent: 'ytd-video-renderer', child: 'a[href^="/shorts/"]' },
     { parent: 'ytd-grid-video-renderer', child: 'a[href^="/shorts/"]' },
-    // Mobile YouTube.
     { parent: 'ytm-video-with-context-renderer', child: 'a[href^="/shorts/"]' },
     { parent: 'ytm-compact-video-renderer', child: 'a[href^="/shorts/"]' }
   ];
