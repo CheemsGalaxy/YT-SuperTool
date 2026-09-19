@@ -3,7 +3,7 @@
   function initDownloader(player) {
     const controls = player?.querySelector('.ytp-right-controls');
     if (!controls || controls.querySelector('[data-yt-supertool="download"]')) return;
-    window.YTSuperTool.ensureControlStyles?.();
+    window.YTSuperTool.injectStyles?.();
     const button = document.createElement('button');
     button.className = 'ytp-button yt-supertool-control';
     button.dataset.ytSupertool = 'download';
