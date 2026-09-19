@@ -3,14 +3,15 @@
   let lastVideoId = '';
   let enabled = false;
   let renderToken = 0;
+  let renderTimer = 0;
+  let segmentedObserver = null;
+  let segmentedObserverTimer = 0;
+  let currentBadge = null;
+  let currentSegmented = null;
+  let themeMedia = null;
+  let themeListener = null;
 
-  function isExtensionAlive() {
-    try {
-      return Boolean(chrome.runtime?.id);
-    } catch {
-      return false;
-    }
-  }
+  const isExtensionAlive = () => window.YTSuperTool.utils.isExtensionAlive();
 
   const getVideoId = () =>
     new URLSearchParams(location.search).get('v')
@@ -78,15 +79,13 @@
       align-items: center !important;
       justify-content: center !important;
       align-self: center !important;
-      height: 36px !important;
-      min-height: 36px !important;
-      padding: 0 12px !important;
+      height: 40px !important;
+      min-height: 40px !important;
+      padding: 0 6px !important;
       margin: 0 !important;
-      background: transparent !important;
-      background-color: transparent !important;
       border: 0 !important;
       color: var(--yt-spec-text-primary, #fff) !important;
-      font: 500 14px/36px Roboto, sans-serif !important;
+      font: 500 14px/40px Roboto, sans-serif !important;
       cursor: default !important;
       user-select: none !important;
       flex-shrink: 0 !important;
@@ -95,6 +94,7 @@
       z-index: auto !important;
       box-sizing: border-box !important;
       vertical-align: middle !important;
+      transition: background-color 0.15s ease !important;
     `;
     badge.setAttribute('aria-label', 'Dislikes');
     badge.setAttribute('aria-live', 'polite');
@@ -104,21 +104,67 @@
     return badge;
   }
 
-  function syncBadgeColors(badge, segmented, dislikeHost, container) {
-    const segmentedStyle = segmented && getComputedStyle(segmented);
-    const dislikeStyle = dislikeHost && getComputedStyle(dislikeHost);
-    const background = segmentedStyle?.backgroundColor;
-    const color = dislikeStyle?.color || segmentedStyle?.color;
-
-    if (background && background !== 'transparent' && background !== 'rgba(0, 0, 0, 0)') {
-      badge.style.setProperty('background-color', background, 'important');
-    } else if (container) {
-      const containerBackground = getComputedStyle(container).backgroundColor;
-      if (containerBackground && containerBackground !== 'transparent') {
-        badge.style.setProperty('background-color', containerBackground, 'important');
-      }
+  function readSegmentedBackground(segmented, fallbackEl) {
+    const candidates = [segmented, fallbackEl].filter(Boolean);
+    for (const el of candidates) {
+      const bg = getComputedStyle(el).backgroundColor;
+      if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
     }
-    if (color) badge.style.setProperty('color', color, 'important');
+    return 'rgba(255, 255, 255, 0.1)';
+  }
+
+  function syncBadgeBackground() {
+    if (!currentBadge || !currentSegmented || !currentBadge.isConnected) return;
+    const container = document.querySelector('#top-level-buttons-computed');
+    const bg = readSegmentedBackground(currentSegmented, container);
+    if (currentBadge.dataset.lastBg !== bg) {
+      currentBadge.style.setProperty('background-color', bg, 'important');
+      currentBadge.dataset.lastBg = bg;
+    }
+    const color = getComputedStyle(currentSegmented).color;
+    if (color) currentBadge.style.setProperty('color', color, 'important');
+  }
+
+  function observeSegmentedBg() {
+    if (segmentedObserver) segmentedObserver.disconnect();
+    clearTimeout(segmentedObserverTimer);
+    if (!currentSegmented) return;
+    segmentedObserver = new MutationObserver(() => syncBadgeBackground());
+    segmentedObserver.observe(currentSegmented, {
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+    segmentedObserverTimer = setTimeout(() => {
+      segmentedObserver?.disconnect();
+      segmentedObserver = null;
+    }, 5000);
+  }
+
+  function setupThemeListener() {
+    if (themeMedia) return;
+    try {
+      themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+      themeListener = () => syncBadgeBackground();
+      themeMedia.addEventListener('change', themeListener);
+    } catch {}
+    const docObserver = new MutationObserver(() => syncBadgeBackground());
+    docObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['dark', 'light', 'dark-theme', 'class']
+    });
+    currentBadge && (currentBadge.__themeObserver = docObserver);
+  }
+
+  function cleanupThemeListener() {
+    if (themeMedia && themeListener) {
+      try { themeMedia.removeEventListener('change', themeListener); } catch {}
+    }
+    themeMedia = null;
+    themeListener = null;
+    if (currentBadge?.__themeObserver) {
+      currentBadge.__themeObserver.disconnect();
+      delete currentBadge.__themeObserver;
+    }
   }
 
   function insertBadge(container, segmented, value, videoId) {
@@ -134,7 +180,11 @@
       container.appendChild(badge);
     }
 
-    syncBadgeColors(badge, segmented, dislikeHost, container);
+    currentBadge = badge;
+    currentSegmented = segmented;
+    syncBadgeBackground();
+    observeSegmentedBg();
+    setupThemeListener();
   }
 
   async function render() {
@@ -161,7 +211,9 @@
   }
 
   function scheduleRender() {
-    [0, 400, 1200].forEach(delay => setTimeout(render, delay));
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(render, 100);
+    setTimeout(render, 1200);
   }
 
   function hasButtonsContainerMutation(mutations) {
@@ -205,6 +257,15 @@
       cache.clear();
       lastVideoId = '';
       renderToken = 0;
+      clearTimeout(renderTimer);
+      clearTimeout(segmentedObserverTimer);
+      renderTimer = 0;
+      segmentedObserverTimer = 0;
+      segmentedObserver?.disconnect();
+      segmentedObserver = null;
+      cleanupThemeListener();
+      currentBadge = null;
+      currentSegmented = null;
       removeRenderedCount();
     }
   };

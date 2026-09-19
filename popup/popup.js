@@ -45,7 +45,9 @@ function createToggle({ key, label, description }) {
   return row;
 }
 
-settings.forEach(setting => root.append(createToggle(setting)));
+const fragment = document.createDocumentFragment();
+settings.forEach(setting => fragment.append(createToggle(setting)));
+root.append(fragment);
 root.addEventListener('change', event => {
   const input = event.target;
   if (input.type !== 'checkbox') return;

@@ -36,3 +36,15 @@ class ObserverManager {
 }
 window.YTSuperTool = window.YTSuperTool || {};
 window.YTSuperTool.ObserverManager = ObserverManager;
+window.YTSuperTool.utils = {
+  isExtensionAlive() {
+    try { return Boolean(chrome.runtime?.id); } catch { return false; }
+  },
+  debounce(fn, delay) {
+    let timer = 0;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+};

@@ -13,7 +13,7 @@
 	},
 	"content_scripts": [{
 		"matches": ["*://*.youtube.com/*"],
-		"js": ["content/features/dislike.js", "content/features/no-shorts.js", "content/features/clean-homepage.js", "content/features/nonstop.js", "content/features/speed.js", "content/features/downloader.js", "content/features/pip.js", "content/features/screenshot.js", "content/observer.js", "content/main.js"],
+		"js": ["content/styles.js", "content/features/dislike.js", "content/features/no-shorts.js", "content/features/clean-homepage.js", "content/features/nonstop.js", "content/features/speed.js", "content/features/downloader.js", "content/features/pip.js", "content/features/screenshot.js", "content/observer.js", "content/main.js"],
 		"run_at": "document_idle"
 	}],
 	"icons": { "16": "assets/icons/icon16.png", "48": "assets/icons/icon48.png", "128": "assets/icons/icon128.png" }

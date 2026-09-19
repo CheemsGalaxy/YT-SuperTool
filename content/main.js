@@ -1,11 +1,10 @@
 (function () {
   if (location.hostname !== 'youtube.com' && !location.hostname.endsWith('.youtube.com')) return;
-  function isExtensionAlive() {
-    try { return Boolean(chrome.runtime?.id); } catch (error) { return false; }
-  }
+  const isExtensionAlive = () => window.YTSuperTool.utils.isExtensionAlive();
 
   const defaults = { dislike: true, noShorts: true, cleanHomepage: true, nonstop: true, speed: true, downloader: false, pip: true, screenshot: true };
   const modules = window.YTSuperTool;
+  modules.injectStyles?.();
   let settings = { ...defaults };
   let refreshTimer = 0;
   let playerRetryTimer = 0;
@@ -64,21 +63,27 @@
   };
   const scheduleApply = () => {
     clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(apply, 200);
-    setTimeout(apply, 1000);
+    refreshTimer = setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(apply, { timeout: 500 });
+      } else {
+        apply();
+      }
+    }, 200);
   };
   const handleMutations = mutations => {
     if (!active) return;
     if (settings.dislike) modules.dislike?.updateDislike(mutations);
     if (settings.noShorts) modules.noShorts?.updateNoShorts(mutations);
+    if (settings.cleanHomepage) modules.cleanHomepage?.updateCleanHomepage(mutations);
     if (settings.nonstop) modules.nonstop?.updateNonstop(mutations);
     const playerRelated = mutations.some(mutation => {
       if (mutation.target?.closest?.('.html5-video-player')) return true;
-      if (mutation.target?.matches?.('#player, #movie_player, .html5-video-player')) return true;
+      if (mutation.target?.matches?.('#player, #movie_player, .html5-video-player, .ytp-left-controls, .ytp-right-controls')) return true;
       return [...mutation.addedNodes].some(node => {
         if (node.nodeType !== Node.ELEMENT_NODE) return false;
-        if (node.matches?.('.html5-video-player, #movie_player, #player, .ytp-right-controls, ytd-segmented-like-dislike-button-renderer')) return true;
-        return node.querySelector?.('.html5-video-player, #movie_player, #player, .ytp-right-controls');
+        if (node.matches?.('.html5-video-player, #movie_player, #player, .ytp-left-controls, .ytp-right-controls, ytd-segmented-like-dislike-button-renderer')) return true;
+        return node.querySelector?.('.html5-video-player, #movie_player, #player, .ytp-left-controls, .ytp-right-controls');
       });
     });
     if (playerRelated) initPlayerFeaturesWithRetry();

@@ -1,6 +1,4 @@
 (function () {
-  let cleanHomepageObserver = null;
-
   const isCleanHomepageSection = section => {
     if (section.querySelector('ytd-inline-survey-renderer')) return true;
     if (section.querySelector('ytd-statement-banner-renderer')) return true;
@@ -48,20 +46,17 @@
   function initCleanHomepage() {
     stopCleanHomepage();
     hideCleanHomepageSections();
-    if (!document.body) return;
-    cleanHomepageObserver = new MutationObserver(mutations => {
-      mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE) hideCleanHomepageSections(node);
-      }));
-    });
-    cleanHomepageObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function updateCleanHomepage(mutations) {
+    mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE) hideCleanHomepageSections(node);
+    }));
   }
 
   function stopCleanHomepage() {
-    cleanHomepageObserver?.disconnect();
-    cleanHomepageObserver = null;
   }
 
   window.YTSuperTool = window.YTSuperTool || {};
-  window.YTSuperTool.cleanHomepage = { initCleanHomepage, stopCleanHomepage };
+  window.YTSuperTool.cleanHomepage = { initCleanHomepage, updateCleanHomepage, stopCleanHomepage };
 })();

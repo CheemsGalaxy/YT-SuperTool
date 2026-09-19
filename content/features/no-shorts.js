@@ -1,6 +1,4 @@
 (function () {
-  let shortsObserver = null;
-
   const SHORTS_SELECTORS = [
     'ytd-rich-shelf-renderer[is-shorts]',
     'ytd-reel-shelf-renderer',
@@ -24,8 +22,8 @@
     { parent: 'ytm-compact-video-renderer', child: 'a[href^="/shorts/"]' }
   ];
 
-  const elementsFor = (root, selector) => [
-    ...(root.matches?.(selector) ? [root] : []),
+  const elementsFor = (root, selector, includeRoot = true) => [
+    ...(includeRoot && root.matches?.(selector) ? [root] : []),
     ...(root.querySelectorAll?.(selector) || [])
   ];
 
@@ -39,10 +37,11 @@
   };
 
   function hideShorts(root = document) {
+    const includeRoot = root.nodeType !== Node.ELEMENT_NODE || RELEVANT_TAGS.test(root.tagName);
     const set = new Set();
-    elementsFor(root, COMBINED).forEach(element => { if (element.isConnected) set.add(element); });
+    elementsFor(root, COMBINED, includeRoot).forEach(element => { if (element.isConnected) set.add(element); });
     SHORTS_HAS_RULES.forEach(({ parent, child }) => {
-      elementsFor(root, parent).forEach(element => {
+      elementsFor(root, parent, includeRoot).forEach(element => {
         if (element.isConnected && element.querySelector(child)) set.add(element);
       });
     });
@@ -54,13 +53,6 @@
     initNoShorts() {
       window.YTSuperTool.noShorts.stopNoShorts();
       hideShorts();
-      if (!document.body) return;
-      shortsObserver = new MutationObserver(mutations => {
-        mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
-          if (node.nodeType === Node.ELEMENT_NODE && RELEVANT_TAGS.test(node.tagName)) hideShorts(node);
-        }));
-      });
-      shortsObserver.observe(document.body, { childList: true, subtree: true });
     },
     updateNoShorts(mutations) {
       mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
@@ -68,8 +60,6 @@
       }));
     },
     stopNoShorts() {
-      shortsObserver?.disconnect();
-      shortsObserver = null;
     }
   };
 })();

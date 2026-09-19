@@ -62,7 +62,6 @@ async function fetchDislikeHandler(videoId) {
     const data = await response.json();
     const dislikes = Number(data.dislikes) || 0;
     await setCachedDislike(videoId, dislikes);
-    cleanupDislikeCache();
     return { ok: true, dislikes };
   } catch (error) {
     return { ok: false, error: error.message };
@@ -94,7 +93,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return false;
     }
     fetchDislikeHandler(videoId)
-      .then(sendResponse)
+      .then(response => { sendResponse(response); return response; })
+      .then(async () => {
+        try {
+          await cleanupDislikeCache();
+        } catch (error) {}
+      })
       .catch(error => sendResponse({ ok: false, error: error.message }));
     return true;
   }
