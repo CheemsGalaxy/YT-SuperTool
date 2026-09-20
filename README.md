@@ -31,7 +31,7 @@
 
 ## 🛠 Giới thiệu
 
-**YT SuperTool** là một công cụ giúp nâng cao trải nghiệm sử dụng **YouTube**, cung cấp một số tính năng và công cụ hữu ích đang chờ bạn khám phá.
+**YT SuperTool** là một công cụ giúp nâng cao trải nghiệm sử dụng **YouTube**, cung cấp một số tính năng và công cụ hữu ích đang chờ bạn khám phá. Đặc biệt, xin cảm ơn **[Return YouTube Dislike](https://returnyoutubedislike.com/)** đã cung cấp API miễn phí cho tính năng hiển thị số lượt dislike.
 
 ## ✨ Tính năng
 
@@ -64,7 +64,7 @@ Mở link bên dưới → nhấn **Add to Chrome** → **Add extension**.
 
 **Bước 2: Tải file cài đặt**
 
-[YT.SuperTool.MV3.crx](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.crx)
+[YT.SuperTool.MV3.crx](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/YT.SuperTool.MV3.crx)
 
 **Bước 3: Mở Extensions**
 
@@ -92,7 +92,7 @@ Cách này không cần CRXLauncher, cài trực tiếp từ Chrome Extensions.
 
 **Bước 1: Tải file cài đặt**
 
-[YT.SuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.zip)
+[YT.SuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/YT.SuperTool.MV3.zip)
 
 **Bước 2: Giải nén file**
 
@@ -193,8 +193,7 @@ Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể 
 
 ## 🛠 Introduction
 
-**YT SuperTool** is a tool that enhances your **YouTube** experience, providing a set of useful features and utilities waiting for you to explore.
-
+**YT SuperTool** is a tool that enhances your **YouTube** experience, providing a set of useful features and utilities waiting for you to explore. Special thanks to **[Return YouTube Dislike](https://returnyoutubedislike.com/)** for providing a free API for the dislike count feature.
 ## ✨ Features
 
 - **No Shorts** — Hide Shorts from the sidebar, homepage, and search results.
@@ -226,7 +225,7 @@ Open the link below → click **Add to Chrome** → **Add extension**.
 
 **Step 2: Download the installation file**
 
-[YT.SuperTool.MV3.crx](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.crx)
+[YT.SuperTool.MV3.crx](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/YT.SuperTool.MV3.crx)
 
 **Step 3: Open Extensions**
 
@@ -254,7 +253,7 @@ This method doesn't require CRXLauncher. Install directly from Chrome Extensions
 
 **Step 1: Download the installation file**
 
-[YT.SuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.zip)
+[YT.SuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/YT.SuperTool.MV3.zip)
 
 **Step 2: Extract the file**
 
