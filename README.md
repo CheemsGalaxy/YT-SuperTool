@@ -148,7 +148,7 @@ Với **Cách 2**, Chrome sẽ cảnh báo extension từ nguồn ngoài mỗi l
 | **SponsorBlock** | Tự động bỏ qua sponsor, intro, outro, tự quảng cáo trong video | [Chrome Web Store](https://chromewebstore.google.com/detail/sponsorblock-for-youtube/mnjggcdmjocbbbhaepdhchncahnbgone) |
 
 **Tại sao không tích hợp vào YT SuperTool?**
-- **uBO Lite** là extension chuyên dụng về adblock, được duy trì bởi đội ngũ uBlock Origin. Tích hợp vào YT SuperTool sẽ trùng lặp và kém hiệu quả hơn.
+- **uBO Lite** là extension chuyên dụng về adblock, được duy trì bởi đội ngũ uBlock Origin. Họ thường xuyên cập nhật để thích ứng mỗi khi YouTube thay đổi cách phát quảng cáo.
 - **SponsorBlock** cần server cộng đồng để vote timestamp — không thể tự làm trong extension nhỏ.
 
 ## 💡 Đóng góp & Liên hệ
@@ -169,11 +169,11 @@ Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể 
 
 ### v2.0.0 — 14/09/2026
 - ✨ Chuyển sang Manifest V3
+- ⚡ Tối ưu hiệu suất, trải nghiệm người dùng
+- 🐞 Fix một số bug còn tồn đọng từ Manifest V2
 
 ### v1.0.0 — 01/09/2026
-- 🎉 Phiên bản đầu tiên
-
----
+- 🎉 Phiên bản đầu tiên chạy trên Manifest V2 (đã khai tử)
 
 [⬆️ **Back to top**](#)
 
@@ -309,7 +309,7 @@ For the best YouTube experience, we recommend installing these 2 extensions alon
 | **SponsorBlock** | Automatically skip sponsors, intros, outros, and self-promos in videos | [Chrome Web Store](https://chromewebstore.google.com/detail/sponsorblock-for-youtube/mnjggcdmjocbbbhaepdhchncahnbgone) |
 
 **Why not integrate them into YT SuperTool?**
-- **uBO Lite** is a dedicated adblock extension maintained by the uBlock Origin team. Integrating it would be redundant and less effective.
+- **uBO Lite** is a dedicated adblock extension maintained by the uBlock Origin team. They frequently update it to adapt whenever YouTube changes how it serves ads.
 - **SponsorBlock** requires a community server to vote timestamps — not feasible for a small extension.
 
 ## 💡 Contributing & Contact
@@ -330,9 +330,11 @@ If you need support or want to chat directly, you can join Discord:
 
 ### v2.0.0 — 2026-09-14
 - ✨ Migrated to Manifest V3
+- ⚡ Improved performance and user experience
+- 🐞 Fixed some leftover bugs from Manifest V2
 
 ### v1.0.0 — 2026-09-01
-- 🎉 Initial release
+- 🎉 Initial release on Manifest V2 (deprecated)
 
 ---
 
