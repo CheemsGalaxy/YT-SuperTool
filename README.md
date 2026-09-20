@@ -48,11 +48,13 @@
 
 Do chính sách mới của Google đối với tiện ích mở rộng Chrome, việc cài đặt trực tiếp file `.crx` theo cách thông thường không còn được hỗ trợ như trước.
 
-Hiện tại, vì **YT SuperTool chưa được phát hành trên Chrome Web Store**, bạn có thể sử dụng **CRXLauncher** để cài đặt tiện ích.
+Hiện tại, vì **YT SuperTool chưa được phát hành trên Chrome Web Store**, bạn có thể cài đặt bằng **1 trong 2 cách** dưới đây.
 
 > ⚠️ **Lưu ý:** Đây là giải pháp tạm thời để sử dụng YT SuperTool trong thời gian tiện ích chưa có mặt trên Chrome Web Store. Mình xin lỗi vì sự bất tiện này và sẽ cố gắng đưa tiện ích lên Chrome Web Store trong thời gian tới.
 
-### 🔧 Các bước cài đặt
+---
+
+### 🔧 Cách 1: Cài qua file `.crx` (dùng CRXLauncher)
 
 **Bước 1: Cài CRXLauncher**
 
@@ -60,15 +62,9 @@ Mở link bên dưới → nhấn **Add to Chrome** → **Add extension**.
 
 [CRXLauncher – Chrome Web Store](https://chromewebstore.google.com/detail/crxlauncher/kiilhncajadbgbmdbdcopdpnmdhlbdle?utm)
 
-**Bước 2: Tải và giải nén file cài đặt**
+**Bước 2: Tải file cài đặt**
 
-- Tải file nén từ link bên dưới.
-- Giải nén file `.zip` để lấy file `YTSuperTool(MV3).crx` bên trong.
-  - **Windows:** Chuột phải file `.zip` → **Extract All**.
-  - **Mac:** Double-click file `.zip`.
-  - **Linux:** `unzip YTSuperTool.MV3.zip`
-
-Tải xuống và giải nén [YTSuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YTSuperTool.MV3.zip)
+[YT.SuperTool.MV3.crx](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.crx)
 
 **Bước 3: Mở Extensions**
 
@@ -76,13 +72,9 @@ Gõ `chrome://extensions/` vào thanh địa chỉ, hoặc menu ⋮ → **Extens
 
 **Bước 4: Chọn file**
 
-Trong giao diện CRXLauncher, nhấn **Choose file**.
+Trong giao diện CRXLauncher, nhấn **Choose file** → chọn file `YT.SuperTool.MV3.crx` đã tải ở Bước 2.
 
-**Bước 5: Chọn file .crx**
-
-Chọn file `YTSuperTool(MV3).crx` bạn đã giải nén ở Bước 2.
-
-**Bước 6: Cấp quyền**
+**Bước 5: Cấp quyền**
 
 Nhấn **Open** → **Allow permissions** → **Allow**.
 
@@ -92,16 +84,59 @@ Nhấn **Open** → **Allow permissions** → **Allow**.
 
 Từ bây giờ, bạn có thể mở **Extensions → CRXLauncher** để truy cập và sử dụng YT SuperTool.
 
+---
+
+### 🔧 Cách 2: Cài qua file `.zip` (Load unpacked)
+
+Cách này không cần CRXLauncher, cài trực tiếp từ Chrome Extensions.
+
+**Bước 1: Tải file cài đặt**
+
+[YT.SuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.zip)
+
+**Bước 2: Giải nén file**
+
+Giải nén file `.zip` ra một thư mục cố định (ví dụ: `Downloads/YT-SuperTool/`).
+
+- **Windows:** Chuột phải file `.zip` → **Extract All**.
+- **Mac:** Double-click file `.zip`.
+- **Linux:** `unzip YT.SuperTool.MV3.zip`.
+
+> ⚠️ **Quan trọng:** Không xóa thư mục này sau khi cài — Chrome sẽ đọc trực tiếp từ đây. Nếu xóa, extension sẽ ngừng hoạt động.
+
+**Bước 3: Mở Extensions**
+
+Gõ `chrome://extensions/` vào thanh địa chỉ, hoặc menu ⋮ → **Extensions** → **Manage Extensions**.
+
+**Bước 4: Bật Developer Mode**
+
+Gạt công tắc **Developer mode** ở góc trên bên phải.
+
+**Bước 5: Load unpacked**
+
+Nhấn **Load unpacked** → chọn thư mục bạn đã giải nén ở Bước 2.
+
+**Bước 6: Xác nhận**
+
+Extension YT SuperTool sẽ xuất hiện trong danh sách. Chrome có thể hiện cảnh báo — đây là bình thường khi cài extension từ nguồn ngoài.
+
+🎉 **Hoàn tất!**
+
+---
+
 ### ❓ Không cài được?
 
 **Lỗi "CRX_HEADER_INVALID":**
-Đổi file `.crx` thành `.zip`, giải nén, rồi dùng **Load unpacked** trong `chrome://extensions/`.
+Chrome đã chặn file `.crx`. Dùng **Cách 2** (Load unpacked từ file `.zip`).
 
 **Extension bị tắt sau khi cài:**
 Vào `chrome://extensions/`, gạt toggle của YT SuperTool sang phải để bật.
 
 **Popup bị thừa to:**
-Đây là bug của CRXLauncher (không phải extension). Đợi bản cập nhật hoặc dùng cách **Load unpacked**.
+Đây là bug của CRXLauncher (không phải extension). Dùng **Cách 2** (Load unpacked).
+
+**Extension tự tắt sau khi tắt Chrome:**
+Với **Cách 2**, Chrome sẽ cảnh báo extension từ nguồn ngoài mỗi lần khởi động — nhấn **Keep** để giữ.
 
 ## 🎯 Bộ công cụ gợi ý
 
@@ -175,11 +210,13 @@ Nếu cần hỗ trợ hoặc muốn trao đổi trực tiếp, bạn có thể 
 
 Due to Google's new policy on Chrome extensions, installing a `.crx` file directly the usual way is no longer supported.
 
-Currently, since **YT SuperTool has not been published on the Chrome Web Store**, you can use **CRXLauncher** to install the extension.
+Currently, since **YT SuperTool has not been published on the Chrome Web Store**, you can install it using **one of the two methods** below.
 
 > ⚠️ **Note:** This is a temporary solution while YT SuperTool is not yet available on the Chrome Web Store. Apologies for the inconvenience — I will try to bring the extension to the Chrome Web Store soon.
 
-### 🔧 Installation Steps
+---
+
+### 🔧 Method 1: Install via `.crx` file (CRXLauncher)
 
 **Step 1: Install CRXLauncher**
 
@@ -187,15 +224,9 @@ Open the link below → click **Add to Chrome** → **Add extension**.
 
 [CRXLauncher – Chrome Web Store](https://chromewebstore.google.com/detail/crxlauncher/kiilhncajadbgbmdbdcopdpnmdhlbdle?utm)
 
-**Step 2: Download and extract the installation file**
+**Step 2: Download the installation file**
 
-- Download the `.zip` file from the link below.
-- Extract the `.zip` file to get the `YTSuperTool(MV3).crx` file inside.
-  - **Windows:** Right-click the `.zip` file → **Extract All**.
-  - **Mac:** Double-click the `.zip` file.
-  - **Linux:** `unzip YTSuperTool.MV3.zip`
-
-[Download and extract YTSuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YTSuperTool.MV3.zip)
+[YT.SuperTool.MV3.crx](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.crx)
 
 **Step 3: Open Extensions**
 
@@ -203,13 +234,9 @@ Type `chrome://extensions/` in the address bar, or menu ⋮ → **Extensions** �
 
 **Step 4: Choose file**
 
-In the CRXLauncher interface, click **Choose file**.
+In CRXLauncher, click **Choose file** → select the `YT.SuperTool.MV3.crx` file downloaded in Step 2.
 
-**Step 5: Select the .crx file**
-
-Select the `YTSuperTool(MV3).crx` file you extracted in Step 2.
-
-**Step 6: Grant permissions**
+**Step 5: Grant permissions**
 
 Click **Open** → **Allow permissions** → **Allow**.
 
@@ -219,16 +246,59 @@ Click **Open** → **Allow permissions** → **Allow**.
 
 From now on, you can open **Extensions → CRXLauncher** to access and use YT SuperTool.
 
+---
+
+### 🔧 Method 2: Install via `.zip` file (Load unpacked)
+
+This method doesn't require CRXLauncher. Install directly from Chrome Extensions.
+
+**Step 1: Download the installation file**
+
+[YT.SuperTool.MV3.zip](https://github.com/CheemsGalaxy/YT-Super-Tool/releases/download/Release/YT.SuperTool.MV3.zip)
+
+**Step 2: Extract the file**
+
+Extract the `.zip` file to a **permanent folder** (e.g., `Downloads/YT-SuperTool/`).
+
+- **Windows:** Right-click the `.zip` file → **Extract All**.
+- **Mac:** Double-click the `.zip` file.
+- **Linux:** `unzip YT.SuperTool.MV3.zip`.
+
+> ⚠️ **Important:** Do not delete this folder after installation — Chrome reads directly from it. If deleted, the extension will stop working.
+
+**Step 3: Open Extensions**
+
+Type `chrome://extensions/` in the address bar, or menu ⋮ → **Extensions** → **Manage Extensions**.
+
+**Step 4: Enable Developer Mode**
+
+Toggle **Developer mode** in the top-right corner.
+
+**Step 5: Load unpacked**
+
+Click **Load unpacked** → select the folder you extracted in Step 2.
+
+**Step 6: Confirm**
+
+YT SuperTool will appear in the list. Chrome may show a warning — this is normal when installing from outside the Web Store.
+
+🎉 **Done!**
+
+---
+
 ### ❓ Can't install?
 
 **Error "CRX_HEADER_INVALID":**
-Rename `.crx` to `.zip`, extract it, then use **Load unpacked** in `chrome://extensions/`.
+Chrome has blocked the `.crx` file. Use **Method 2** (Load unpacked from `.zip`).
 
 **Extension is disabled after installation:**
 Go to `chrome://extensions/`, toggle YT SuperTool to the right to enable it.
 
 **Popup is oversized:**
-This is a CRXLauncher bug (not the extension). Wait for an update or use the **Load unpacked** method.
+This is a CRXLauncher bug (not the extension). Use **Method 2** (Load unpacked).
+
+**Extension is disabled after restarting Chrome:**
+With **Method 2**, Chrome warns about non-Web-Store extensions on every startup — click **Keep** to retain it.
 
 ## 🎯 Recommended Setup
 
