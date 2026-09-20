@@ -4,9 +4,14 @@
   const STEP = 0.05;
   const KEY_STEP = 0.25;
   const DEFAULT_SPEED = 1;
-  const PRESETS = [0.75, 1, 1.25, 1.5];
   const SAVE_DEBOUNCE = 200;
   const MAX_RETRY = 40;
+  const PRESET_GROUPS = [
+    [0.25, 0.5, 0.75],
+    [1, 1.25, 1.5, 1.75],
+    [2, 2.5, 3],
+    [4, 5, 6, 7, 8, 9, 10]
+  ];
 
   let currentSpeed = DEFAULT_SPEED;
   let container = null;
@@ -15,14 +20,20 @@
   let onRateChange = null;
   let initRetryTimer = 0;
   let initRetryCount = 0;
-  let badgeRef = null;
   let sliderRef = null;
-  let presetButtons = [];
+  let chipRef = null;
+  let dropdownEl = null;
+  let miniSliderRef = null;
+  let presetItems = [];
+  let isDropdownOpen = false;
   let saveTimer = 0;
+  let clickOutsideHandler = null;
+  let escapeHandler = null;
+  let positionHandler = null;
 
   const clampSpeed = v => Math.min(MAX_SPEED, Math.max(MIN_SPEED, Number(v) || DEFAULT_SPEED));
   const normalizeSpeed = v => Math.round(clampSpeed(v) / STEP) * STEP;
-  const formatSpeed = v => `${v.toFixed(2)}x`;
+  const shortSpeed = v => `${Number(Number(v).toFixed(2))}x`;
 
   function saveSpeed(speed) {
     clearTimeout(saveTimer);
@@ -34,10 +45,15 @@
   }
 
   function syncPresetStates() {
-    for (const button of presetButtons) {
-      const presetValue = parseFloat(button.textContent);
-      button.classList.toggle('is-active', Math.abs(presetValue - currentSpeed) < 0.001);
+    for (const item of presetItems) {
+      const presetValue = parseFloat(item.dataset.value);
+      item.classList.toggle('is-active', Math.abs(presetValue - currentSpeed) < 0.001);
     }
+  }
+
+  function syncChipText() {
+    if (!chipRef) return;
+    chipRef.textContent = isDropdownOpen ? '✕' : `${shortSpeed(currentSpeed)} ▼`;
   }
 
   function applySpeed(value, persist = true) {
@@ -48,11 +64,12 @@
     }
     currentSpeed = next;
     if (video && video.playbackRate !== currentSpeed) video.playbackRate = currentSpeed;
-    if (badgeRef) badgeRef.textContent = formatSpeed(currentSpeed);
     if (sliderRef) {
       sliderRef.value = String(currentSpeed);
-      sliderRef.title = formatSpeed(currentSpeed);
+      sliderRef.title = shortSpeed(currentSpeed);
     }
+    if (miniSliderRef) miniSliderRef.value = String(currentSpeed);
+    syncChipText();
     syncPresetStates();
     if (persist) saveSpeed(currentSpeed);
   }
@@ -75,6 +92,180 @@
     if (video && video.playbackRate !== currentSpeed) video.playbackRate = currentSpeed;
   }
 
+  function removeDropdownListeners() {
+    if (clickOutsideHandler) {
+      document.removeEventListener('click', clickOutsideHandler, true);
+      document.removeEventListener('pointerdown', clickOutsideHandler, true);
+      clickOutsideHandler = null;
+    }
+    if (escapeHandler) {
+      document.removeEventListener('keydown', escapeHandler, true);
+      escapeHandler = null;
+    }
+  }
+
+  function removePositionListeners() {
+    if (positionHandler) {
+      window.removeEventListener('resize', positionHandler);
+      window.removeEventListener('scroll', positionHandler, true);
+      positionHandler = null;
+    }
+  }
+
+  function closeDropdown() {
+    if (!isDropdownOpen) return;
+    isDropdownOpen = false;
+    if (dropdownEl) {
+      dropdownEl.style.display = 'none';
+      dropdownEl.style.top = '';
+      dropdownEl.style.left = '';
+      dropdownEl.style.position = '';
+      dropdownEl.style.zIndex = '';
+      if (dropdownEl.parentElement === document.body && container) {
+        container.appendChild(dropdownEl);
+      }
+    }
+    if (chipRef) chipRef.classList.remove('is-open');
+    syncChipText();
+    removeDropdownListeners();
+    removePositionListeners();
+  }
+
+  function openDropdown() {
+    if (isDropdownOpen) return;
+    isDropdownOpen = true;
+
+    if (dropdownEl) {
+      if (dropdownEl.parentElement !== document.body) {
+        document.body.appendChild(dropdownEl);
+      }
+      dropdownEl.style.display = 'block';
+      dropdownEl.style.position = 'fixed';
+      dropdownEl.style.zIndex = '2147483647';
+    }
+
+    if (chipRef) chipRef.classList.add('is-open');
+    syncChipText();
+
+    const active = presetItems.find(item => item.classList.contains('is-active'));
+    if (active && dropdownEl) {
+      try { active.scrollIntoView({ block: 'nearest' }); } catch {}
+    }
+
+    clickOutsideHandler = event => {
+      const path = event.composedPath?.() || [];
+      if (path.includes(container) || path.includes(dropdownEl)) return;
+      closeDropdown();
+    };
+    escapeHandler = event => {
+      if (event.key === 'Escape') closeDropdown();
+    };
+    positionHandler = () => {
+      if (!isDropdownOpen || !chipRef || !dropdownEl) return;
+      const chipRect = chipRef.getBoundingClientRect();
+      const ddRect = dropdownEl.getBoundingClientRect();
+      const top = chipRect.top - ddRect.height - 8;
+      const left = Math.max(8, chipRect.right - ddRect.width);
+      dropdownEl.style.top = `${top}px`;
+      dropdownEl.style.left = `${left}px`;
+      dropdownEl.style.position = 'fixed';
+      dropdownEl.style.zIndex = '2147483647';
+    };
+
+    positionHandler();
+    window.addEventListener('resize', positionHandler, { passive: true });
+    window.addEventListener('scroll', positionHandler, { passive: true, capture: true });
+    document.addEventListener('click', clickOutsideHandler, true);
+    document.addEventListener('pointerdown', clickOutsideHandler, true);
+    document.addEventListener('keydown', escapeHandler, true);
+  }
+
+  function toggleDropdown() {
+    if (isDropdownOpen) closeDropdown();
+    else openDropdown();
+  }
+
+  function buildDropdown() {
+    const dd = document.createElement('div');
+    dd.className = 'yt-supertool-speed-dropdown';
+    dd.style.display = 'none';
+    dd.setAttribute('role', 'menu');
+
+    PRESET_GROUPS.forEach((group, idx) => {
+      group.forEach(value => {
+        const item = document.createElement('div');
+        item.className = 'yt-supertool-speed-preset';
+        item.dataset.value = String(value);
+        item.setAttribute('role', 'menuitem');
+        item.setAttribute('tabindex', '0');
+
+        const label = document.createElement('span');
+        label.textContent = shortSpeed(value);
+
+        const check = document.createElement('span');
+        check.className = 'yt-supertool-speed-check';
+        check.textContent = '✓';
+
+        item.append(label, check);
+        item.addEventListener('click', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          applySpeed(value);
+          closeDropdown();
+        });
+        item.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            applySpeed(value);
+            closeDropdown();
+          }
+        });
+        dd.append(item);
+      });
+
+      if (idx < PRESET_GROUPS.length - 1) {
+        const divider = document.createElement('div');
+        divider.className = 'yt-supertool-speed-divider';
+        dd.append(divider);
+      }
+    });
+
+    const divider2 = document.createElement('div');
+    divider2.className = 'yt-supertool-speed-divider';
+    dd.append(divider2);
+
+    const label = document.createElement('div');
+    label.className = 'yt-supertool-speed-label';
+    label.textContent = 'Custom';
+    dd.append(label);
+
+    const mini = document.createElement('input');
+    mini.type = 'range';
+    mini.className = 'yt-supertool-speed-mini-slider';
+    mini.min = String(MIN_SPEED);
+    mini.max = String(MAX_SPEED);
+    mini.step = String(STEP);
+    mini.value = String(currentSpeed);
+    mini.addEventListener('input', event => applySpeed(event.target.value));
+    mini.addEventListener('click', event => event.stopPropagation());
+    mini.addEventListener('mousedown', event => event.stopPropagation());
+    dd.append(mini);
+
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'yt-supertool-speed-reset';
+    reset.textContent = 'Reset 1x';
+    reset.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      applySpeed(DEFAULT_SPEED);
+      closeDropdown();
+    });
+    dd.append(reset);
+
+    return { dd, mini };
+  }
+
   function initSpeed(player) {
     if (!player) return;
     const anchor = findControlsAnchor(player);
@@ -86,11 +277,15 @@
 
     const existing = document.querySelector('[data-yt-supertool="speed"]');
     if (existing) {
-      if (existing.parentElement !== anchor.parentElement) anchor.insertAdjacentElement('afterend', existing);
+      if (existing.parentElement !== anchor.parentElement) {
+        anchor.insertAdjacentElement('afterend', existing);
+      }
       container = existing;
-      badgeRef = existing.querySelector('.yt-supertool-speed-badge');
       sliderRef = existing.querySelector('.yt-supertool-speed-slider');
-      presetButtons = Array.from(existing.querySelectorAll('.yt-supertool-speed-presets button'));
+      chipRef = existing.querySelector('.yt-supertool-speed-trigger');
+      dropdownEl = document.querySelector('.yt-supertool-speed-dropdown');
+      miniSliderRef = dropdownEl?.querySelector('.yt-supertool-speed-mini-slider') || null;
+      presetItems = dropdownEl ? Array.from(dropdownEl.querySelectorAll('.yt-supertool-speed-preset')) : [];
       setVideo(player);
       applySpeed(currentSpeed, false);
       return;
@@ -103,11 +298,6 @@
     const el = document.createElement('div');
     el.dataset.ytSupertool = 'speed';
     el.title = 'Playback speed';
-
-    const badge = document.createElement('span');
-    badge.className = 'yt-supertool-speed-badge';
-    badge.textContent = formatSpeed(currentSpeed);
-    badge.setAttribute('aria-label', 'Playback speed');
 
     const slider = document.createElement('input');
     slider.type = 'range';
@@ -123,29 +313,29 @@
       applySpeed(DEFAULT_SPEED);
     });
 
-    const presets = document.createElement('span');
-    presets.className = 'yt-supertool-speed-presets';
-    PRESETS.forEach(preset => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = `${preset}x`;
-      button.title = `Set playback speed to ${preset}x`;
-      button.addEventListener('click', event => {
-        event.preventDefault();
-        event.stopPropagation();
-        applySpeed(preset);
-      });
-      presets.append(button);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'yt-supertool-speed-trigger';
+    chip.setAttribute('aria-label', 'Toggle speed presets');
+    chip.setAttribute('aria-haspopup', 'true');
+    chip.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleDropdown();
     });
 
-    el.append(badge, slider, presets);
+    const { dd, mini } = buildDropdown();
+    el.append(slider, chip, dd);
     anchor.insertAdjacentElement('afterend', el);
-    container = el;
-    badgeRef = badge;
-    sliderRef = slider;
-    presetButtons = Array.from(presets.querySelectorAll('button'));
 
-    if (video && video.playbackRate !== currentSpeed) video.playbackRate = currentSpeed;
+    container = el;
+    sliderRef = slider;
+    chipRef = chip;
+    dropdownEl = dd;
+    miniSliderRef = mini;
+    presetItems = Array.from(dd.querySelectorAll('.yt-supertool-speed-preset'));
+
+    syncChipText();
     syncPresetStates();
 
     onRateChange = () => {
@@ -153,8 +343,9 @@
       const rate = Number(video.playbackRate.toFixed(2));
       if (Math.abs(rate - currentSpeed) > 0.001) {
         currentSpeed = rate;
-        if (badgeRef) badgeRef.textContent = formatSpeed(currentSpeed);
         if (sliderRef) sliderRef.value = String(currentSpeed);
+        if (miniSliderRef) miniSliderRef.value = String(currentSpeed);
+        syncChipText();
         syncPresetStates();
         saveSpeed(currentSpeed);
       }
@@ -186,9 +377,16 @@
     initRetryTimer = 0;
     saveTimer = 0;
     initRetryCount = 0;
-    badgeRef = null;
+    closeDropdown();
+    removeDropdownListeners();
+    removePositionListeners();
+    if (dropdownEl?.parentElement === document.body) dropdownEl.remove();
     sliderRef = null;
-    presetButtons = [];
+    chipRef = null;
+    dropdownEl = null;
+    miniSliderRef = null;
+    presetItems = [];
+    isDropdownOpen = false;
     if (onKeydown) {
       document.removeEventListener('keydown', onKeydown);
       onKeydown = null;

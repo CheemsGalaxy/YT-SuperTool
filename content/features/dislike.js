@@ -1,3 +1,5 @@
+// content/features/dislike.js
+
 (function () {
   const cache = new Map();
   let lastVideoId = '';
@@ -69,6 +71,7 @@
   function removeRenderedCount() {
     document.querySelectorAll('.yt-supertool-dislike-count, .yt-supertool-dislike-badge')
       .forEach(element => element.remove());
+    currentBadge = null;
   }
 
   function createCount(value, videoId) {
@@ -152,7 +155,7 @@
       attributes: true,
       attributeFilter: ['dark', 'light', 'dark-theme', 'class']
     });
-    currentBadge && (currentBadge.__themeObserver = docObserver);
+    if (currentBadge) currentBadge.__themeObserver = docObserver;
   }
 
   function cleanupThemeListener() {
@@ -192,6 +195,9 @@
 
     const id = getVideoId();
     const token = ++renderToken;
+
+    removeRenderedCount();
+
     const segmented = findSegmented();
     const container = document.querySelector('#top-level-buttons-computed');
 
@@ -199,7 +205,6 @@
     lastVideoId = id;
 
     let item = cache.get(id);
-    removeRenderedCount();
     if (!item || Date.now() - item.time > 60000) {
       item = await fetchDislike(id);
       if (item.value !== '—') cache.set(id, item);
