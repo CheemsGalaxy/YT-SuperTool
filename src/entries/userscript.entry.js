@@ -1,0 +1,35 @@
+// ==UserScript==
+// @name         YT SuperTool
+// @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
+// @version      2.3.0
+// @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
+// @author       CheemsGalaxy
+// @match        *://*.youtube.com/*
+// @exclude      *://music.youtube.com/*
+// @exclude      *://studio.youtube.com/*
+// @noframes
+// @run-at       document-start
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_addValueChangeListener
+// @grant        GM_removeValueChangeListener
+// @grant        GM_registerMenuCommand
+// @grant        GM_addStyle
+// @grant        GM_xmlhttpRequest
+// @grant        GM_openInTab
+// @grant        unsafeWindow
+// @connect      returnyoutubedislikeapi.com
+// @connect      sponsor.ajay.app
+// ==/UserScript==
+
+import bridge from '../adapters/index.js';
+import { installNetworkGuard } from '../core/features/adblock/adblock-network.js';
+import { installAdblockPrune } from '../core/features/adblock/adblock-prune.js';
+import { initCore } from '../core/index.js';
+
+installAdblockPrune(bridge.mainWindow);
+installNetworkGuard(bridge.mainWindow);
+
+initCore().catch((error) => {
+  console.error('YT SuperTool failed to start:', error);
+});

@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "permissions": ["storage", "tabs", "scripting", "declarativeNetRequest"],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "https://returnyoutubedislikeapi.com/*",
+    "https://sponsor.ajay.app/*",
+    "https://*.doubleclick.net/*",
+    "https://*.googlesyndication.com/*",
+    "https://*.googleadservices.com/*",
+    "https://*.googletagservices.com/*",
+    "https://*.google-analytics.com/*",
+    "https://*.googletagmanager.com/*",
+    "https://*.2mdn.net/*",
+    "https://*.moatads.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "YT SuperTool",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["main-world.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "yt-adblock",
+        "enabled": true,
+        "path": "rules/yt-adblock-dnr.json"
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.freebuff/
+coverage/
+*.pem
+*.crx
+*.xpi
+*.zip
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db

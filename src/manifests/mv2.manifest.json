@@ -1,0 +1,40 @@
+{
+  "manifest_version": 2,
+  "permissions": [
+    "storage",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "*://*.youtube.com/*",
+    "https://returnyoutubedislikeapi.com/*",
+    "https://sponsor.ajay.app/*",
+    "https://*.doubleclick.net/*",
+    "https://*.googlesyndication.com/*",
+    "https://*.googleadservices.com/*",
+    "https://*.googletagservices.com/*",
+    "https://*.google-analytics.com/*",
+    "https://*.googletagmanager.com/*",
+    "https://*.2mdn.net/*",
+    "https://*.moatads.com/*"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "browser_action": {
+    "default_title": "YT SuperTool",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "web_accessible_resources": ["main-world.js", "assets/*"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "yt-supertool@cheemsgalaxy.github.io",
+      "strict_min_version": "109.0"
+    }
+  }
+}
