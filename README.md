@@ -1,6 +1,6 @@
 # YT SuperTool
 
-[Tiếng Việt](#vi) | [English](#en) | [Donate](#Donate)
+[Tiếng Việt](#vi) | [English](#en) | [Donate](#donate)
 
 <a name="vi"></a>
 ## Tiếng Việt
@@ -327,6 +327,8 @@ Copyright (c) 2026 CheemsGalaxy.
 Dislike counts come from the [Return YouTube Dislike](https://returnyoutubedislike.com/) API. SponsorBlock segments come from the [SponsorBlock](https://sponsor.ajay.app/) API.
 
 ---
+
+<a name="donate"></a>
 
 <div align="center">
 
