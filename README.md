@@ -1,6 +1,6 @@
 # YT SuperTool
 
-[Tiếng Việt](#vi) | [English](#en)
+[Tiếng Việt](#vi) | [English](#en) | [Donate](#Donate)
 
 <a name="vi"></a>
 ## Tiếng Việt
@@ -328,10 +328,14 @@ Dislike counts come from the [Return YouTube Dislike](https://returnyoutubedisli
 
 ---
 
-## Ủng hộ / Support
+<div align="center">
 
-Ủng hộ dự án qua MoMo nếu bạn muốn. Donate via MoMo if you want to support the project.
+### ☕ Support This Project - Ủng hộ dự án 💌 - Donate:
 
-[![Donate MoMo](https://img.shields.io/badge/Donate-MoMo-pink?style=for-the-badge&logo=momo&logoColor=white)](https://me.momo.vn/chimchimkl28) [<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://me.momo.vn/chimchimkl28" alt="MoMo QR Code" width="140"/>](https://me.momo.vn/chimchimkl28)
+[![Donate MoMo](https://img.shields.io/badge/Donate-MoMo-pink?style=for-the-badge&logo=momo&logoColor=white)](https://me.momo.vn/chimchimkl28)
+
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://me.momo.vn/chimchimkl28" alt="MoMo QR Code" width="180"/>
+
+</div>
 
 [Back to top](#yt-supertool) | [Tiếng Việt](#vi) | [English](#en)
