@@ -36,7 +36,7 @@ Phiên bản hiện tại: 2.3.0
 
 #### Các lớp chặn quảng cáo
 
-Chặn quảng cáo tắt mặc định. YouTube thay đổi cách phát quảng cáo và cách phát hiện adblock thường xuyên. Các lớp có sẵn có thể ngừng hoạt động, làm hỏng phát lại hoặc kích hoạt phản hồi chống adblock. Để dùng hàng ngày, cài [uBlock Origin](https://ublockorigin.com/) trên Firefox hoặc [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) trên Chrome và Edge. Chỉ bật các lớp có sẵn nếu bạn chấp nhận rủi ro bảo trì này.
+Chặn quảng cáo mặc định sẽ tắt vì YouTube thay đổi cách phát quảng cáo và cách phát hiện adblock thường xuyên. Các lớp có sẵn có thể ngừng hoạt động, làm hỏng phát lại hoặc kích hoạt phản hồi chống adblock. Để dùng hàng ngày, cài [uBlock Origin](https://ublockorigin.com/) trên Firefox hoặc [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) trên Chrome và Edge. Chỉ bật các lớp có sẵn nếu bạn chấp nhận rủi ro bảo trì này.
 
 1. **JSON prune.** Xóa `adPlacements`, `playerAds`, `adSlots` và `adBreakHeartbeatParams` khỏi phản hồi trình phát trước khi YouTube đọc. Lớp này chạy trong main world tại `document-start`.
 2. **Cosmetic CSS.** Ẩn slot quảng cáo trong feed, masthead, sidebar và trình phát. Quy tắc chỉ áp dụng khi công tắc tổng và lớp cosmetic cùng bật.
