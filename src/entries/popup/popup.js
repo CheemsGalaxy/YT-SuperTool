@@ -1,10 +1,10 @@
 import { createElement } from '../../core/dom-safe.js';
 import { createIcon, createBrandMark } from '../../core/ui/icons.js';
+import { createSponsorAccordion } from '../../core/ui/sponsor-accordion.js';
 import {
   FEATURE_GROUPS,
   FEATURES,
   featuresForGroup,
-  SPONSOR_CATEGORIES,
   DEFAULTS
 } from '../../core/settings-schema.js';
 
@@ -55,7 +55,7 @@ const rows = new Map();
 const groupMeta = new Map();
 const tabs = new Map();
 const panels = new Map();
-let sponsorDetails = null;
+let sponsorAccordion = null;
 let activeGroup = FEATURE_GROUPS[0].id;
 
 const buildRow = (feature) => {
@@ -95,52 +95,20 @@ const buildRow = (feature) => {
   return row;
 };
 
-const buildSponsorDetails = () => {
-  const categories = createElement('div', { className: 'popup-categories', id: 'popup-sb-categories' });
-  const categoryInputs = new Map();
-
-  Object.entries(SPONSOR_CATEGORIES).forEach(([key, category]) => {
-    const checkbox = createElement('input', { type: 'checkbox' });
-    checkbox.dataset.category = key;
-    const dot = createElement('span', { className: 'popup-category-dot', 'aria-hidden': 'true' });
-    dot.style.backgroundColor = category.color;
-    const label = createElement('label', { className: 'popup-category' }, [
-      checkbox,
-      dot,
-      createElement('span', { textContent: category.label })
-    ]);
-    categories.appendChild(label);
-    categoryInputs.set(key, checkbox);
+const buildSponsorAccordion = () => {
+  const accordion = createSponsorAccordion({
+    onChange: (value) => {
+      storageSet({ sponsorblockCategories: JSON.stringify(value) })
+        .then(() => setStatus('Saved'))
+        .catch(() => setStatus('Unable to save categories'));
+    },
+    onNoticeChange: (checked) => {
+      storageSet({ sponsorblockNotice: checked })
+        .then(() => setStatus('Saved'))
+        .catch(() => setStatus('Unable to save notice setting'));
+    }
   });
-
-  const notice = createElement('input', { type: 'checkbox', id: 'popup-sb-notice' });
-  const noticeLabel = createElement('label', { className: 'popup-check' }, [
-    notice,
-    createElement('span', { textContent: 'Show a skip notice with undo' })
-  ]);
-
-  const details = createElement('details', { className: 'popup-details', id: 'popup-sb' }, [
-    createElement('summary', { textContent: 'SponsorBlock categories' }),
-    categories,
-    noticeLabel
-  ]);
-
-  categories.addEventListener('change', () => {
-    const value = Object.fromEntries(
-      [...categoryInputs.entries()].map(([key, checkbox]) => [key, checkbox.checked])
-    );
-    storageSet({ sponsorblockCategories: JSON.stringify(value) })
-      .then(() => setStatus('Saved'))
-      .catch(() => setStatus('Unable to save categories'));
-  });
-
-  notice.addEventListener('change', () => {
-    storageSet({ sponsorblockNotice: notice.checked })
-      .then(() => setStatus('Saved'))
-      .catch(() => setStatus('Unable to save notice setting'));
-  });
-
-  return { details, categoryInputs, notice };
+  return { element: accordion.element, accordion };
 };
 
 const buildShell = () => {
@@ -187,12 +155,13 @@ const buildShell = () => {
         panel.appendChild(createElement('div', { className: 'popup-section', textContent: 'Defence layers' }));
       }
       panel.appendChild(buildRow(feature));
+      if (feature.key === 'sponsorblock') {
+        const built = buildSponsorAccordion();
+        sponsorAccordion = built.accordion;
+        panel.appendChild(built.element);
+      }
     }
 
-    if (group.id === 'player') {
-      sponsorDetails = buildSponsorDetails();
-      panel.appendChild(sponsorDetails.details);
-    }
 
     panels.set(group.id, panel);
     panelHost.appendChild(panel);
@@ -208,11 +177,6 @@ const buildShell = () => {
       : ids[(index - 1 + ids.length) % ids.length];
     showGroup(next);
     tabs.get(next)?.focus();
-  });
-
-  tabList.addEventListener('click', (event) => {
-    const tab = event.target.closest('.popup-tab');
-    if (tab) showGroup(tab.id.replace('popup-tab-', ''));
   });
 
   panelHost.addEventListener('change', (event) => {
@@ -265,9 +229,7 @@ const syncValues = () => {
     node.textContent = `${active}/${features.length}`;
   });
 
-  if (sponsorDetails) {
-    sponsorDetails.details.hidden = !state.sponsorblock;
-  }
+  sponsorAccordion?.setOpen(Boolean(state.sponsorblock));
 };
 
 const renderBrand = () => {
@@ -285,25 +247,13 @@ const renderMeta = () => {
 };
 
 const applySponsorCategories = (saved) => {
-  if (!sponsorDetails) return;
-  let parsed = saved;
-  if (typeof parsed === 'string') {
-    try {
-      parsed = JSON.parse(parsed);
-    } catch {
-      parsed = {};
-    }
-  }
-  Object.entries(SPONSOR_CATEGORIES).forEach(([key, category]) => {
-    const checkbox = sponsorDetails.categoryInputs.get(key);
-    if (checkbox) checkbox.checked = typeof parsed?.[key] === 'boolean' ? parsed[key] : category.enabled;
-  });
+  sponsorAccordion?.setCategories(saved);
 };
 
 const hydrateSponsor = (values) => {
-  if (!sponsorDetails) return;
-  applySponsorCategories(values.sponsorblockCategories);
-  sponsorDetails.notice.checked = Boolean(values.sponsorblockNotice);
+  if (!sponsorAccordion) return;
+  sponsorAccordion.setCategories(values.sponsorblockCategories);
+  sponsorAccordion.setNotice(values.sponsorblockNotice);
 };
 
 const subscribeToStorage = () => {
@@ -321,12 +271,12 @@ const subscribeToStorage = () => {
     });
     if (touched) syncValues();
 
-    if (!sponsorDetails) return;
+    if (!sponsorAccordion) return;
     if ('sponsorblockCategories' in changes) {
       applySponsorCategories(changes.sponsorblockCategories?.newValue);
     }
     if ('sponsorblockNotice' in changes) {
-      sponsorDetails.notice.checked = Boolean(changes.sponsorblockNotice?.newValue);
+      sponsorAccordion.setNotice(changes.sponsorblockNotice?.newValue);
     }
   });
 };

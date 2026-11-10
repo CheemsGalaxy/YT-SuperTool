@@ -25,8 +25,10 @@
 import bridge from '../adapters/index.js';
 import { installNetworkGuard } from '../core/features/adblock/adblock-network.js';
 import { installAdblockPrune } from '../core/features/adblock/adblock-prune.js';
+import { installAdblockStealth } from '../core/features/adblock/adblock-stealth.js';
 import { initCore } from '../core/index.js';
 
+installAdblockStealth(bridge.mainWindow);
 installAdblockPrune(bridge.mainWindow);
 installNetworkGuard(bridge.mainWindow);
 

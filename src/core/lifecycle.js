@@ -6,22 +6,23 @@ export function createLifecycleManager({ onNavigate = () => {}, onMutations = ()
 
   const flush = () => {
     timer = 0;
-    const mutations = pending.filter((mutation) => mutation.addedNodes.length
-      || mutation.removedNodes.length
-      || mutation.type === 'attributes');
+    const mutations = pending;
     pending = [];
-    if (mutations.length) {
-      try {
-        onMutations(mutations);
-      } catch (error) {
-        console.warn('YT SuperTool mutation pass failed:', error);
-      }
+    if (!mutations.length) return;
+    try {
+      onMutations(mutations);
+    } catch (error) {
+      console.warn('YT SuperTool mutation pass failed:', error);
     }
   };
 
   const handleMutation = (mutations) => {
-    pending.push(...mutations);
-    if (pending.length > 2000) pending.splice(0, pending.length - 1000);
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes' || mutation.addedNodes.length || mutation.removedNodes.length) {
+        pending.push(mutation);
+      }
+    }
+    if (pending.length > 1000) pending.splice(0, pending.length - 1000);
     clearTimeout(timer);
     timer = setTimeout(flush, delay);
   };

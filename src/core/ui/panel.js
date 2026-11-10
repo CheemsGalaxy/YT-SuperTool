@@ -1,6 +1,7 @@
 import themeCss from './theme.css?inline';
 import { createElement } from '../dom-safe.js';
 import { createIcon, createBrandMark } from './icons.js';
+import { createSponsorAccordion } from './sponsor-accordion.js';
 import { FEATURE_GROUPS, featuresForGroup, STORAGE_KEYS } from '../settings-schema.js';
 
 const detectDark = () => {
@@ -36,6 +37,8 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
   let statusTimer = 0;
   let open = false;
   let activeGroup = FEATURE_GROUPS[0].id;
+  let sponsorAccordion = null;
+  let themeSignature = '';
 
   const buildRow = (feature) => {
     const input = createElement('input', {
@@ -78,6 +81,21 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
     rows.set(feature.key, { row, input, feature });
     return row;
   };
+
+  const buildSponsorAccordion = () => createSponsorAccordion({
+    onChange: (value) => {
+      void settings.set('sponsorblockCategories', JSON.stringify(value)).then((saved) => {
+        if (saved === false) toast?.show('Could not save categories');
+        else flashSaved();
+      });
+    },
+    onNoticeChange: (checked) => {
+      void settings.set('sponsorblockNotice', checked).then((saved) => {
+        if (saved === false) toast?.show('Could not save that setting');
+        else flashSaved();
+      });
+    }
+  });
 
   const buildTab = (group) => {
     const features = featuresForGroup(group.id);
@@ -125,6 +143,10 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
         list.appendChild(createElement('div', { className: 'ytst-section', textContent: 'Defence layers' }));
       }
       list.appendChild(buildRow(feature));
+      if (feature.key === 'sponsorblock') {
+        sponsorAccordion = buildSponsorAccordion();
+        list.appendChild(sponsorAccordion.element);
+      }
     }
     wrapper.appendChild(list);
 
@@ -166,10 +188,18 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
       const active = features.filter((feature) => settings.get(feature.key)).length;
       node.textContent = `${active}/${features.length}`;
     });
+
+    sponsorAccordion?.setOpen(Boolean(settings.get('sponsorblock')));
+    sponsorAccordion?.setCategories(settings.get('sponsorblockCategories'));
+    sponsorAccordion?.setNotice(settings.get('sponsorblockNotice'));
   };
 
   const syncTheme = () => {
     if (!host) return;
+    const root = document.documentElement;
+    const signature = `${root?.getAttribute('dark')}|${root?.getAttribute('light')}|${globalThis.matchMedia?.('(prefers-color-scheme: dark)')?.matches}`;
+    if (signature === themeSignature) return;
+    themeSignature = signature;
     host.dataset.theme = detectDark() ? 'dark' : 'light';
   };
 

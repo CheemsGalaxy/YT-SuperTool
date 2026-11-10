@@ -31,18 +31,13 @@ export const NETWORK_FILTERS = [
   '||googleoptimize.com^',
   '||scorecardresearch.com^',
   '||quantserve.com^',
-  '! YouTube ad and telemetry endpoints (player bootstrapping is left alone)',
+  '! YouTube ad endpoints (playback, QoE and generic telemetry stay untouched)',
   '||youtube.com/api/stats/ads',
   '||youtube.com/api/stats/atr',
   '||youtube.com/api/stats/delayplay',
-  '||youtube.com/api/stats/playback',
-  '||youtube.com/api/stats/qoe',
-  '||youtube.com/get_midroll_info',
   '||youtube.com/pagead/',
   '||youtube.com/ptracking',
-  '||youtube.com/youtubei/v1/log_event',
   '||youtube.com/youtubei/v1/ads/',
-  '||youtubei.googleapis.com/youtubei/v1/log_event',
   '! Do not break the player, playback or the watch page itself',
   '@@||youtube.com/youtubei/v1/player',
   '@@||youtube.com/youtubei/v1/next',
@@ -85,6 +80,3 @@ export const COSMETIC_FILTERS = [
   'youtube.com##.ytp-suggested-action:has(.ytp-ad-suggested-action)'
 ];
 
-export const FILTER_LIST = [...NETWORK_FILTERS, ...COSMETIC_FILTERS].join('\n');
-
-export default FILTER_LIST;

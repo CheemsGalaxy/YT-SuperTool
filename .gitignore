@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .freebuff/
+.promo/
 coverage/
 *.pem
 *.crx

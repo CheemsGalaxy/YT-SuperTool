@@ -137,13 +137,6 @@ const start = async () => {
     onMutations: handleMutations
   });
 
-  const loadSettings = async () => {
-    if (active) {
-      apply();
-      lifecycle.start();
-    }
-  };
-
   settings.subscribe(() => {
     panel.syncTheme();
     scheduleApply();
@@ -154,7 +147,6 @@ const start = async () => {
     if (active) {
       apply();
       lifecycle.start();
-      lifecycle.refresh();
     } else {
       lifecycle.stop();
     }
@@ -162,7 +154,10 @@ const start = async () => {
 
   document.addEventListener('visibilitychange', handleVisibility, { passive: true });
 
-  await loadSettings();
+  if (active) {
+    apply();
+    lifecycle.start();
+  }
   bridge.onMenuCommand?.('YT SuperTool settings', () => panel.toggle());
 
   return { settings, features, panel, launcher, apply };

@@ -48,12 +48,7 @@ export function createLauncher({ onOpen }) {
     return button;
   };
 
-  const destroy = () => {
-    document.querySelectorAll('.ytst-header-button, [data-ytst="launcher"]')
-      .forEach((button) => button.remove());
-  };
-
-  return { ensureHeader, ensurePlayer, destroy };
+  return { ensureHeader, ensurePlayer };
 }
 
 export default createLauncher;

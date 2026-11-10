@@ -14,6 +14,7 @@ export function createDislike({ bridge }) {
   let lastVideoId = '';
   let renderToken = 0;
   let renderTimer = 0;
+  let renderRetryTimer = 0;
   let currentBadge = null;
   let currentSegmented = null;
   let themeMedia = null;
@@ -159,8 +160,9 @@ export function createDislike({ bridge }) {
 
   function scheduleRender() {
     clearTimeout(renderTimer);
+    clearTimeout(renderRetryTimer);
     renderTimer = setTimeout(render, 100);
-    setTimeout(render, 1200);
+    renderRetryTimer = setTimeout(render, 1200);
   }
 
   function hasButtonsContainerMutation(mutations) {
@@ -211,7 +213,9 @@ export function createDislike({ bridge }) {
       lastVideoId = '';
       renderToken = 0;
       clearTimeout(renderTimer);
+      clearTimeout(renderRetryTimer);
       renderTimer = 0;
+      renderRetryTimer = 0;
       cleanupThemeListener();
       currentBadge = null;
       currentSegmented = null;

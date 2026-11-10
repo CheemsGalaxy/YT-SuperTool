@@ -1,6 +1,6 @@
 import { FiltersEngine, Request } from '@ghostery/adblocker';
 import { NETWORK_FILTERS } from './adblock-filters.js';
-import { hasAdPayload, isPlayerEndpoint, sanitizePlayerResponse } from './adblock-player.js';
+import { hasAdPayload, isPlayerEndpoint, rewriteAdKeys } from './adblock-player.js';
 
 const ENGINE_CONFIG = {
   loadNetworkFilters: true,
@@ -17,6 +17,7 @@ const ENGINE_CONFIG = {
 
 let engine = null;
 let engineFailed = false;
+let engineWarm = false;
 
 const getEngine = () => {
   if (engine || engineFailed) return engine;
@@ -27,6 +28,14 @@ const getEngine = () => {
     console.warn('YT SuperTool could not build the adblock engine:', error);
   }
   return engine;
+};
+
+const warmEngine = (win) => {
+  if (engineWarm) return;
+  engineWarm = true;
+  const run = () => getEngine();
+  if (typeof win?.requestIdleCallback === 'function') win.requestIdleCallback(run, { timeout: 1000 });
+  else win?.setTimeout?.(run, 0);
 };
 
 const isBlockingEnabled = (win) => {
@@ -68,8 +77,8 @@ const sanitizeFetchResponse = async (win, response) => {
     const text = await response.clone().text();
     if (!hasAdPayload(text)) return response;
 
-    const payload = JSON.parse(text);
-    sanitizePlayerResponse(payload);
+    const rewritten = rewriteAdKeys(text);
+    if (rewritten === text) return response;
 
     const HeadersCtor = win?.Headers || globalThis.Headers;
     const ResponseCtor = win?.Response || globalThis.Response;
@@ -77,7 +86,7 @@ const sanitizeFetchResponse = async (win, response) => {
     headers.delete('content-length');
     headers.delete('content-encoding');
 
-    return new ResponseCtor(JSON.stringify(payload), {
+    return new ResponseCtor(rewritten, {
       status: response.status,
       statusText: response.statusText,
       headers
@@ -137,19 +146,21 @@ const installSanitizedXhrGetters = (xhr, textDescriptor, responseDescriptor) => 
         ? readResponseText(xhr, textDescriptor)
         : null;
 
-      let payload = null;
-      if (raw && hasAdPayload(raw)) {
-        payload = JSON.parse(raw);
-      } else if (responseType === 'json' && responseDescriptor?.get) {
+      let text = raw;
+      if (!text && responseType === 'json' && responseDescriptor?.get) {
         const value = responseDescriptor.get.call(xhr);
-        if (value && typeof value === 'object') payload = value;
+        if (value && typeof value === 'object') {
+          cachedJson = value;
+          text = JSON.stringify(value);
+        }
       }
 
-      if (payload) {
-        sanitizePlayerResponse(payload);
-        cachedJson = payload;
-        cachedText = JSON.stringify(payload);
-      }
+      if (!text || !hasAdPayload(text)) return;
+      const rewritten = rewriteAdKeys(text);
+      if (rewritten === text) return;
+
+      cachedText = rewritten;
+      cachedJson = JSON.parse(rewritten);
     } catch {
 
     }
@@ -243,6 +254,7 @@ export function installNetworkGuard(win) {
     installFetchHook(win);
     installXhrHook(win);
     win.__ytstNetworkGuard = true;
+    warmEngine(win);
     return true;
   } catch (error) {
     console.warn('YT SuperTool could not install the adblock request guard:', error);

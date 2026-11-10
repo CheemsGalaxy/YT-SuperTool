@@ -1,4 +1,4 @@
-export const AD_KEYS = [
+const AD_KEYS = [
   'adPlacements',
   'playerAds',
   'adSlots',
@@ -8,9 +8,16 @@ export const AD_KEYS = [
 ];
 
 const AD_KEYS_SET = new Set(AD_KEYS);
+const AD_KEY_PATTERN = /"(adPlacements|playerAds|adSlots|adBreakHeartbeatParams|adParams|adSafetyReason)"\s*:/g;
+const RENAMED_PREFIX = 'ytst_no_ads_';
 const ANTI_ADBLOCK_HINT = /ad[\s-]?block|terms of service|monetization|enforcement message/i;
 const MAX_DEPTH = 8;
 const MAX_NODES = 6000;
+
+export const rewriteAdKeys = (text) => {
+  if (typeof text !== 'string' || text.length === 0) return text;
+  return text.replace(AD_KEY_PATTERN, (match, key) => `"${RENAMED_PREFIX}${key}":`);
+};
 
 const hasAntiAdblockMessage = (status) => {
   if (!status || typeof status !== 'object') return false;
@@ -25,11 +32,10 @@ const hasAntiAdblockMessage = (status) => {
 const sanitizePlayabilityStatus = (status) => {
   if (!status || typeof status !== 'object') return;
 
-  const enforced = hasAntiAdblockMessage(status);
+  const enforced = status.status === 'ERROR' && hasAntiAdblockMessage(status);
   delete status.enforcementMessageViewModel;
 
-  if (enforced && status.status === 'ERROR') {
-
+  if (enforced) {
     status.status = 'OK';
     delete status.reason;
     delete status.errorScreen;
@@ -51,7 +57,21 @@ const walk = (node, depth, counter) => {
   }
 
   for (const key of Object.keys(node)) {
-    if (AD_KEYS_SET.has(key) || key === 'enforcementMessageViewModel') {
+    if (AD_KEYS_SET.has(key)) {
+      const value = node[key];
+      try {
+        delete node[key];
+      } catch {
+        node[key] = undefined;
+      }
+      try {
+        node[`${RENAMED_PREFIX}${key}`] = value;
+      } catch {
+
+      }
+      continue;
+    }
+    if (key === 'enforcementMessageViewModel') {
       try {
         delete node[key];
       } catch {

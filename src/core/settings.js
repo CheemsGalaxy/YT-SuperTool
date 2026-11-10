@@ -3,7 +3,6 @@ import { DEFAULTS, STORAGE_KEYS } from './settings-schema.js';
 export function createSettings({ storage }) {
   const values = { ...DEFAULTS };
   const listeners = new Set();
-  let ready = false;
 
   const emit = (key) => {
     for (const listener of listeners) {
@@ -47,7 +46,6 @@ export function createSettings({ storage }) {
     entries.forEach(([key, value]) => {
       values[key] = value === undefined || value === null ? DEFAULTS[key] : value;
     });
-    ready = true;
     emit(null);
     return values;
   };
@@ -73,10 +71,7 @@ export function createSettings({ storage }) {
     setMany,
     reset,
     subscribe,
-    values,
-    get ready() {
-      return ready;
-    }
+    values
   };
 }
 

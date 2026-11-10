@@ -224,7 +224,7 @@ export function createSpeed({ bridge }) {
     if (!enabled || retryCount >= MAX_RETRY) return;
     retryCount += 1;
     clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => this.init(player), 250);
+    retryTimer = setTimeout(() => api.init(player), 250);
   }
 
   function buildContainer() {
@@ -288,7 +288,7 @@ export function createSpeed({ bridge }) {
         presetItems = [...menu.querySelectorAll('.ytst-speed-preset')];
       }
 
-      let existing = document.querySelector('.ytst-speed');
+      const existing = document.querySelector('.ytst-speed');
       if (existing) {
         if (existing.parentElement !== anchor.parentElement) {
           anchor.insertAdjacentElement('afterend', existing);

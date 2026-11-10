@@ -10,15 +10,21 @@ const NOTICE_DURATION = 5000;
 const getPlayer = () => document.querySelector('#movie_player') || document.querySelector('.html5-video-player');
 const getVideo = () => getPlayer()?.querySelector('video') || document.querySelector('video');
 
+let cachedHref = '';
+let cachedVideoId = '';
+
 const getVideoId = () => {
+  if (location.href === cachedHref) return cachedVideoId;
+  cachedHref = location.href;
   try {
-    const url = new URL(location.href);
-    return url.searchParams.get('v')
+    const url = new URL(cachedHref);
+    cachedVideoId = url.searchParams.get('v')
       || url.pathname.match(/\/(?:shorts|embed|live)\/([^/?]+)/)?.[1]
       || (url.hostname === 'youtu.be' ? url.pathname.slice(1) : '');
   } catch {
-    return '';
+    cachedVideoId = '';
   }
+  return cachedVideoId;
 };
 
 const cacheKey = (videoId, categories) => `${videoId}|${categories.slice().sort().join(',')}`;

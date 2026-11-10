@@ -1,6 +1,7 @@
 import baseCosmeticCss from './adblock-cosmetic.css?inline';
 import { compileCosmeticCss } from './adblock-cosmetic.js';
 import { COSMETIC_FILTERS } from './adblock-filters.js';
+import { createAdblockGuard } from './adblock-guard.js';
 import { createAdblockSkipper } from './adblock-skipper.js';
 
 const cosmeticCss = `${baseCosmeticCss}\n${compileCosmeticCss(COSMETIC_FILTERS)}`;
@@ -13,6 +14,7 @@ const FLAGS = {
 
 export function createAdblock({ bridge, settings }) {
   let skipper = null;
+  let guard = null;
   let cosmeticInjected = false;
   let started = false;
 
@@ -41,6 +43,9 @@ export function createAdblock({ bridge, settings }) {
 
     if (skip) skipper?.start();
     else skipper?.stop();
+
+    if (master) guard?.start();
+    else guard?.stop();
   };
 
   settings.subscribe((key) => {
@@ -52,10 +57,8 @@ export function createAdblock({ bridge, settings }) {
     init() {
       started = true;
       if (!skipper) skipper = createAdblockSkipper();
+      if (!guard) guard = createAdblockGuard();
       sync();
-    },
-    update() {
-
     },
     stop() {
       started = false;
@@ -63,6 +66,7 @@ export function createAdblock({ bridge, settings }) {
       setFlag(FLAGS.prune, false);
       setFlag(FLAGS.cosmetic, false);
       skipper?.stop();
+      guard?.stop();
     }
   };
 }

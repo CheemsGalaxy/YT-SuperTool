@@ -1,6 +1,6 @@
 import { COSMETIC_FILTERS } from './adblock-filters.js';
 
-export const COSMETIC_PREFIX = 'html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"]';
+const COSMETIC_PREFIX = 'html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"]';
 
 const parseSelector = (rule) => {
   if (typeof rule !== 'string') return null;
@@ -29,7 +29,5 @@ export function compileCosmeticCss(filters = COSMETIC_FILTERS, prefix = COSMETIC
   const scoped = [...selectors].map((selector) => `${prefix} ${selector}`);
   return `${scoped.join(',\n')} {\n  display: none !important;\n}\n`;
 }
-
-export const cosmeticCss = compileCosmeticCss();
 
 export default compileCosmeticCss;

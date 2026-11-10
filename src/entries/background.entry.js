@@ -4,7 +4,7 @@ const DISLIKE_CACHE_TTL = 5 * 60 * 1000;
 const CACHE_PREFIX = 'dislike_';
 const CACHE_MAX_ENTRIES = 500;
 const ALLOWED_FETCH_HOSTS = ['returnyoutubedislikeapi.com', 'sponsor.ajay.app'];
-const ALLOWED_TARGET_HOSTS = ['www.youtubepi.com', 'youtubepi.com', 'y2mate.nu'];
+const ALLOWED_TARGET_HOSTS = ['www.youtubepi.com', 'youtubepi.com', 'y2mate.nu', 'ytmp3pc.com', 'www.ytmp3pc.com'];
 const AD_RULESET_ID = 'yt-adblock';
 
 const ext = globalThis.browser || globalThis.chrome;

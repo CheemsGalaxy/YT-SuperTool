@@ -1,0 +1,288 @@
+.ytst-dl-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  min-width: 40px;
+  margin-left: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.05));
+  color: var(--yt-spec-text-primary, #0f0f0f);
+  font-family: "Roboto", "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ytst-dl-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.ytst-dl-button:focus-visible {
+  outline: 2px solid var(--yt-spec-call-to-action, #065fd4);
+  outline-offset: 2px;
+}
+
+.ytst-dl-button svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.ytst-dl-button .ytst-dl-caret {
+  width: 14px;
+  height: 14px;
+  margin-left: -2px;
+}
+
+.ytst-dl-label {
+  pointer-events: none;
+}
+
+.ytst-dl-copy-area {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ytst-dl-menu {
+  position: fixed;
+  z-index: 2147483000;
+  width: 288px;
+  max-width: calc(100vw - 16px);
+  padding: 6px 0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f0f0f;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  font-family: "Roboto", "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.ytst-dl-menu-head {
+  padding: 10px 16px 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ytst-dl-section {
+  padding: 10px 16px 4px;
+  color: #606060;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ytst-dl-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 9px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ytst-dl-item:hover,
+.ytst-dl-item:focus-visible {
+  background: rgba(0, 0, 0, 0.06);
+  outline: none;
+}
+
+.ytst-dl-item:disabled {
+  color: #909090;
+  cursor: default;
+  background: transparent;
+}
+
+.ytst-dl-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ytst-dl-item-title {
+  font-weight: 500;
+}
+
+.ytst-dl-item-note,
+.ytst-dl-item-meta,
+.ytst-dl-status {
+  color: #606060;
+  font-size: 12px;
+}
+
+.ytst-dl-item-meta {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.ytst-dl-menu-foot {
+  margin-top: 6px;
+  padding: 8px 16px 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  color: #909090;
+  font-size: 11px;
+}
+
+.ytst-dl-progress {
+  position: fixed;
+  z-index: 2147483000;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f0f0f;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  font-family: "Roboto", "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+
+.ytst-dl-progress-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ytst-dl-progress-label {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.ytst-dl-cancel {
+  flex: none;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #065fd4;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ytst-dl-cancel:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ytst-dl-bar {
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.ytst-dl-bar > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #ff0033;
+  transition: width 120ms linear;
+}
+
+.ytst-dl-progress[data-state="done"] .ytst-dl-bar > span {
+  background: #2ba640;
+}
+
+.ytst-dl-progress[data-state="error"] .ytst-dl-bar > span {
+  background: #cc0000;
+}
+
+html[dark] .ytst-dl-button,
+html[dark-theme] .ytst-dl-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f1f1;
+}
+
+html[dark] .ytst-dl-button:hover,
+html[dark-theme] .ytst-dl-button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+html[dark] .ytst-dl-menu,
+html[dark-theme] .ytst-dl-menu,
+html[dark] .ytst-dl-progress,
+html[dark-theme] .ytst-dl-progress {
+  background: #212121;
+  color: #f1f1f1;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+html[dark] .ytst-dl-section,
+html[dark-theme] .ytst-dl-section,
+html[dark] .ytst-dl-item-note,
+html[dark-theme] .ytst-dl-item-note,
+html[dark] .ytst-dl-item-meta,
+html[dark-theme] .ytst-dl-item-meta,
+html[dark] .ytst-dl-status,
+html[dark-theme] .ytst-dl-status {
+  color: #aaaaaa;
+}
+
+html[dark] .ytst-dl-item:hover,
+html[dark-theme] .ytst-dl-item:hover,
+html[dark] .ytst-dl-item:focus-visible,
+html[dark-theme] .ytst-dl-item:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[dark] .ytst-dl-menu-foot,
+html[dark-theme] .ytst-dl-menu-foot {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  color: #717171;
+}
+
+html[dark] .ytst-dl-cancel,
+html[dark-theme] .ytst-dl-cancel {
+  color: #3ea6ff;
+}
+
+html[dark] .ytst-dl-cancel:hover,
+html[dark-theme] .ytst-dl-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[dark] .ytst-dl-bar,
+html[dark-theme] .ytst-dl-bar {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 1000px) {
+  .ytst-dl-button {
+    width: 40px;
+    padding: 0;
+  }
+
+  .ytst-dl-label {
+    display: none;
+  }
+}

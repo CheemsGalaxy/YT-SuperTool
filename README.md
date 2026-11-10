@@ -32,11 +32,13 @@ Phiên bản hiện tại: 2.3.0
 | Tốc độ phát | Thêm thanh tốc độ, preset và phím tắt `<` / `>`. | Bật |
 | Picture in picture | Mở video hiện tại trong cửa sổ nổi. | Bật |
 | Chụp màn hình | Lưu khung hình hiện tại thành PNG. | Bật |
-| Tải video | Mở video hiện tại trên trang tải của bên thứ ba. | Tắt |
+| Tải video | Tải MP4 hoặc MP3 ngay trên trang xem, cạnh nút Like và Share. | Bật |
 
 #### Các lớp chặn quảng cáo
 
 Chặn quảng cáo mặc định sẽ tắt vì YouTube thay đổi cách phát quảng cáo và cách phát hiện adblock thường xuyên. Các lớp có sẵn có thể ngừng hoạt động, làm hỏng phát lại hoặc kích hoạt phản hồi chống adblock. Để dùng hàng ngày, cài [uBlock Origin](https://ublockorigin.com/) trên Firefox hoặc [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) trên Chrome và Edge. Chỉ bật các lớp có sẵn nếu bạn chấp nhận rủi ro bảo trì này.
+
+Các lớp trong trang không xóa dữ liệu quảng cáo khỏi phản hồi trình phát. Tool đổi tên khóa `adPlacements`, `playerAds`, `adSlots` và `adBreakHeartbeatParams` trong JSON, tắt cờ dò adblock của trình phát, rồi gỡ modal cảnh báo nếu nó vẫn hiện. Cách này ít phụ thuộc tên nút và selector quảng cáo, nên cần bảo trì ít hơn.
 
 1. **JSON prune.** Xóa `adPlacements`, `playerAds`, `adSlots` và `adBreakHeartbeatParams` khỏi phản hồi trình phát trước khi YouTube đọc. Lớp này chạy trong main world tại `document-start`.
 2. **Cosmetic CSS.** Ẩn slot quảng cáo trong feed, masthead, sidebar và trình phát. Quy tắc chỉ áp dụng khi công tắc tổng và lớp cosmetic cùng bật.
@@ -47,6 +49,18 @@ Bản extension thêm lớp mạng. MV3 dùng quy tắc `declarativeNetRequest`,
 #### Giao diện
 
 Cài đặt mở trong panel Shadow DOM. Panel theo theme trang qua thuộc tính dark và light của YouTube, màu nền trang và `prefers-color-scheme`. Toàn bộ CSS và icon SVG nằm trong bundle. UI không gọi CDN hay font bên ngoài.
+
+#### Tải video và audio
+
+Nút **Download** nằm cạnh hàng nút Like, Share và Save trên trang xem. Menu tách làm hai nhóm: một mục tải trực tiếp và các mục chuyển sang dịch vụ ngoài.
+
+- **MP4 360p tải trực tiếp.** Tool lấy luồng progressive trong `streamingData.formats` (đã có sẵn cả hình lẫn tiếng) rồi lưu thẳng file về máy, không qua server trung gian, không cần ghép luồng.
+- **MP4/MP3 chất lượng cao.** Một nút duy nhất: sao chép URL video đang xem vào clipboard, hiện thông báo "Link copied", rồi mở tab mới tới [ytmp3pc.com](https://ytmp3pc.com/). Bạn dán link vừa copy vào đó để chọn độ phân giải hoặc MP3.
+- **Không giải mã chữ ký.** Tool không chạy player JS, không `eval`/`new Function`, không xử lý n-parameter, nên hợp lệ với CSP của Manifest V3.
+- **Link hết hạn.** Link tải của YouTube có hạn dùng. Nếu báo lỗi 403 hoặc 410, mở lại menu để lấy link mới.
+- **Hủy.** Thẻ tiến trình có nút Cancel. Chuyển video hoặc tắt tính năng cũng hủy tác vụ đang chạy.
+
+Chỉ luồng progressive 360p đi qua tool; mọi định dạng khác do ytmp3pc.com xử lý trong tab mới.
 
 ### Kiến trúc
 
@@ -160,7 +174,7 @@ Phát hành theo [MIT License](https://github.com/CheemsGalaxy/YT-SuperTool/blob
 
 Copyright (c) 2026 CheemsGalaxy.
 
-Số dislike lấy từ API [Return YouTube Dislike](https://returnyoutubedislike.com/). Đoạn SponsorBlock lấy từ API [SponsorBlock](https://sponsor.ajay.app/).
+Số dislike lấy từ API [Return YouTube Dislike](https://returnyoutubedislike.com/). Đoạn SponsorBlock lấy từ API [SponsorBlock](https://sponsor.ajay.app/). Mã hóa MP3 dùng [wasm-media-encoders](https://github.com/arseneyr/wasm-media-encoders) (MIT) với LAME (LGPL-2.0-only) biên dịch sang WebAssembly.
 
 [Lên đầu trang](#yt-supertool) | [Chuyển sang English](#en)
 
@@ -196,11 +210,13 @@ Current version: 2.3.0
 | Playback speed | Adds a speed slider, presets, and `<` / `>` shortcuts. | On |
 | Picture in picture | Opens the current video in a floating window. | On |
 | Screenshot | Saves the current video frame as PNG. | On |
-| Downloader | Opens the current video in a third-party download page. | Off |
+| Downloader | Saves MP4 360p directly and routes other formats to ytmp3pc.com. | On |
 
 #### Ad blocking layers
 
 Ad blocking is off by default. YouTube changes ad delivery and ad-block detection often. The built-in layers can stop working, break playback, or trigger anti-adblock responses. For daily use, install [uBlock Origin](https://ublockorigin.com/) on Firefox or [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) on Chrome and Edge. Enable the built-in layers only if you accept that maintenance risk.
+
+The in-page layers do not delete ad data from player responses. The tool renames the `adPlacements`, `playerAds`, `adSlots`, and `adBreakHeartbeatParams` keys in the JSON, clears the player's adblock detection flags, and removes the warning modal if it still appears. This depends less on button names and ad selectors, so it needs less maintenance.
 
 1. **JSON prune.** Removes `adPlacements`, `playerAds`, `adSlots`, and `adBreakHeartbeatParams` from player responses before YouTube reads them. It runs in the main world at `document-start`.
 2. **Cosmetic CSS.** Hides feed, masthead, sidebar, and player ad slots. The rules apply only when the master switch and the cosmetic layer are on.
@@ -211,6 +227,18 @@ Extension builds add a network layer. MV3 uses `declarativeNetRequest` rules, an
 #### Interface
 
 Settings open in a Shadow DOM panel. The panel follows the page theme through YouTube's dark and light attributes, the page background, and `prefers-color-scheme`. All CSS and SVG icons ship in the bundle. The UI makes no external CDN or font request.
+
+#### Video and audio downloads
+
+The **Download** button sits in the Like, Share, and Save row on watch pages. Its menu has two groups: one direct download and the formats that continue elsewhere.
+
+- **Direct MP4 360p.** The tool takes the progressive stream from `streamingData.formats`, which already carries video and audio, and saves it straight to disk. No proxy server, no remuxing.
+- **High quality MP4/MP3.** A single entry copies the current video URL to the clipboard, shows a "Link copied" toast, then opens [ytmp3pc.com](https://ytmp3pc.com/) in a new tab. Paste the link there to pick a resolution or MP3.
+- **No signature solving.** The tool never runs player JavaScript, never calls `eval`/`new Function` and never touches the n-parameter, so it stays inside the Manifest V3 CSP.
+- **Expired links.** YouTube download links expire. If a request answers 403 or 410, open the menu again for a fresh link.
+- **Cancel.** The progress card has a Cancel button. Changing videos or turning the feature off also aborts the active job.
+
+Only the progressive 360p stream goes through the extension; everything else is handled by ytmp3pc.com in a new tab.
 
 ### Architecture
 
@@ -324,7 +352,7 @@ Released under the [MIT License](https://github.com/CheemsGalaxy/YT-SuperTool/bl
 
 Copyright (c) 2026 CheemsGalaxy.
 
-Dislike counts come from the [Return YouTube Dislike](https://returnyoutubedislike.com/) API. SponsorBlock segments come from the [SponsorBlock](https://sponsor.ajay.app/) API.
+Dislike counts come from the [Return YouTube Dislike](https://returnyoutubedislike.com/) API. SponsorBlock segments come from the [SponsorBlock](https://sponsor.ajay.app/) API. MP3 encoding uses [wasm-media-encoders](https://github.com/arseneyr/wasm-media-encoders) (MIT) with LAME (LGPL-2.0-only) compiled to WebAssembly.
 
 ---
 

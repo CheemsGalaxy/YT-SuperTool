@@ -1,67 +1,105 @@
-const isCleanHomepageSection = (section) => {
-  if (section.querySelector('ytd-inline-survey-renderer')) return true;
-  if (section.querySelector('ytd-statement-banner-renderer')) return true;
-  if (section.querySelector('ytd-mini-game-card-view-model, mini-game-card-view-model')) return true;
-  if (section.querySelector('a[href*="/playables"], a[href*="/mini-game"], a[href*="/feed/storefront"], a[href="/gaming"]')) return true;
-  if (section.querySelector('ytd-rich-shelf-renderer[is-live]')) return true;
+const SECTION_SELECTOR = 'ytd-rich-section-renderer';
+const BANNER_SELECTOR = 'ytd-statement-banner-renderer';
+const PROMO_SELECTOR = 'yt-mealbar-promo-renderer';
+const WATCH_SELECTOR = `${SECTION_SELECTOR}, ${BANNER_SELECTOR}, ${PROMO_SELECTOR}`;
+const SECTION_REMOVED = new WeakSet();
 
+const CLEAN_HINTS = [
+  'Playables',
+  'Play games',
+  'Gaming',
+  'Live',
+  'Movies & TV',
+  'Chơi game trên YouTube',
+  'Chơi ngay không cần tải',
+  'Phim & TV',
+  'Trò chơi',
+  'Trực tiếp'
+];
+
+const isCleanHomepageSection = (section) => {
+  if (section.querySelector('ytd-inline-survey-renderer, ytd-statement-banner-renderer, ytd-rich-shelf-renderer[is-live]')) {
+    return true;
+  }
+  if (section.querySelector('ytd-mini-game-card-view-model, mini-game-card-view-model')) return true;
+  if (section.querySelector('a[href*="/playables"], a[href*="/mini-game"], a[href*="/feed/storefront"], a[href="/gaming"]')) {
+    return true;
+  }
   const text = section.textContent;
-  if (!text) return false;
-  return text.includes('Playables') || text.includes('Play games')
-    || text.includes('Gaming') || text.includes('Live')
-    || text.includes('Movies & TV') || text.includes('Chơi game trên YouTube')
-    || text.includes('Chơi ngay không cần tải') || text.includes('Phim & TV')
-    || text.includes('Trò chơi') || text.includes('Trực tiếp');
+  return Boolean(text) && CLEAN_HINTS.some((hint) => text.includes(hint));
 };
 
-function hideMealbarPromo(root = document) {
-  const promos = root.matches?.('yt-mealbar-promo-renderer')
-    ? [root]
-    : root.querySelectorAll?.('yt-mealbar-promo-renderer') || [];
+const dropPromo = (promo) => {
+  if (!promo.isConnected) return;
+  (promo.closest('tp-yt-paper-dialog, ytd-popup-container') || promo).remove();
+};
 
-  promos.forEach((promo) => {
-    if (!promo.isConnected) return;
-    const dialog = promo.closest('tp-yt-paper-dialog, ytd-popup-container');
-    (dialog || promo).remove();
+const dropBanner = (banner) => {
+  if (!banner.isConnected || banner.closest(SECTION_SELECTOR)) return;
+  banner.remove();
+};
+
+const dropSection = (section) => {
+  if (!section.isConnected || SECTION_REMOVED.has(section)) return;
+  SECTION_REMOVED.add(section);
+  if (isCleanHomepageSection(section)) section.remove();
+};
+
+const collectTargets = (node, targets) => {
+  if (!(node instanceof Element)) return;
+  if (node.matches(WATCH_SELECTOR)) targets.add(node);
+  node.querySelectorAll(WATCH_SELECTOR).forEach((element) => targets.add(element));
+};
+
+const processTargets = (targets) => {
+  targets.forEach((node) => {
+    if (node.matches(PROMO_SELECTOR)) dropPromo(node);
+    else if (node.matches(BANNER_SELECTOR)) dropBanner(node);
+    else dropSection(node);
   });
-}
+};
 
-function hideCleanHomepageSections(root = document) {
-  hideMealbarPromo(root);
-
-  const sections = root.matches?.('ytd-rich-section-renderer')
-    ? [root]
-    : root.querySelectorAll?.('ytd-rich-section-renderer') || [];
-
-  sections.forEach((section) => {
-    if (section.isConnected && isCleanHomepageSection(section)) section.remove();
-  });
-
-  const banners = root.matches?.('ytd-statement-banner-renderer')
-    ? [root]
-    : root.querySelectorAll?.('ytd-statement-banner-renderer') || [];
-  banners.forEach((banner) => {
-    if (banner.isConnected && !banner.closest('ytd-rich-section-renderer')) banner.remove();
-  });
-}
+const scanDocument = () => {
+  const targets = new Set();
+  document.querySelectorAll(WATCH_SELECTOR).forEach((element) => targets.add(element));
+  processTargets(targets);
+};
 
 export function createCleanHomepage() {
+  let enabled = false;
+  let lastHref = '';
+  let lastScanAt = 0;
+  let sweepTimer = 0;
+
   return {
     init() {
-      hideCleanHomepageSections();
-      setTimeout(hideCleanHomepageSections, 500);
-      setTimeout(hideCleanHomepageSections, 1500);
+      enabled = true;
+      const href = location.href;
+      const now = Date.now();
+      if (href === lastHref && now - lastScanAt < 1000) return;
+      lastHref = href;
+      lastScanAt = now;
+      scanDocument();
+      clearTimeout(sweepTimer);
+      sweepTimer = setTimeout(() => {
+        if (enabled) scanDocument();
+      }, 900);
     },
     update(mutations) {
-      mutations.forEach((mutation) => {
-        if (mutation.target?.nodeType === Node.ELEMENT_NODE) hideCleanHomepageSections(mutation.target);
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE) hideCleanHomepageSections(node);
-        });
-      });
+      if (!enabled) return;
+      const targets = new Set();
+      for (const mutation of mutations) {
+        const target = mutation.target;
+        if (target instanceof Element && target.matches(WATCH_SELECTOR)) targets.add(target);
+        for (const node of mutation.addedNodes) collectTargets(node, targets);
+        if (!targets.size && mutation.removedNodes.length) continue;
+      }
+      if (targets.size) processTargets(targets);
     },
     stop() {
-
+      enabled = false;
+      clearTimeout(sweepTimer);
+      sweepTimer = 0;
     }
   };
 }

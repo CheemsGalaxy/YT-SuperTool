@@ -84,15 +84,15 @@ export const FEATURES = [
     key: 'downloader',
     group: 'player',
     label: 'Downloader',
-    description: 'Open the current video in a download page.',
+    description: 'Download MP4 360p directly, or open ytmp3pc.com for other formats.',
     icon: 'download',
-    default: false
+    default: true
   },
   {
     key: 'adblock',
     group: 'blocking',
     label: 'Ad blocking',
-    description: 'Optional three-layer ad blocking. Off by default.',
+    description: 'Three layers: player data rewrite, cosmetic CSS and player skip.',
     icon: 'shield',
     default: false
   },
@@ -100,7 +100,7 @@ export const FEATURES = [
     key: 'adblockPrune',
     group: 'blocking',
     label: 'JSON prune',
-    description: 'Strip ad placements from player data before playback.',
+    description: 'Rename ad placements in player data before playback.',
     icon: 'braces',
     badge: 'L1',
     default: true,
@@ -140,10 +140,8 @@ export const DEFAULTS = Object.fromEntries([
 ]);
 
 export const STORAGE_KEYS = Object.keys(DEFAULTS);
-export const MUTATION_FEATURES = ['dislike', 'noShorts', 'cleanHomepage', 'nonstop'];
+export const MUTATION_FEATURES = ['dislike', 'noShorts', 'cleanHomepage', 'nonstop', 'downloader'];
 export const PLAYER_FEATURES = ['speed', 'pip', 'screenshot', 'downloader'];
 export const CONTENT_FEATURES = FEATURES.filter((feature) => !feature.dependsOn).map((feature) => feature.key);
 
 export const featuresForGroup = (groupId) => FEATURES.filter((feature) => feature.group === groupId);
-
-export const getFeature = (key) => FEATURES.find((feature) => feature.key === key) || null;

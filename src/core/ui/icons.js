@@ -87,8 +87,6 @@ const ICONS = {
   ]
 };
 
-export const ICON_NAMES = Object.keys(ICONS);
-
 export function createIcon(name, size = 20, { strokeWidth } = {}) {
   const shapes = ICONS[name] || ICONS.sliders;
   const svg = createSvgElement('svg', {

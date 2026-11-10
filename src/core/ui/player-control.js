@@ -18,7 +18,7 @@ function alignWithNative(button) {
   button.style.boxSizing = 'border-box';
 }
 
-export function getInsertAnchor(controls) {
+function getInsertAnchor(controls) {
   if (!controls) return null;
   return controls.querySelector('.ytp-settings-button')
     || controls.querySelector('.ytp-subtitles-button')
