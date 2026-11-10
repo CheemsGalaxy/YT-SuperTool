@@ -7,7 +7,7 @@ const POPUP_SELECTORS = [
 ];
 const POPUP_SELECTOR = POPUP_SELECTORS.join(',');
 const CONTAINER_SELECTOR = '#dialog, [role="dialog"], ytd-popup-container, tp-yt-paper-dialog';
-const PAUSE_TEXT = /continue\s+watching|video\s+paused/i;
+const PAUSE_TEXT = /continue\s+watching|video\s+paused|video đã tạm dừng|tiếp tục xem|vẫn (?:đang )?xem/i;
 const PLAYBACK_ERROR_TEXT = /sự cố gây gián đoạn|gặp sự cố|playback.*interrupted|something went wrong/i;
 
 const hasPauseText = (element) => {
