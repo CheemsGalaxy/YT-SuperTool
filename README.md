@@ -1,11 +1,17 @@
 # YT SuperTool
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="promo/banner-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="promo/banner-light.png">
+  <img src="promo/banner-light.png" alt="YT SuperTool banner: settings panel with SponsorBlock categories and an open download menu">
+</picture>
+
 [Tiếng Việt](#vi) | [English](#en) | [Donate](#donate)
 
 <a name="vi"></a>
 ## Tiếng Việt
 
-YT SuperTool là bộ công cụ YouTube tất cả trong một. Tool có bộ chặn quảng cáo ba lớp tùy chọn, dọn feed, khôi phục số dislike và thêm điều khiển trình phát. Một mã nguồn lõi build ra userscript và extension Manifest V2 hoặc Manifest V3.
+YT SuperTool là bộ công cụ YouTube tất cả trong một: chặn quảng cáo ba lớp tùy chọn, dọn feed, khôi phục số dislike, thêm điều khiển trình phát và tải MP4 hoặc MP3 ngay trên trang xem. Một lõi mã nguồn build ra userscript, extension Manifest V2 và Manifest V3.
 
 [Bản phát hành](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
@@ -23,7 +29,7 @@ Phiên bản hiện tại: 2.3.0
 
 | Tính năng | Hành vi | Mặc định |
 |---|---|---|
-| Chặn quảng cáo | Ba lớp tùy chọn: JSON prune, cosmetic CSS và auto-skip. | Tắt |
+| Chặn quảng cáo | Ba lớp tùy chọn: JSON prune, cosmetic filtering và player fallback. | Tắt |
 | Ẩn Shorts | Xóa kệ Shorts, tab và thẻ trong feed. | Bật |
 | Dọn trang chủ | Ẩn promo, khảo sát, Playables và kệ live. | Bật |
 | Khôi phục dislike | Hiển thị số dislike ước tính từ API Return YouTube Dislike. | Bật |
@@ -40,9 +46,15 @@ Chặn quảng cáo mặc định sẽ tắt vì YouTube thay đổi cách phát
 
 Các lớp trong trang không xóa dữ liệu quảng cáo khỏi phản hồi trình phát. Tool đổi tên khóa `adPlacements`, `playerAds`, `adSlots` và `adBreakHeartbeatParams` trong JSON, tắt cờ dò adblock của trình phát, rồi gỡ modal cảnh báo nếu nó vẫn hiện. Cách này ít phụ thuộc tên nút và selector quảng cáo, nên cần bảo trì ít hơn.
 
-1. **JSON prune.** Xóa `adPlacements`, `playerAds`, `adSlots` và `adBreakHeartbeatParams` khỏi phản hồi trình phát trước khi YouTube đọc. Lớp này chạy trong main world tại `document-start`.
-2. **Cosmetic CSS.** Ẩn slot quảng cáo trong feed, masthead, sidebar và trình phát. Quy tắc chỉ áp dụng khi công tắc tổng và lớp cosmetic cùng bật.
-3. **Auto-skip.** Tắt tiếng quảng cáo lọt vào trình phát, bấm nút bỏ qua và tua đến cuối. Lớp này khôi phục trạng thái tắt tiếng và tốc độ phát trước đó sau quảng cáo.
+1. **JSON prune.** Đổi tên `adPlacements`, `playerAds`, `adSlots` và `adBreakHeartbeatParams` trong phản hồi trình phát trước khi YouTube đọc. Lớp này chạy trong main world tại `document-start`.
+2. **Cosmetic filtering.** Ẩn slot quảng cáo trong feed, masthead, sidebar và trình phát. Quy tắc chỉ áp dụng khi công tắc tổng và lớp cosmetic cùng bật.
+3. **Player fallback.** Tắt tiếng quảng cáo lọt vào trình phát, bấm nút bỏ qua và tua đến cuối. Lớp này khôi phục trạng thái tắt tiếng và tốc độ phát trước đó sau quảng cáo.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-blocking.png">
+  <source media="(prefers-color-scheme: light)" srcset="promo/popup-light-blocking.png">
+  <img src="promo/popup-light-blocking.png" alt="Tab Blocking trong popup extension, với công tắc tổng và ba lớp JSON prune, cosmetic filtering, player fallback" width="420">
+</picture>
 
 Bản extension thêm lớp mạng. MV3 dùng quy tắc `declarativeNetRequest`, MV2 dùng chặn `webRequest`. Userscript vá `fetch` và `XMLHttpRequest` trong trang. Các bộ lọc này chạy trước ba lớp trong trang.
 
@@ -50,9 +62,19 @@ Bản extension thêm lớp mạng. MV3 dùng quy tắc `declarativeNetRequest`,
 
 Cài đặt mở trong panel Shadow DOM. Panel theo theme trang qua thuộc tính dark và light của YouTube, màu nền trang và `prefers-color-scheme`. Toàn bộ CSS và icon SVG nằm trong bundle. UI không gọi CDN hay font bên ngoài.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="promo/panel-dark-player.png">
+  <source media="(prefers-color-scheme: light)" srcset="promo/panel-light-player.png">
+  <img src="promo/panel-light-player.png" alt="Panel YT SuperTool, tab Player, với SponsorBlock, tốc độ phát và PiP">
+</picture>
+
+Tab **Browse** dọn feed, tab **Player** gom điều khiển video, tab **Blocking** chứa ba lớp chặn quảng cáo. Bộ ảnh đầy đủ cho cả theme sáng và tối nằm trong [`promo/`](promo/).
+
 #### Tải video và audio
 
 Nút **Download** nằm cạnh hàng nút Like, Share và Save trên trang xem. Menu tách làm hai nhóm: một mục tải trực tiếp và các mục chuyển sang dịch vụ ngoài.
+
+<img src="promo/downloader.png" alt="Nút Download cạnh Like và Share, menu mở với MP4 360p và MP4/MP3 chất lượng cao">
 
 - **MP4 360p tải trực tiếp.** Tool lấy luồng progressive trong `streamingData.formats` (đã có sẵn cả hình lẫn tiếng) rồi lưu thẳng file về máy, không qua server trung gian, không cần ghép luồng.
 - **MP4/MP3 chất lượng cao.** Một nút duy nhất: sao chép URL video đang xem vào clipboard, hiện thông báo "Link copied", rồi mở tab mới tới [ytmp3pc.com](https://ytmp3pc.com/). Bạn dán link vừa copy vào đó để chọn độ phân giải hoặc MP3.
@@ -107,6 +129,14 @@ Nếu bản phát hành mới nhất không có gói cho trình duyệt của b�
 3. Bật **Developer mode**.
 4. Bấm **Load unpacked** và chọn thư mục đã giải nén.
 5. Mở YouTube. Extension hoạt động và popup hiển thị cùng bộ cài đặt như panel userscript.
+
+Popup chia ba tab như panel:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-browse.png">
+  <source media="(prefers-color-scheme: light)" srcset="promo/popup-light-browse.png">
+  <img src="promo/popup-light-browse.png" alt="Popup extension YT SuperTool, tab Browse, với Hide Shorts và Clean homepage" width="360">
+</picture>
 
 Chrome và Edge không còn tải extension Manifest V2. Dùng gói MV3 trên hai trình duyệt này.
 
@@ -183,7 +213,7 @@ Số dislike lấy từ API [Return YouTube Dislike](https://returnyoutubedislik
 <a name="en"></a>
 ## English
 
-YT SuperTool is an all-in-one YouTube enhancer. It includes an optional three-layer ad blocker, removes feed clutter, restores the dislike count, and adds player controls. One core codebase builds a userscript and Manifest V2 or Manifest V3 extensions.
+YT SuperTool is an all-in-one YouTube enhancer: optional three-layer ad blocking, feed cleanup, restored dislike counts, player controls, and MP4 or MP3 downloads on the watch page. One core builds the userscript and the Manifest V2 and Manifest V3 extensions.
 
 [Releases](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
@@ -201,7 +231,7 @@ Current version: 2.3.0
 
 | Feature | Behavior | Default |
 |---|---|---|
-| Ad blocking | Optional three layers: JSON prune, cosmetic CSS, and auto-skip. | Off |
+| Ad blocking | Optional three layers: JSON prune, cosmetic filtering, and player fallback. | Off |
 | Hide Shorts | Removes Shorts shelves, tabs, and feed cards. | On |
 | Clean homepage | Hides promos, surveys, Playables, and live shelves. | On |
 | Return dislike | Shows estimated dislike counts from the Return YouTube Dislike API. | On |
@@ -218,9 +248,15 @@ Ad blocking is off by default. YouTube changes ad delivery and ad-block detectio
 
 The in-page layers do not delete ad data from player responses. The tool renames the `adPlacements`, `playerAds`, `adSlots`, and `adBreakHeartbeatParams` keys in the JSON, clears the player's adblock detection flags, and removes the warning modal if it still appears. This depends less on button names and ad selectors, so it needs less maintenance.
 
-1. **JSON prune.** Removes `adPlacements`, `playerAds`, `adSlots`, and `adBreakHeartbeatParams` from player responses before YouTube reads them. It runs in the main world at `document-start`.
-2. **Cosmetic CSS.** Hides feed, masthead, sidebar, and player ad slots. The rules apply only when the master switch and the cosmetic layer are on.
-3. **Auto-skip.** Mutes an ad that reaches the player, clicks the skip button, and seeks to the end. It restores the previous mute state and playback speed after the ad.
+1. **JSON prune.** Renames `adPlacements`, `playerAds`, `adSlots`, and `adBreakHeartbeatParams` in player responses before YouTube reads them. It runs in the main world at `document-start`.
+2. **Cosmetic filtering.** Hides feed, masthead, sidebar, and player ad slots. The rules apply only when the master switch and the cosmetic layer are on.
+3. **Player fallback.** Mutes an ad that reaches the player, clicks the skip button, and seeks to the end. It restores the previous mute state and playback speed after the ad.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-blocking.png">
+  <source media="(prefers-color-scheme: light)" srcset="promo/popup-light-blocking.png">
+  <img src="promo/popup-light-blocking.png" alt="Blocking tab in the extension popup, with the master switch and the JSON prune, cosmetic filtering, and player fallback layers" width="420">
+</picture>
 
 Extension builds add a network layer. MV3 uses `declarativeNetRequest` rules, and MV2 uses `webRequest` blocking. The userscript patches `fetch` and `XMLHttpRequest` in the page. These filters run before the three in-page layers.
 
@@ -228,9 +264,19 @@ Extension builds add a network layer. MV3 uses `declarativeNetRequest` rules, an
 
 Settings open in a Shadow DOM panel. The panel follows the page theme through YouTube's dark and light attributes, the page background, and `prefers-color-scheme`. All CSS and SVG icons ship in the bundle. The UI makes no external CDN or font request.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="promo/panel-dark-player.png">
+  <source media="(prefers-color-scheme: light)" srcset="promo/panel-light-player.png">
+  <img src="promo/panel-light-player.png" alt="YT SuperTool panel on the Player tab, with SponsorBlock, playback speed, and PiP">
+</picture>
+
+The **Browse** tab cleans the feed, the **Player** tab holds the video controls, and the **Blocking** tab holds the three ad-blocking layers. The full light and dark set is in [`promo/`](promo/).
+
 #### Video and audio downloads
 
 The **Download** button sits in the Like, Share, and Save row on watch pages. Its menu has two groups: one direct download and the formats that continue elsewhere.
+
+<img src="promo/downloader.png" alt="Download button beside Like and Share, with the menu open on MP4 360p and high quality MP4 or MP3">
 
 - **Direct MP4 360p.** The tool takes the progressive stream from `streamingData.formats`, which already carries video and audio, and saves it straight to disk. No proxy server, no remuxing.
 - **High quality MP4/MP3.** A single entry copies the current video URL to the clipboard, shows a "Link copied" toast, then opens [ytmp3pc.com](https://ytmp3pc.com/) in a new tab. Paste the link there to pick a resolution or MP3.
@@ -285,6 +331,14 @@ If the latest release does not contain the package for your browser, build it fr
 3. Turn on **Developer mode**.
 4. Click **Load unpacked** and select the extracted folder.
 5. Open YouTube. The extension is active, and its popup exposes the same settings as the userscript panel.
+
+The popup uses the same three tabs as the panel:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-browse.png">
+  <source media="(prefers-color-scheme: light)" srcset="promo/popup-light-browse.png">
+  <img src="promo/popup-light-browse.png" alt="YT SuperTool extension popup on the Browse tab, with Hide Shorts and Clean homepage" width="360">
+</picture>
 
 Chrome and Edge no longer load Manifest V2 extensions. Use the MV3 package on those browsers.
 
