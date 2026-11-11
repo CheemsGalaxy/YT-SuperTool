@@ -49,7 +49,11 @@ export const UI_STRINGS = {
   takeScreenshot: 'Take screenshot',
   pictureInPicture: 'Picture in picture',
   estimatedDislikes: 'Estimated dislikes',
-  dislikeData: 'Dislike data'
+  dislikeData: 'Dislike data',
+  checkUpdate: 'Check update',
+  checkingUpdate: 'Checking...',
+  downloadUpdate: 'Download update',
+  updateCheckFailed: 'Could not check for updates'
 };
 
 export const UI_TEXT = {
@@ -62,5 +66,7 @@ export const UI_TEXT = {
   menuFoot: (label) => `Only the single-stream MP4 downloads in place. High quality MP4 and MP3 continue on ${label} with the link copied for you.`,
   downloadFailed: (reason) => `Download failed: ${reason}`,
   downloadProgress: (percent, size) => `Downloading MP4 · ${percent}%${size ? ` · ${size}` : ''}`,
-  savedFile: (fileName) => `Saved · ${fileName}`
+  savedFile: (fileName) => `Saved · ${fileName}`,
+  upToDate: (version) => `Up to date · v${version}`,
+  updateAvailable: (version) => `v${version} available`
 };

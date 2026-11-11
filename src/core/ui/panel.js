@@ -22,7 +22,7 @@ const detectDark = () => {
   return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true;
 };
 
-export function createPanel({ settings, storage, toast, meta = {} }) {
+export function createPanel({ settings, storage, toast, update, meta = {} }) {
   const rows = new Map();
   const tabs = new Map();
   const panels = new Map();
@@ -175,6 +175,12 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
     }, 1500);
   };
 
+  const showStatus = (message) => {
+    if (!statusText) return;
+    clearTimeout(statusTimer);
+    statusText.textContent = message;
+  };
+
   const syncValues = () => {
     rows.forEach(({ input, row, feature }) => {
       input.checked = Boolean(settings.get(feature.key));
@@ -257,6 +263,41 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
       });
     });
 
+    let pendingUpdate = '';
+
+    const updateButton = createElement('button', {
+      type: 'button',
+      className: 'ytst-button',
+      textContent: UI_STRINGS.checkUpdate
+    });
+    updateButton.addEventListener('click', () => {
+      if (!update) return;
+      if (pendingUpdate) {
+        update.openDownload();
+        return;
+      }
+      updateButton.disabled = true;
+      updateButton.textContent = UI_STRINGS.checkingUpdate;
+      showStatus(UI_STRINGS.checkingUpdate);
+      void update.check().then((result) => {
+        updateButton.disabled = false;
+        if (result.status === 'available') {
+          pendingUpdate = result.latest;
+          updateButton.textContent = UI_STRINGS.downloadUpdate;
+          showStatus(UI_TEXT.updateAvailable(result.latest));
+          toast?.show(UI_TEXT.updateAvailable(result.latest));
+          return;
+        }
+        updateButton.textContent = UI_STRINGS.checkUpdate;
+        if (result.status === 'current') {
+          showStatus(UI_TEXT.upToDate(result.current));
+          return;
+        }
+        showStatus(UI_STRINGS.updateCheckFailed);
+        toast?.show(UI_STRINGS.updateCheckFailed);
+      });
+    });
+
     const doneButton = createElement('button', {
       type: 'button',
       className: 'ytst-button ytst-button-primary',
@@ -279,7 +320,7 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
         ]),
         createElement('span', {
           className: 'ytst-badge',
-          textContent: UI_TEXT.versionTarget(meta.version || '2.3.2', meta.target || 'mv3')
+          textContent: UI_TEXT.versionTarget(meta.version || '2.4.0', meta.target || 'mv3')
         }),
         createElement('div', { className: 'ytst-header-actions' }, [
           (() => {
@@ -300,7 +341,7 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
           createElement('span', { className: 'ytst-status-dot', 'aria-hidden': 'true' }),
           statusText
         ]),
-        createElement('div', { className: 'ytst-footer-actions' }, [resetButton, doneButton])
+        createElement('div', { className: 'ytst-footer-actions' }, [updateButton, resetButton, doneButton])
       ])
     ]);
 

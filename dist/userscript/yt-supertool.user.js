@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YT SuperTool
 // @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
-// @version      2.3.2
+// @version      2.4.0
 // @updateURL    https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @downloadURL  https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
@@ -22,6 +22,7 @@
 // @grant        unsafeWindow
 // @connect      returnyoutubedislikeapi.com
 // @connect      sponsor.ajay.app
+// @connect      raw.githubusercontent.com
 // ==/UserScript==
 (function() {
   "use strict";
@@ -198,7 +199,7 @@
     };
     return {
       env: "userscript",
-      version: "2.3.2",
+      version: "2.4.0",
       storage,
       network,
       injector,
@@ -12309,7 +12310,7 @@
       refresh: handleNavigation
     };
   }
-  const themeCss = ':host {\n  all: initial;\n\n  --ytst-font: "Roboto", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\n  --ytst-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;\n  --ytst-space-1: 4px;\n  --ytst-space-2: 8px;\n  --ytst-space-3: 12px;\n  --ytst-space-4: 16px;\n\n  --ytst-surface: rgba(15, 15, 15, 0.88);\n  --ytst-elevated: rgba(255, 255, 255, 0.04);\n  --ytst-elevated-hover: rgba(255, 255, 255, 0.08);\n  --ytst-line: rgba(255, 255, 255, 0.08);\n  --ytst-line-strong: rgba(255, 255, 255, 0.14);\n  --ytst-text: #f1f1f1;\n  --ytst-text-muted: #aaaaaa;\n  --ytst-text-faint: #717171;\n  --ytst-accent: #ff0033;\n  --ytst-accent-control: #3ea6ff;\n  --ytst-track: rgba(255, 255, 255, 0.2);\n  --ytst-focus: #3ea6ff;\n  --ytst-backdrop: rgba(0, 0, 0, 0.6);\n  --ytst-radius-panel: 12px;\n  --ytst-radius-item: 8px;\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);\n\n  display: block;\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  color: var(--ytst-text);\n  color-scheme: dark;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n:host([data-theme="light"]) {\n  --ytst-surface: rgba(255, 255, 255, 0.92);\n  --ytst-elevated: rgba(15, 15, 15, 0.045);\n  --ytst-elevated-hover: rgba(15, 15, 15, 0.08);\n  --ytst-line: rgba(15, 15, 15, 0.1);\n  --ytst-line-strong: rgba(15, 15, 15, 0.18);\n  --ytst-text: #0f0f0f;\n  --ytst-text-muted: #606060;\n  --ytst-text-faint: #909090;\n  --ytst-track: rgba(15, 15, 15, 0.24);\n  --ytst-backdrop: rgba(15, 15, 15, 0.4);\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);\n  color-scheme: light;\n}\n\n* {\n  box-sizing: border-box;\n}\n\n.ytst-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 2147483000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 24px;\n  background: var(--ytst-backdrop);\n  opacity: 0;\n  visibility: hidden;\n  transition: opacity 160ms ease, visibility 0s linear 160ms;\n}\n\n.ytst-overlay[data-open="true"] {\n  opacity: 1;\n  visibility: visible;\n  transition: opacity 160ms ease;\n}\n\n.ytst-panel {\n  display: grid;\n  grid-template-rows: auto minmax(0, 1fr) auto;\n  width: min(640px, 100%);\n  height: min(520px, 100%);\n  overflow: hidden;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-panel);\n  background: var(--ytst-surface);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  box-shadow: var(--ytst-shadow);\n  transform: translateY(8px) scale(0.995);\n  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-overlay[data-open="true"] .ytst-panel {\n  transform: none;\n}\n\n.ytst-panel:focus {\n  outline: none;\n}\n\n.ytst-header {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: var(--ytst-space-3) var(--ytst-space-4);\n  border-bottom: 1px solid var(--ytst-line);\n}\n\n.ytst-brand {\n  display: grid;\n  flex: 0 0 28px;\n  width: 28px;\n  height: 28px;\n  place-items: center;\n  border-radius: 8px;\n  background: var(--ytst-accent);\n  color: #ffffff;\n}\n\n.ytst-brand svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n\n.ytst-header-copy {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-title {\n  margin: 0;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 1.2;\n  letter-spacing: -0.01em;\n}\n\n.ytst-subtitle {\n  color: var(--ytst-text-muted);\n  font-size: 11px;\n  line-height: 1.2;\n}\n\n.ytst-badge {\n  padding: 2px 5px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.02em;\n  line-height: 1.2;\n}\n\n.ytst-header-actions {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-icon-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 30px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-icon-button:hover {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-icon-button:active {\n  background: var(--ytst-elevated);\n}\n\n.ytst-body {\n  display: grid;\n  grid-template-columns: 168px minmax(0, 1fr);\n  min-height: 0;\n}\n\n.ytst-rail {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: var(--ytst-space-2);\n  overflow-y: auto;\n  border-right: 1px solid var(--ytst-line);\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-tab {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  height: 34px;\n  min-height: 34px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  font-weight: 500;\n  text-align: left;\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-tab svg {\n  flex: 0 0 18px;\n  opacity: 0.9;\n}\n\n.ytst-tab:hover {\n  background: var(--ytst-elevated);\n  color: var(--ytst-text);\n}\n\n.ytst-tab[aria-selected="true"] {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-tab-count {\n  margin-left: auto;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-tab[aria-selected="true"] .ytst-tab-count {\n  color: var(--ytst-text-muted);\n}\n\n.ytst-content {\n  min-height: 0;\n  padding: 8px 8px 12px;\n  overflow-y: auto;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-content::-webkit-scrollbar {\n  width: 8px;\n}\n\n.ytst-content::-webkit-scrollbar-track {\n  background: transparent;\n}\n\n.ytst-content::-webkit-scrollbar-thumb {\n  border: 2px solid transparent;\n  border-radius: 8px;\n  background: var(--ytst-line-strong);\n  background-clip: content-box;\n}\n\n.ytst-tabpanel[hidden] {\n  display: none;\n}\n\n.ytst-group {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.ytst-group-head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: var(--ytst-space-2);\n  padding: 4px 8px 8px;\n}\n\n.ytst-group-title {\n  margin: 0;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-group-meta {\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-section {\n  margin: 12px 8px 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  min-height: 52px;\n  padding: 8px 10px;\n  border-radius: var(--ytst-radius-item);\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-row:hover {\n  background: var(--ytst-elevated);\n}\n\n.ytst-row.is-disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.ytst-row-icon {\n  display: inline-flex;\n  flex: 0 0 20px;\n  color: var(--ytst-text-muted);\n}\n\n.ytst-row:hover .ytst-row-icon {\n  color: var(--ytst-text);\n}\n\n.ytst-row-copy {\n  display: flex;\n  flex: 1 1 auto;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-row-label {\n  color: var(--ytst-text);\n  font-size: 13.5px;\n  font-weight: 500;\n  line-height: 1.25;\n}\n\n.ytst-row-desc {\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.35;\n}\n\n.ytst-row-meta {\n  display: flex;\n  flex: 0 0 auto;\n  align-items: center;\n  gap: 8px;\n}\n\n.ytst-badge-layer {\n  padding: 1px 4px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 9.5px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.04em;\n  line-height: 1.4;\n}\n\n.ytst-switch-input {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip: rect(0 0 0 0);\n  white-space: nowrap;\n  border: 0;\n}\n\n.ytst-switch {\n  position: relative;\n  flex: 0 0 36px;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: var(--ytst-track);\n  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-thumb {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #f1f1f1;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-input:checked + .ytst-switch {\n  background: var(--ytst-accent-control);\n}\n\n.ytst-switch-input:checked + .ytst-switch .ytst-switch-thumb {\n  background: #ffffff;\n  transform: translateX(16px);\n}\n\n.ytst-switch-input:focus-visible + .ytst-switch {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n.ytst-switch-input:disabled + .ytst-switch {\n  opacity: 0.55;\n}\n\n.ytst-footer {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: 10px 14px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-status {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.2;\n}\n\n.ytst-status-dot {\n  flex: 0 0 5px;\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ytst-accent-control);\n}\n\n.ytst-footer-actions {\n  display: flex;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-button {\n  height: 30px;\n  padding: 0 12px;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-button:hover {\n  background: var(--ytst-elevated-hover);\n}\n\n.ytst-button-primary {\n  border-color: transparent;\n  background: var(--ytst-text);\n  color: #0f0f0f;\n}\n\n.ytst-button-primary:hover {\n  background: #d9d9d9;\n  color: #0f0f0f;\n}\n\n:host([data-theme="light"]) .ytst-button-primary {\n  background: #0f0f0f;\n  color: #ffffff;\n}\n\n:host([data-theme="light"]) .ytst-button-primary:hover {\n  background: #272727;\n}\n\n.ytst-button:focus-visible,\n.ytst-tab:focus-visible,\n.ytst-icon-button:focus-visible {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n@media (max-width: 720px) {\n  .ytst-overlay {\n    padding: 12px;\n  }\n\n  .ytst-panel {\n    height: min(560px, 100%);\n  }\n\n  .ytst-body {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto minmax(0, 1fr);\n  }\n\n  .ytst-rail {\n    flex-direction: row;\n    gap: 6px;\n    padding: var(--ytst-space-2);\n    overflow-x: auto;\n    border-right: 0;\n    border-bottom: 1px solid var(--ytst-line);\n  }\n\n  .ytst-tab {\n    flex: 0 0 auto;\n    padding: 0 10px;\n  }\n\n  .ytst-tab-count {\n    display: none;\n  }\n}\n\n.ytst-sb {\n  display: grid;\n  grid-template-rows: 0fr;\n  opacity: 0;\n  transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;\n}\n\n.ytst-sb[data-open="true"] {\n  grid-template-rows: 1fr;\n  opacity: 1;\n}\n\n.ytst-sb-inner {\n  min-height: 0;\n  overflow: hidden;\n}\n\n.ytst-sb-list {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1px 10px;\n  padding: 2px 10px 2px 42px;\n}\n\n.ytst-sb-cat,\n.ytst-sb-notice {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  cursor: pointer;\n}\n\n.ytst-sb-cat {\n  min-height: 26px;\n}\n\n.ytst-sb-cat:hover,\n.ytst-sb-notice:hover {\n  color: var(--ytst-text);\n}\n\n.ytst-sb-cat input,\n.ytst-sb-notice input {\n  width: 14px;\n  height: 14px;\n  margin: 0;\n  accent-color: var(--ytst-accent-control);\n}\n\n.ytst-sb-dot {\n  flex: 0 0 7px;\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n}\n\n.ytst-sb-notice {\n  margin: 4px 10px 8px 42px;\n  padding-top: 8px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-overlay,\n  .ytst-panel,\n  .ytst-tab,\n  .ytst-row,\n  .ytst-switch,\n  .ytst-switch-thumb,\n  .ytst-sb {\n    transition-duration: 0ms;\n  }\n}\n';
+  const themeCss = ':host {\n  all: initial;\n\n  --ytst-font: "Roboto", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\n  --ytst-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;\n  --ytst-space-1: 4px;\n  --ytst-space-2: 8px;\n  --ytst-space-3: 12px;\n  --ytst-space-4: 16px;\n\n  --ytst-surface: rgba(15, 15, 15, 0.88);\n  --ytst-elevated: rgba(255, 255, 255, 0.04);\n  --ytst-elevated-hover: rgba(255, 255, 255, 0.08);\n  --ytst-line: rgba(255, 255, 255, 0.08);\n  --ytst-line-strong: rgba(255, 255, 255, 0.14);\n  --ytst-text: #f1f1f1;\n  --ytst-text-muted: #aaaaaa;\n  --ytst-text-faint: #717171;\n  --ytst-accent: #ff0033;\n  --ytst-accent-control: #3ea6ff;\n  --ytst-track: rgba(255, 255, 255, 0.2);\n  --ytst-focus: #3ea6ff;\n  --ytst-backdrop: rgba(0, 0, 0, 0.6);\n  --ytst-radius-panel: 12px;\n  --ytst-radius-item: 8px;\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);\n\n  display: block;\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  color: var(--ytst-text);\n  color-scheme: dark;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n:host([data-theme="light"]) {\n  --ytst-surface: rgba(255, 255, 255, 0.92);\n  --ytst-elevated: rgba(15, 15, 15, 0.045);\n  --ytst-elevated-hover: rgba(15, 15, 15, 0.08);\n  --ytst-line: rgba(15, 15, 15, 0.1);\n  --ytst-line-strong: rgba(15, 15, 15, 0.18);\n  --ytst-text: #0f0f0f;\n  --ytst-text-muted: #606060;\n  --ytst-text-faint: #909090;\n  --ytst-track: rgba(15, 15, 15, 0.24);\n  --ytst-backdrop: rgba(15, 15, 15, 0.4);\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);\n  color-scheme: light;\n}\n\n* {\n  box-sizing: border-box;\n}\n\n.ytst-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 2147483000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 24px;\n  background: var(--ytst-backdrop);\n  opacity: 0;\n  visibility: hidden;\n  transition: opacity 160ms ease, visibility 0s linear 160ms;\n}\n\n.ytst-overlay[data-open="true"] {\n  opacity: 1;\n  visibility: visible;\n  transition: opacity 160ms ease;\n}\n\n.ytst-panel {\n  display: grid;\n  grid-template-rows: auto minmax(0, 1fr) auto;\n  width: min(640px, 100%);\n  height: min(520px, 100%);\n  overflow: hidden;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-panel);\n  background: var(--ytst-surface);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  box-shadow: var(--ytst-shadow);\n  transform: translateY(8px) scale(0.995);\n  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-overlay[data-open="true"] .ytst-panel {\n  transform: none;\n}\n\n.ytst-panel:focus {\n  outline: none;\n}\n\n.ytst-header {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: var(--ytst-space-3) var(--ytst-space-4);\n  border-bottom: 1px solid var(--ytst-line);\n}\n\n.ytst-brand {\n  display: grid;\n  flex: 0 0 28px;\n  width: 28px;\n  height: 28px;\n  place-items: center;\n  border-radius: 8px;\n  background: var(--ytst-accent);\n  color: #ffffff;\n}\n\n.ytst-brand svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n\n.ytst-header-copy {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-title {\n  margin: 0;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 1.2;\n  letter-spacing: -0.01em;\n}\n\n.ytst-subtitle {\n  color: var(--ytst-text-muted);\n  font-size: 11px;\n  line-height: 1.2;\n}\n\n.ytst-badge {\n  padding: 2px 5px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.02em;\n  line-height: 1.2;\n}\n\n.ytst-header-actions {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-icon-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 30px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-icon-button:hover {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-icon-button:active {\n  background: var(--ytst-elevated);\n}\n\n.ytst-body {\n  display: grid;\n  grid-template-columns: 168px minmax(0, 1fr);\n  min-height: 0;\n}\n\n.ytst-rail {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: var(--ytst-space-2);\n  overflow-y: auto;\n  border-right: 1px solid var(--ytst-line);\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-tab {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  height: 34px;\n  min-height: 34px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  font-weight: 500;\n  text-align: left;\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-tab svg {\n  flex: 0 0 18px;\n  opacity: 0.9;\n}\n\n.ytst-tab:hover {\n  background: var(--ytst-elevated);\n  color: var(--ytst-text);\n}\n\n.ytst-tab[aria-selected="true"] {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-tab-count {\n  margin-left: auto;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-tab[aria-selected="true"] .ytst-tab-count {\n  color: var(--ytst-text-muted);\n}\n\n.ytst-content {\n  min-height: 0;\n  padding: 8px 8px 12px;\n  overflow-y: auto;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-content::-webkit-scrollbar {\n  width: 8px;\n}\n\n.ytst-content::-webkit-scrollbar-track {\n  background: transparent;\n}\n\n.ytst-content::-webkit-scrollbar-thumb {\n  border: 2px solid transparent;\n  border-radius: 8px;\n  background: var(--ytst-line-strong);\n  background-clip: content-box;\n}\n\n.ytst-tabpanel[hidden] {\n  display: none;\n}\n\n.ytst-group {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.ytst-group-head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: var(--ytst-space-2);\n  padding: 4px 8px 8px;\n}\n\n.ytst-group-title {\n  margin: 0;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-group-meta {\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-section {\n  margin: 12px 8px 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  min-height: 52px;\n  padding: 8px 10px;\n  border-radius: var(--ytst-radius-item);\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-row:hover {\n  background: var(--ytst-elevated);\n}\n\n.ytst-row.is-disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.ytst-row-icon {\n  display: inline-flex;\n  flex: 0 0 20px;\n  color: var(--ytst-text-muted);\n}\n\n.ytst-row:hover .ytst-row-icon {\n  color: var(--ytst-text);\n}\n\n.ytst-row-copy {\n  display: flex;\n  flex: 1 1 auto;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-row-label {\n  color: var(--ytst-text);\n  font-size: 13.5px;\n  font-weight: 500;\n  line-height: 1.25;\n}\n\n.ytst-row-desc {\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.35;\n}\n\n.ytst-row-meta {\n  display: flex;\n  flex: 0 0 auto;\n  align-items: center;\n  gap: 8px;\n}\n\n.ytst-badge-layer {\n  padding: 1px 4px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 9.5px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.04em;\n  line-height: 1.4;\n}\n\n.ytst-switch-input {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip: rect(0 0 0 0);\n  white-space: nowrap;\n  border: 0;\n}\n\n.ytst-switch {\n  position: relative;\n  flex: 0 0 36px;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: var(--ytst-track);\n  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-thumb {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #f1f1f1;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-input:checked + .ytst-switch {\n  background: var(--ytst-accent-control);\n}\n\n.ytst-switch-input:checked + .ytst-switch .ytst-switch-thumb {\n  background: #ffffff;\n  transform: translateX(16px);\n}\n\n.ytst-switch-input:focus-visible + .ytst-switch {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n.ytst-switch-input:disabled + .ytst-switch {\n  opacity: 0.55;\n}\n\n.ytst-footer {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: 10px 14px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-status {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.2;\n}\n\n.ytst-status-dot {\n  flex: 0 0 5px;\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ytst-accent-control);\n}\n\n.ytst-footer-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-button {\n  height: 30px;\n  padding: 0 12px;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-button:hover {\n  background: var(--ytst-elevated-hover);\n}\n\n.ytst-button-primary {\n  border-color: transparent;\n  background: var(--ytst-text);\n  color: #0f0f0f;\n}\n\n.ytst-button-primary:hover {\n  background: #d9d9d9;\n  color: #0f0f0f;\n}\n\n:host([data-theme="light"]) .ytst-button-primary {\n  background: #0f0f0f;\n  color: #ffffff;\n}\n\n:host([data-theme="light"]) .ytst-button-primary:hover {\n  background: #272727;\n}\n\n.ytst-button:focus-visible,\n.ytst-tab:focus-visible,\n.ytst-icon-button:focus-visible {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n@media (max-width: 720px) {\n  .ytst-overlay {\n    padding: 12px;\n  }\n\n  .ytst-panel {\n    height: min(560px, 100%);\n  }\n\n  .ytst-body {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto minmax(0, 1fr);\n  }\n\n  .ytst-rail {\n    flex-direction: row;\n    gap: 6px;\n    padding: var(--ytst-space-2);\n    overflow-x: auto;\n    border-right: 0;\n    border-bottom: 1px solid var(--ytst-line);\n  }\n\n  .ytst-tab {\n    flex: 0 0 auto;\n    padding: 0 10px;\n  }\n\n  .ytst-tab-count {\n    display: none;\n  }\n}\n\n.ytst-sb {\n  display: grid;\n  grid-template-rows: 0fr;\n  opacity: 0;\n  transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;\n}\n\n.ytst-sb[data-open="true"] {\n  grid-template-rows: 1fr;\n  opacity: 1;\n}\n\n.ytst-sb-inner {\n  min-height: 0;\n  overflow: hidden;\n}\n\n.ytst-sb-list {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1px 10px;\n  padding: 2px 10px 2px 42px;\n}\n\n.ytst-sb-cat,\n.ytst-sb-notice {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  cursor: pointer;\n}\n\n.ytst-sb-cat {\n  min-height: 26px;\n}\n\n.ytst-sb-cat:hover,\n.ytst-sb-notice:hover {\n  color: var(--ytst-text);\n}\n\n.ytst-sb-cat input,\n.ytst-sb-notice input {\n  width: 14px;\n  height: 14px;\n  margin: 0;\n  accent-color: var(--ytst-accent-control);\n}\n\n.ytst-sb-dot {\n  flex: 0 0 7px;\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n}\n\n.ytst-sb-notice {\n  margin: 4px 10px 8px 42px;\n  padding-top: 8px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-overlay,\n  .ytst-panel,\n  .ytst-tab,\n  .ytst-row,\n  .ytst-switch,\n  .ytst-switch-thumb,\n  .ytst-sb {\n    transition-duration: 0ms;\n  }\n}\n';
   const SVG_NS = "http://www.w3.org/2000/svg";
   const applyAttributes = (element, attributes) => {
     for (const [key, value] of Object.entries(attributes || {})) {
@@ -12518,7 +12519,11 @@
     takeScreenshot: "Take screenshot",
     pictureInPicture: "Picture in picture",
     estimatedDislikes: "Estimated dislikes",
-    dislikeData: "Dislike data"
+    dislikeData: "Dislike data",
+    checkUpdate: "Check update",
+    checkingUpdate: "Checking...",
+    downloadUpdate: "Download update",
+    updateCheckFailed: "Could not check for updates"
   };
   const UI_TEXT = {
     versionTarget: (version, target) => `v${version} · ${String(target).toUpperCase()}`,
@@ -12530,7 +12535,9 @@
     menuFoot: (label) => `Only the single-stream MP4 downloads in place. High quality MP4 and MP3 continue on ${label} with the link copied for you.`,
     downloadFailed: (reason) => `Download failed: ${reason}`,
     downloadProgress: (percent, size) => `Downloading MP4 · ${percent}%${size ? ` · ${size}` : ""}`,
-    savedFile: (fileName) => `Saved · ${fileName}`
+    savedFile: (fileName) => `Saved · ${fileName}`,
+    upToDate: (version) => `Up to date · v${version}`,
+    updateAvailable: (version) => `v${version} available`
   };
   function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
     const inputs = /* @__PURE__ */ new Map();
@@ -12614,7 +12621,7 @@
     }
     return globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
   };
-  function createPanel({ settings, storage, toast, meta = {} }) {
+  function createPanel({ settings, storage, toast, update, meta = {} }) {
     const rows = /* @__PURE__ */ new Map();
     const tabs = /* @__PURE__ */ new Map();
     const panels = /* @__PURE__ */ new Map();
@@ -12752,6 +12759,11 @@
         statusText.textContent = UI_STRINGS.savedLocally;
       }, 1500);
     };
+    const showStatus = (message) => {
+      if (!statusText) return;
+      clearTimeout(statusTimer);
+      statusText.textContent = message;
+    };
     const syncValues = () => {
       rows.forEach(({ input, row, feature }) => {
         input.checked = Boolean(settings.get(feature.key));
@@ -12822,6 +12834,39 @@
           toast?.show(UI_STRINGS.defaultsRestored);
         });
       });
+      let pendingUpdate = "";
+      const updateButton = createElement("button", {
+        type: "button",
+        className: "ytst-button",
+        textContent: UI_STRINGS.checkUpdate
+      });
+      updateButton.addEventListener("click", () => {
+        if (!update) return;
+        if (pendingUpdate) {
+          update.openDownload();
+          return;
+        }
+        updateButton.disabled = true;
+        updateButton.textContent = UI_STRINGS.checkingUpdate;
+        showStatus(UI_STRINGS.checkingUpdate);
+        void update.check().then((result) => {
+          updateButton.disabled = false;
+          if (result.status === "available") {
+            pendingUpdate = result.latest;
+            updateButton.textContent = UI_STRINGS.downloadUpdate;
+            showStatus(UI_TEXT.updateAvailable(result.latest));
+            toast?.show(UI_TEXT.updateAvailable(result.latest));
+            return;
+          }
+          updateButton.textContent = UI_STRINGS.checkUpdate;
+          if (result.status === "current") {
+            showStatus(UI_TEXT.upToDate(result.current));
+            return;
+          }
+          showStatus(UI_STRINGS.updateCheckFailed);
+          toast?.show(UI_STRINGS.updateCheckFailed);
+        });
+      });
       const doneButton = createElement("button", {
         type: "button",
         className: "ytst-button ytst-button-primary",
@@ -12843,7 +12888,7 @@
           ]),
           createElement("span", {
             className: "ytst-badge",
-            textContent: UI_TEXT.versionTarget(meta.version || "2.3.2", meta.target || "mv3")
+            textContent: UI_TEXT.versionTarget(meta.version || "2.4.0", meta.target || "mv3")
           }),
           createElement("div", { className: "ytst-header-actions" }, [
             (() => {
@@ -12864,7 +12909,7 @@
             createElement("span", { className: "ytst-status-dot", "aria-hidden": "true" }),
             statusText
           ]),
-          createElement("div", { className: "ytst-footer-actions" }, [resetButton, doneButton])
+          createElement("div", { className: "ytst-footer-actions" }, [updateButton, resetButton, doneButton])
         ])
       ]);
       content.addEventListener("change", (event) => {
@@ -13015,6 +13060,90 @@
       timer = setTimeout(() => node.classList.remove("is-visible"), duration);
     };
     return { show };
+  }
+  const VERSION_URL = "https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/src/manifests/base.manifest.json";
+  const RELEASE_URL = "https://github.com/CheemsGalaxy/YT-SuperTool/releases/tag/Release";
+  const USERSCRIPT_URL = "https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js";
+  const CHECK_INTERVAL = 24 * 60 * 60 * 1e3;
+  const LAST_CHECK_KEY = "updateLastCheck";
+  const NOTIFIED_KEY = "updateNotifiedVersion";
+  const parseVersion = (value) => String(value || "").split(".").map((part) => parseInt(part, 10) || 0);
+  const compareVersions = (left, right) => {
+    const a = parseVersion(left);
+    const b = parseVersion(right);
+    const length = Math.max(a.length, b.length);
+    for (let index = 0; index < length; index += 1) {
+      const diff = (a[index] || 0) - (b[index] || 0);
+      if (diff !== 0) return diff > 0 ? 1 : -1;
+    }
+    return 0;
+  };
+  function createUpdateChecker({ bridge: bridge2, toast, currentVersion }) {
+    let latest = "";
+    let available = false;
+    const downloadUrl = bridge2.env === "userscript" ? USERSCRIPT_URL : RELEASE_URL;
+    const readRemoteVersion = async () => {
+      const response = await bridge2.network.request(VERSION_URL, { responseType: "json", timeout: 8e3 });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+      const version = String(data?.version || "");
+      if (!version) throw new Error("Missing remote version");
+      return version;
+    };
+    const check = async () => {
+      try {
+        const remote = await readRemoteVersion();
+        latest = remote;
+        available = compareVersions(remote, currentVersion) > 0;
+        await bridge2.storage.set(LAST_CHECK_KEY, Date.now());
+        return {
+          status: available ? "available" : "current",
+          current: currentVersion,
+          latest: remote,
+          downloadUrl
+        };
+      } catch (error2) {
+        return {
+          status: "error",
+          current: currentVersion,
+          latest: "",
+          error: error2?.message || UI_STRINGS.updateCheckFailed,
+          downloadUrl
+        };
+      }
+    };
+    const auto = async () => {
+      try {
+        const last = Number(await bridge2.storage.get(LAST_CHECK_KEY, 0)) || 0;
+        if (Date.now() - last < CHECK_INTERVAL) return null;
+        const result = await check();
+        if (result.status !== "available") return result;
+        const notified = await bridge2.storage.get(NOTIFIED_KEY, "");
+        if (notified !== result.latest) {
+          toast?.show(UI_TEXT.updateAvailable(result.latest));
+          await bridge2.storage.set(NOTIFIED_KEY, result.latest);
+        }
+        return result;
+      } catch {
+        return null;
+      }
+    };
+    return {
+      check,
+      auto,
+      openDownload() {
+        bridge2.openExternal?.(downloadUrl);
+      },
+      get latest() {
+        return latest;
+      },
+      get available() {
+        return available;
+      },
+      get downloadUrl() {
+        return downloadUrl;
+      }
+    };
   }
   const CACHE_TTL$2 = 60 * 1e3;
   const getVideoId$2 = () => new URLSearchParams(location.search).get("v") || location.pathname.match(/\/shorts\/([^/?]+)/)?.[1] || "";
@@ -15007,10 +15136,12 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
     await settings.load();
     const toast = createToast();
     const features = createFeatures({ bridge, settings, toast });
+    const update = createUpdateChecker({ bridge, toast, currentVersion: bridge.version });
     const panel = createPanel({
       settings,
       storage: bridge.storage,
       toast,
+      update,
       meta: { version: bridge.version, target: bridge.env }
     });
     const launcher = createLauncher({ onOpen: () => panel.toggle() });
@@ -15129,7 +15260,8 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       lifecycle.start();
     }
     bridge.onMenuCommand?.(UI_STRINGS.settingsTitle, () => panel.toggle());
-    return { settings, features, panel, launcher, apply };
+    void update.auto();
+    return { settings, features, panel, launcher, update, apply };
   };
   async function initCore() {
     if (!isYouTube()) return null;

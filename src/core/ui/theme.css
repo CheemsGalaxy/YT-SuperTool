@@ -470,6 +470,7 @@
 
 .ytst-footer-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--ytst-space-2);
   margin-left: auto;
 }

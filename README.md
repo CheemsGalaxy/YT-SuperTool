@@ -15,7 +15,7 @@ YT SuperTool là bộ công cụ YouTube tất cả trong một: chặn quảng 
 
 [Bản phát hành](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
-Phiên bản hiện tại: 2.3.2
+Phiên bản hiện tại: 2.4.0
 
 ### Tải xuống
 
@@ -216,7 +216,7 @@ YT SuperTool is an all-in-one YouTube enhancer: optional three-layer ad blocking
 
 [Releases](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
-Current version: 2.3.2
+Current version: 2.4.0
 
 ### Downloads
 

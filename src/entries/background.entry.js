@@ -3,8 +3,11 @@ import { initAdblockBackground } from './adblock-background.js';
 const DISLIKE_CACHE_TTL = 5 * 60 * 1000;
 const CACHE_PREFIX = 'dislike_';
 const CACHE_MAX_ENTRIES = 500;
-const ALLOWED_FETCH_HOSTS = ['returnyoutubedislikeapi.com', 'sponsor.ajay.app'];
+const ALLOWED_FETCH_HOSTS = ['returnyoutubedislikeapi.com', 'sponsor.ajay.app', 'raw.githubusercontent.com'];
 const ALLOWED_TARGET_HOSTS = ['www.youtubepi.com', 'youtubepi.com', 'y2mate.nu', 'ytmp3pc.com', 'www.ytmp3pc.com'];
+const ALLOWED_GITHUB_TARGETS = [
+  'https://github.com/CheemsGalaxy/YT-SuperTool/releases/'
+];
 const AD_RULESET_ID = 'yt-adblock';
 
 const ext = globalThis.browser || globalThis.chrome;
@@ -151,6 +154,12 @@ ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return false;
     }
 
+    if (parsedUrl.hostname === 'raw.githubusercontent.com'
+      && !parsedUrl.pathname.startsWith('/CheemsGalaxy/YT-SuperTool/')) {
+      sendResponse({ ok: false, error: 'Request path is not allowed' });
+      return false;
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     fetch(parsedUrl, { ...options, signal: controller.signal })
@@ -169,7 +178,10 @@ ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === 'YT_SUPERTOOL_OPEN_URL') {
     try {
       const target = new URL(message.url);
-      if (target.protocol !== 'https:' || !ALLOWED_TARGET_HOSTS.includes(target.hostname)) {
+      const githubAllowed = target.hostname === 'github.com'
+        && ALLOWED_GITHUB_TARGETS.some((allowed) => target.href.startsWith(allowed));
+      if (target.protocol !== 'https:'
+        || (!ALLOWED_TARGET_HOSTS.includes(target.hostname) && !githubAllowed)) {
         throw new Error('URL is not allowed');
       }
       const creation = ext.tabs.create({ url: target.href });

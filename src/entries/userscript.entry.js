@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YT SuperTool
 // @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
-// @version      2.3.2
+// @version      2.4.0
 // @updateURL    https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @downloadURL  https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
@@ -22,6 +22,7 @@
 // @grant        unsafeWindow
 // @connect      returnyoutubedislikeapi.com
 // @connect      sponsor.ajay.app
+// @connect      raw.githubusercontent.com
 // ==/UserScript==
 
 import bridge from '../adapters/index.js';

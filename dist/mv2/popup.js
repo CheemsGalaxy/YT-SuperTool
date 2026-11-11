@@ -346,7 +346,11 @@
     takeScreenshot: "Take screenshot",
     pictureInPicture: "Picture in picture",
     estimatedDislikes: "Estimated dislikes",
-    dislikeData: "Dislike data"
+    dislikeData: "Dislike data",
+    checkUpdate: "Check update",
+    checkingUpdate: "Checking...",
+    downloadUpdate: "Download update",
+    updateCheckFailed: "Could not check for updates"
   };
   const UI_TEXT = {
     versionTarget: (version, target) => `v${version} · ${String(target).toUpperCase()}`,
@@ -358,7 +362,9 @@
     menuFoot: (label) => `Only the single-stream MP4 downloads in place. High quality MP4 and MP3 continue on ${label} with the link copied for you.`,
     downloadFailed: (reason) => `Download failed: ${reason}`,
     downloadProgress: (percent, size) => `Downloading MP4 · ${percent}%${size ? ` · ${size}` : ""}`,
-    savedFile: (fileName) => `Saved · ${fileName}`
+    savedFile: (fileName) => `Saved · ${fileName}`,
+    upToDate: (version) => `Up to date · v${version}`,
+    updateAvailable: (version) => `v${version} available`
   };
   function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
     const inputs = /* @__PURE__ */ new Map();
@@ -628,7 +634,7 @@
     if (brand) brand.appendChild(createBrandMark(16));
   };
   const renderMeta = () => {
-    const version = api?.runtime?.getManifest?.().version || "2.3.2";
+    const version = api?.runtime?.getManifest?.().version || "2.4.0";
     const manifestVersion = api?.runtime?.getManifest?.().manifest_version || 3;
     const versionNode = document.getElementById("popup-version");
     const targetNode = document.getElementById("popup-target");

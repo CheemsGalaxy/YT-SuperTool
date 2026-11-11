@@ -1,6 +1,6 @@
 {
   "name": "YT SuperTool",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, playback controls.",
   "icons": {
     "16": "assets/icons/icon16.png",
@@ -27,6 +27,7 @@
     "*://*.youtube.com/*",
     "https://returnyoutubedislikeapi.com/*",
     "https://sponsor.ajay.app/*",
+    "https://raw.githubusercontent.com/*",
     "https://*.doubleclick.net/*",
     "https://*.googlesyndication.com/*",
     "https://*.googleadservices.com/*",

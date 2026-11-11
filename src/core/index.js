@@ -5,6 +5,7 @@ import { createLifecycleManager } from './lifecycle.js';
 import { createPanel } from './ui/panel.js';
 import { createLauncher } from './ui/launcher.js';
 import { createToast } from './ui/toast.js';
+import { createUpdateChecker } from './update-check.js';
 import { UI_STRINGS } from './ui/strings.js';
 import { createFeatures } from './features/index.js';
 import { MUTATION_FEATURES, PLAYER_FEATURES, CONTENT_FEATURES } from './settings-schema.js';
@@ -22,10 +23,12 @@ const start = async () => {
 
   const toast = createToast();
   const features = createFeatures({ bridge, settings, toast });
+  const update = createUpdateChecker({ bridge, toast, currentVersion: bridge.version });
   const panel = createPanel({
     settings,
     storage: bridge.storage,
     toast,
+    update,
     meta: { version: bridge.version, target: bridge.env }
   });
   const launcher = createLauncher({ onOpen: () => panel.toggle() });
@@ -160,8 +163,9 @@ const start = async () => {
     lifecycle.start();
   }
   bridge.onMenuCommand?.(UI_STRINGS.settingsTitle, () => panel.toggle());
+  void update.auto();
 
-  return { settings, features, panel, launcher, apply };
+  return { settings, features, panel, launcher, update, apply };
 };
 
 export async function initCore() {
