@@ -142,7 +142,7 @@
     };
     return {
       env: target2,
-      version: api?.runtime?.getManifest?.().version || "2.3.1",
+      version: api?.runtime?.getManifest?.().version || "2.3.2",
       storage,
       network,
       injector,
@@ -979,7 +979,7 @@
           ]),
           createElement("span", {
             className: "ytst-badge",
-            textContent: UI_TEXT.versionTarget(meta.version || "2.3.1", meta.target || "mv3")
+            textContent: UI_TEXT.versionTarget(meta.version || "2.3.2", meta.target || "mv3")
           }),
           createElement("div", { className: "ytst-header-actions" }, [
             (() => {

@@ -1,4 +1,4 @@
-const FALLBACK_VERSION = '2.3.1';
+const FALLBACK_VERSION = '2.3.2';
 const STORAGE_PREFIX = 'yt_supertool_';
 
 const extensionApi = () => globalThis.browser || globalThis.chrome || null;

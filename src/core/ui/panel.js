@@ -279,7 +279,7 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
         ]),
         createElement('span', {
           className: 'ytst-badge',
-          textContent: UI_TEXT.versionTarget(meta.version || '2.3.1', meta.target || 'mv3')
+          textContent: UI_TEXT.versionTarget(meta.version || '2.3.2', meta.target || 'mv3')
         }),
         createElement('div', { className: 'ytst-header-actions' }, [
           (() => {
