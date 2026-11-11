@@ -21,9 +21,9 @@ Phiên bản hiện tại: 2.3.1
 
 | Nền tảng | Gói | Chạy trên | Tải |
 |---|---|---|---|
-| Userscript | `yt-supertool.user.js` | Tampermonkey, Violentmonkey | [Cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/yt-supertool.user.js) · [Tải về](https://github.com/user-attachments/files/34616428/yt-supertool.user.js) |
-| Extension MV3 | `yt-supertool-mv3.zip` | Chrome, Edge, Brave, Chromium khác | [Tải ZIP](https://github.com/user-attachments/files/34616429/yt-supertool-mv3.zip) |
-| Extension MV2 | `yt-supertool-mv2.zip` | Firefox 109 trở lên | [Tải ZIP](https://github.com/user-attachments/files/34616432/yt-supertool-mv2.zip) |
+| Userscript | `yt-supertool.user.js` | Tampermonkey, Violentmonkey | [Cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) · [Tải về](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
+| Extension MV3 | `yt-supertool-mv3.zip` | Chrome, Edge, Brave, Chromium khác | [Tải ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) |
+| Extension MV2 | `yt-supertool-mv2.zip` | Firefox 109 trở lên | [Tải ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) |
 
 ### Tính năng chính
 
@@ -104,7 +104,7 @@ Vite build một IIFE cho mỗi entry target với `__TARGET__` đặt lúc buil
 #### Cách 1: Userscript
 
 1. Cài [Tampermonkey](https://www.tampermonkey.net/) hoặc [Violentmonkey](https://violentmonkey.github.io/).
-2. Bấm [cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/yt-supertool.user.js). Trình quản lý userscript mở màn hình cài đặt.
+2. Bấm [cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js). Trình quản lý userscript mở màn hình cài đặt.
 3. Xem quyền được yêu cầu và xác nhận cài.
 4. Mở YouTube. Nút YT SuperTool xuất hiện ở header.
 
@@ -116,8 +116,8 @@ Tải gói trực tiếp:
 
 | Trình duyệt | Gói | Trang quản lý |
 |---|---|---|
-| Chrome, Edge, Brave | [`yt-supertool-mv3.zip`](https://github.com/user-attachments/files/34616429/yt-supertool-mv3.zip) | `chrome://extensions`, `edge://extensions`, `brave://extensions` |
-| Firefox | [`yt-supertool-mv2.zip`](https://github.com/user-attachments/files/34616432/yt-supertool-mv2.zip) | `about:debugging#/runtime/this-firefox` |
+| Chrome, Edge, Brave | [`yt-supertool-mv3.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) | `chrome://extensions`, `edge://extensions`, `brave://extensions` |
+| Firefox | [`yt-supertool-mv2.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) | `about:debugging#/runtime/this-firefox` |
 
 Nếu link tải không dùng được, build từ source. Build ghi cả ba target vào `dist/`.
 
@@ -222,9 +222,9 @@ Current version: 2.3.1
 
 | Target | Package | Runs in | Download |
 |---|---|---|---|
-| Userscript | `yt-supertool.user.js` | Tampermonkey, Violentmonkey | [Quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/yt-supertool.user.js) · [Download](https://github.com/user-attachments/files/34616428/yt-supertool.user.js) |
-| Extension MV3 | `yt-supertool-mv3.zip` | Chrome, Edge, Brave, other Chromium browsers | [Download ZIP](https://github.com/user-attachments/files/34616429/yt-supertool-mv3.zip) |
-| Extension MV2 | `yt-supertool-mv2.zip` | Firefox 109 and newer | [Download ZIP](https://github.com/user-attachments/files/34616432/yt-supertool-mv2.zip) |
+| Userscript | `yt-supertool.user.js` | Tampermonkey, Violentmonkey | [Quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) · [Download](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
+| Extension MV3 | `yt-supertool-mv3.zip` | Chrome, Edge, Brave, other Chromium browsers | [Download ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) |
+| Extension MV2 | `yt-supertool-mv2.zip` | Firefox 109 and newer | [Download ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) |
 
 ### Key features
 
@@ -305,7 +305,7 @@ Vite builds one IIFE per target entry with `__TARGET__` set at build time. MV2 c
 #### Option 1: Userscript
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
-2. Click [quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/yt-supertool.user.js). The userscript manager opens its install screen.
+2. Click [quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js). The userscript manager opens its install screen.
 3. Review the requested permissions and confirm the install.
 4. Open YouTube. The YT SuperTool button appears in the header.
 
@@ -317,8 +317,8 @@ Download the packages directly:
 
 | Browser | Package | Management page |
 |---|---|---|
-| Chrome, Edge, Brave | [`yt-supertool-mv3.zip`](https://github.com/user-attachments/files/34616429/yt-supertool-mv3.zip) | `chrome://extensions`, `edge://extensions`, `brave://extensions` |
-| Firefox | [`yt-supertool-mv2.zip`](https://github.com/user-attachments/files/34616432/yt-supertool-mv2.zip) | `about:debugging#/runtime/this-firefox` |
+| Chrome, Edge, Brave | [`yt-supertool-mv3.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) | `chrome://extensions`, `edge://extensions`, `brave://extensions` |
+| Firefox | [`yt-supertool-mv2.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) | `about:debugging#/runtime/this-firefox` |
 
 If a download link does not work, build from source. The build writes all three targets to `dist/`.
 
