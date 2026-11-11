@@ -5,6 +5,7 @@ import { createLifecycleManager } from './lifecycle.js';
 import { createPanel } from './ui/panel.js';
 import { createLauncher } from './ui/launcher.js';
 import { createToast } from './ui/toast.js';
+import { UI_STRINGS } from './ui/strings.js';
 import { createFeatures } from './features/index.js';
 import { MUTATION_FEATURES, PLAYER_FEATURES, CONTENT_FEATURES } from './settings-schema.js';
 
@@ -158,7 +159,7 @@ const start = async () => {
     apply();
     lifecycle.start();
   }
-  bridge.onMenuCommand?.('YT SuperTool settings', () => panel.toggle());
+  bridge.onMenuCommand?.(UI_STRINGS.settingsTitle, () => panel.toggle());
 
   return { settings, features, panel, launcher, apply };
 };

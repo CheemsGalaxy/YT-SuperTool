@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>YT SuperTool</title>
+  <title></title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -12,21 +12,21 @@
     <header class="popup-head">
       <span class="popup-brand" id="popup-brand" aria-hidden="true"></span>
       <div class="popup-copy">
-        <h1>YT SuperTool</h1>
-        <p id="popup-version">Extension settings</p>
+        <h1 id="popup-title"></h1>
+        <p id="popup-version"></p>
       </div>
-      <span class="popup-badge" id="popup-target">MV3</span>
+      <span class="popup-badge" id="popup-target"></span>
     </header>
 
-    <nav class="popup-tabs" id="popup-tabs" role="tablist" aria-label="Setting groups"></nav>
+    <nav class="popup-tabs" id="popup-tabs" role="tablist"></nav>
     <div class="popup-panels" id="popup-panels"></div>
 
     <footer class="popup-foot">
       <span class="popup-status">
         <span class="popup-dot" aria-hidden="true"></span>
-        <span id="popup-status" role="status">Saved locally</span>
+        <span id="popup-status" role="status"></span>
       </span>
-      <a href="https://returnyoutubedislike.com/" target="_blank" rel="noopener">Dislike data</a>
+      <a href="https://returnyoutubedislike.com/" target="_blank" rel="noopener" id="popup-dislike-link"></a>
     </footer>
   </main>
   <script src="popup.js"></script>

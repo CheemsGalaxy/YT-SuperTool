@@ -1,12 +1,13 @@
-const CACHE_TTL = 60 * 1000;
+import { UI_STRINGS } from '../ui/strings.js';
 
+const CACHE_TTL = 60 * 1000;
 const getVideoId = () =>
   new URLSearchParams(location.search).get('v')
   || location.pathname.match(/\/shorts\/([^/?]+)/)?.[1]
   || '';
 
 const format = (value) =>
-  new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
 
 export function createDislike({ bridge }) {
   const cache = new Map();
@@ -32,9 +33,8 @@ export function createDislike({ bridge }) {
 
   function findDislikeButton(segmented) {
     const selectors = [
-      'ytd-segmented-like-dislike-button-renderer button[aria-label*="dislike" i]',
       'dislike-button-view-model button',
-      'button[aria-label*="dislike" i]',
+      'ytd-segmented-like-dislike-button-renderer button:nth-of-type(2)',
       '#top-level-buttons-computed ytd-toggle-button-renderer:nth-child(2) button'
     ];
     return selectors.map((selector) => segmented?.querySelector(selector)).find(Boolean) || null;
@@ -72,7 +72,7 @@ export function createDislike({ bridge }) {
     badge.className = 'ytst-dislike-count';
     badge.setAttribute('data-ytst', 'dislike');
     badge.setAttribute('data-video-id', videoId);
-    badge.setAttribute('aria-label', 'Estimated dislikes');
+    badge.setAttribute('aria-label', UI_STRINGS.estimatedDislikes);
     badge.setAttribute('aria-live', 'polite');
     badge.textContent = value === '—' ? '—' : format(value);
     return badge;

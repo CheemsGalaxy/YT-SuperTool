@@ -1,3 +1,5 @@
+import { ADBLOCK_HINT, ADBLOCK_TERMS_HINT } from '../../locale-patterns.js';
+
 const WALL_SELECTOR = [
   'ytd-enforcement-message-view-model',
   'ytd-modal-with-title-and-button-renderer',
@@ -6,15 +8,13 @@ const WALL_SELECTOR = [
 
 const OVERLAY_SELECTOR = 'tp-yt-iron-overlay-backdrop';
 const PLAYER_SELECTOR = '#movie_player, .html5-video-player';
-const WALL_HINT = /ad[\s-]?block|chặn quảng cáo/i;
-const LEGAL_HINT = /terms of service|điều khoản|allow youtube ads|cho phép quảng cáo|video player will be blocked/i;
 const SCAN_INTERVAL = 1200;
 
 const isEnforcementWall = (element) => {
   if (!element) return false;
   if (element.tagName === 'YTD-ENFORCEMENT-MESSAGE-VIEW-MODEL') return true;
   const text = (element.innerText || element.textContent || '').slice(0, 4000);
-  if (!WALL_HINT.test(text) || !LEGAL_HINT.test(text)) return false;
+  if (!ADBLOCK_HINT.test(text) || !ADBLOCK_TERMS_HINT.test(text)) return false;
   return Boolean(element.closest('tp-yt-paper-dialog, ytd-popup-container')) || element.tagName.includes('DIALOG');
 };
 

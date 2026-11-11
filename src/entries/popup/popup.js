@@ -1,6 +1,7 @@
 import { createElement } from '../../core/dom-safe.js';
 import { createIcon, createBrandMark } from '../../core/ui/icons.js';
 import { createSponsorAccordion } from '../../core/ui/sponsor-accordion.js';
+import { UI_STRINGS, UI_TEXT } from '../../core/ui/strings.js';
 import {
   FEATURE_GROUPS,
   FEATURES,
@@ -40,13 +41,24 @@ const storageSet = (patch) => {
 const statusNode = document.getElementById('popup-status');
 let statusTimer = 0;
 
+const renderStatic = () => {
+  document.title = UI_STRINGS.appName;
+  const title = document.getElementById('popup-title');
+  const tabList = document.getElementById('popup-tabs');
+  const dislikeLink = document.getElementById('popup-dislike-link');
+  if (title) title.textContent = UI_STRINGS.appName;
+  if (tabList) tabList.setAttribute('aria-label', UI_STRINGS.settingGroups);
+  if (dislikeLink) dislikeLink.textContent = UI_STRINGS.dislikeData;
+  if (statusNode) statusNode.textContent = UI_STRINGS.savedLocally;
+};
+
 const setStatus = (message, revert = true) => {
   if (!statusNode) return;
   statusNode.textContent = message;
   clearTimeout(statusTimer);
   if (revert) {
     statusTimer = setTimeout(() => {
-      statusNode.textContent = 'Saved locally';
+      statusNode.textContent = UI_STRINGS.savedLocally;
     }, 1500);
   }
 };
@@ -99,13 +111,13 @@ const buildSponsorAccordion = () => {
   const accordion = createSponsorAccordion({
     onChange: (value) => {
       storageSet({ sponsorblockCategories: JSON.stringify(value) })
-        .then(() => setStatus('Saved'))
-        .catch(() => setStatus('Unable to save categories'));
+        .then(() => setStatus(UI_STRINGS.saved))
+        .catch(() => setStatus(UI_STRINGS.saveCategoriesError));
     },
     onNoticeChange: (checked) => {
       storageSet({ sponsorblockNotice: checked })
-        .then(() => setStatus('Saved'))
-        .catch(() => setStatus('Unable to save notice setting'));
+        .then(() => setStatus(UI_STRINGS.saved))
+        .catch(() => setStatus(UI_STRINGS.saveNoticeError));
     }
   });
   return { element: accordion.element, accordion };
@@ -152,7 +164,7 @@ const buildShell = () => {
     for (const feature of featuresForGroup(group.id)) {
       if (feature.dependsOn && !headingShown) {
         headingShown = true;
-        panel.appendChild(createElement('div', { className: 'popup-section', textContent: 'Defence layers' }));
+        panel.appendChild(createElement('div', { className: 'popup-section', textContent: UI_STRINGS.defenceLayers }));
       }
       panel.appendChild(buildRow(feature));
       if (feature.key === 'sponsorblock') {
@@ -190,11 +202,11 @@ const buildShell = () => {
     syncValues();
 
     storageSet({ [key]: state[key] })
-      .then(() => setStatus('Saved'))
+      .then(() => setStatus(UI_STRINGS.saved))
       .catch(() => {
         state[key] = previous;
         syncValues();
-        setStatus('Unable to save setting');
+        setStatus(UI_STRINGS.saveError);
       });
   });
 
@@ -238,12 +250,12 @@ const renderBrand = () => {
 };
 
 const renderMeta = () => {
-  const version = api?.runtime?.getManifest?.().version || '2.3.0';
+  const version = api?.runtime?.getManifest?.().version || '2.3.1';
   const manifestVersion = api?.runtime?.getManifest?.().manifest_version || 3;
   const versionNode = document.getElementById('popup-version');
   const targetNode = document.getElementById('popup-target');
-  if (versionNode) versionNode.textContent = `v${version} · YouTube settings`;
-  if (targetNode) targetNode.textContent = `MV${manifestVersion}`;
+  if (versionNode) versionNode.textContent = UI_TEXT.versionSettings(version);
+  if (targetNode) targetNode.textContent = UI_TEXT.manifestTarget(manifestVersion);
 };
 
 const applySponsorCategories = (saved) => {
@@ -282,6 +294,7 @@ const subscribeToStorage = () => {
 };
 
 const start = async () => {
+  renderStatic();
   renderBrand();
   renderMeta();
   buildShell();
@@ -295,10 +308,10 @@ const start = async () => {
     });
     hydrateSponsor(values);
     syncValues();
-    setStatus('Saved locally', false);
+    setStatus(UI_STRINGS.savedLocally, false);
   } catch (error) {
     console.error('YT SuperTool could not load popup settings:', error);
-    setStatus('Unable to load settings', false);
+    setStatus(UI_STRINGS.loadError, false);
     syncValues();
   }
 };

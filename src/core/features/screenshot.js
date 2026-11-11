@@ -1,10 +1,11 @@
 import { createPlayerControl, removePlayerControl } from '../ui/player-control.js';
+import { UI_STRINGS } from '../ui/strings.js';
 
 export function createScreenshot({ toast }) {
   const capture = (player) => {
     const video = player?.querySelector('video');
     if (!video || !video.videoWidth) {
-      toast?.show('No frame available yet');
+      toast?.show(UI_STRINGS.noFrame);
       return;
     }
 
@@ -17,10 +18,10 @@ export function createScreenshot({ toast }) {
       link.download = `youtube-${Date.now()}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-      toast?.show('Screenshot saved');
+      toast?.show(UI_STRINGS.screenshotSaved);
     } catch (error) {
       console.warn('YT SuperTool screenshot blocked by CORS:', error);
-      toast?.show('This frame cannot be captured');
+      toast?.show(UI_STRINGS.screenshotFailed);
     }
   };
 
@@ -29,7 +30,7 @@ export function createScreenshot({ toast }) {
       createPlayerControl({
         player,
         id: 'screenshot',
-        label: 'Take screenshot',
+        label: UI_STRINGS.takeScreenshot,
         icon: 'camera',
         onClick: () => capture(player)
       });

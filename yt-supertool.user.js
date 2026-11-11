@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YT SuperTool
 // @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
-// @version      2.3.0
+// @version      2.3.1
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
 // @author       CheemsGalaxy
 // @match        *://*.youtube.com/*
@@ -196,7 +196,7 @@
     };
     return {
       env: "userscript",
-      version: "2.3.0",
+      version: "2.3.1",
       storage,
       network,
       injector,
@@ -8240,7 +8240,7 @@
   function processRegex(r) {
     return `(?:${r.source})`;
   }
-  function escape(s) {
+  function escape$1(s) {
     return `(?:${s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")})`;
   }
   function setWithDefault(map, key, value) {
@@ -8337,11 +8337,11 @@
           if (f.isRegex()) {
             patterns.push(processRegex(f.getRegex()));
           } else if (f.isRightAnchor()) {
-            patterns.push(`${escape(f.getFilter())}$`);
+            patterns.push(`${escape$1(f.getFilter())}$`);
           } else if (f.isLeftAnchor()) {
-            patterns.push(`^${escape(f.getFilter())}`);
+            patterns.push(`^${escape$1(f.getFilter())}`);
           } else {
-            patterns.push(escape(f.getFilter()));
+            patterns.push(escape$1(f.getFilter()));
           }
         }
         return new NetworkFilter(Object.assign({}, filters[0], {
@@ -11427,6 +11427,201 @@
     "youtube.com##.ytp-ad-suggested-action",
     "youtube.com##.ytp-suggested-action:has(.ytp-ad-suggested-action)"
   ];
+  const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const toPattern = (phrases) => new RegExp(phrases.map(escape).join("|"), "i");
+  const PAUSE_PHRASES = [
+    "continue watching",
+    "video paused",
+    "still watching",
+    "are you still there",
+    "tiếp tục xem",
+    "video đã tạm dừng",
+    "vẫn xem",
+    "bạn vẫn xem",
+    "seguir viendo",
+    "video en pausa",
+    "sigues ahí",
+    "continuar assistindo",
+    "vídeo pausado",
+    "ainda assistindo",
+    "continuer à regarder",
+    "vidéo en pause",
+    "toujours là",
+    "weiter ansehen",
+    "video pausiert",
+    "noch da",
+    "continua a guardare",
+    "video in pausa",
+    "sei ancora lì",
+    "продолжить просмотр",
+    "видео приостановлено",
+    "вы здесь",
+    "視聴を続ける",
+    "動画は一時停止",
+    "まだ視聴",
+    "계속 시청",
+    "동영상이 일시중지",
+    "계속 보고",
+    "继续观看",
+    "视频已暂停",
+    "您还在观看吗",
+    "繼續觀看",
+    "影片已暫停",
+    "देखना जारी रखें",
+    "वीडियो रोका गया",
+    "क्या आप अभी भी देख रहे हैं",
+    "lanjutkan menonton",
+    "video dijeda",
+    "masih menonton",
+    "เล่นต่อ",
+    "วิดีโอหยุดชั่วคราว",
+    "ยังดูอยู่",
+    "izlemeye devam et",
+    "video duraklatıldı",
+    "hâlâ izliyor",
+    "متابعة المشاهدة",
+    "تم إيقاف الفيديو مؤقتًا",
+    "هل ما زلت تشاهد",
+    "doorgaan met kijken",
+    "video gepauzeerd",
+    "nog aan het kijken",
+    "kontynuuj oglądanie",
+    "film wstrzymany",
+    "nadal oglądasz",
+    "продовжити перегляд",
+    "відео призупинено",
+    "ви ще дивитеся",
+    "fortsätt titta",
+    "videon pausad",
+    "tittar du fortfarande"
+  ];
+  const PLAYBACK_ERROR_PHRASES = [
+    "playback interrupted",
+    "playback was interrupted",
+    "something went wrong",
+    "sự cố gây gián đoạn",
+    "gặp sự cố",
+    "reproducción interrumpida",
+    "algo salió mal",
+    "reprodução interrompida",
+    "algo deu errado",
+    "lecture interrompue",
+    "une erreur est survenue",
+    "wiedergabe unterbrochen",
+    "ein fehler ist aufgetreten",
+    "riproduzione interrotta",
+    "qualcosa è andato storto",
+    "воспроизведение прервано",
+    "что-то пошло не так",
+    "再生が中断されました",
+    "問題が発生しました",
+    "재생이 중단되었습니다",
+    "문제가 발생했습니다",
+    "播放已中断",
+    "出现问题",
+    "播放已中斷",
+    "發生問題",
+    "प्लेबैक बाधित हुआ",
+    "कुछ गलत हो गया",
+    "pemutaran terganggu",
+    "terjadi kesalahan",
+    "การเล่นถูกขัดจังหวะ",
+    "เกิดข้อผิดพลาด",
+    "oynatma kesildi",
+    "bir sorun oluştu",
+    "توقف التشغيل",
+    "حدث خطأ",
+    "afspelen onderbroken",
+    "er is iets misgegaan",
+    "odtwarzanie przerwane",
+    "coś poszło nie tak",
+    "відтворення перервано",
+    "щось пішло не так",
+    "uppspelningen avbröts",
+    "något gick fel"
+  ];
+  const ADBLOCK_PHRASES = [
+    "adblock",
+    "ad blocker",
+    "ad-block",
+    "chặn quảng cáo",
+    "bloqueador de anuncios",
+    "bloqueadores de anuncios",
+    "bloqueador de anúncios",
+    "bloqueadores de anúncios",
+    "bloqueur de publicités",
+    "bloqueurs de publicités",
+    "werbeblocker",
+    "blocco annunci",
+    "блокировщик рекламы",
+    "広告ブロック",
+    "광고 차단",
+    "广告拦截",
+    "廣告攔截",
+    "विज्ञापन ब्लॉक",
+    "pemblokir iklan",
+    "บล็อกโฆษณา",
+    "reklam engelleyici",
+    "حظر الإعلانات",
+    "adblocker",
+    "blokowanie reklam",
+    "блокувальник реклами",
+    "annonsblockerare"
+  ];
+  const ADBLOCK_TERMS_PHRASES = [
+    "terms of service",
+    "terms of use",
+    "allow youtube ads",
+    "allow ads",
+    "player will be blocked",
+    "monetization",
+    "enforcement message",
+    "điều khoản",
+    "cho phép quảng cáo",
+    "condiciones del servicio",
+    "permitir anuncios",
+    "termos de serviço",
+    "permitir anúncios",
+    "conditions d'utilisation",
+    "conditions d’utilisation",
+    "autoriser les annonces",
+    "nutzungsbedingungen",
+    "werbung zulassen",
+    "termini di servizio",
+    "consenti annunci",
+    "условия использования",
+    "разрешить рекламу",
+    "利用規約",
+    "広告を許可",
+    "서비스 약관",
+    "광고 허용",
+    "服务条款",
+    "允许广告",
+    "服務條款",
+    "允許廣告",
+    "सेवा की शर्तें",
+    "विज्ञापन अनुमत करें",
+    "persyaratan layanan",
+    "izinkan iklan",
+    "ข้อกำหนดในการให้บริการ",
+    "อนุญาตโฆษณา",
+    "hizmet şartları",
+    "reklamlara izin ver",
+    "شروط الخدمة",
+    "السماح بالإعلانات",
+    "servicevoorwaarden",
+    "advertenties toestaan",
+    "warunki korzystania",
+    "zezwalaj na reklamy",
+    "умови використання",
+    "дозволити рекламу",
+    "användarvillkor",
+    "tillåt annonser"
+  ];
+  const PAUSE_HINT = toPattern(PAUSE_PHRASES);
+  const PLAYBACK_ERROR_HINT = toPattern(PLAYBACK_ERROR_PHRASES);
+  const ADBLOCK_HINT = toPattern(ADBLOCK_PHRASES);
+  const ADBLOCK_TERMS_HINT = toPattern(ADBLOCK_TERMS_PHRASES);
   const AD_KEYS = [
     "adPlacements",
     "playerAds",
@@ -11438,7 +11633,6 @@
   const AD_KEYS_SET = new Set(AD_KEYS);
   const AD_KEY_PATTERN = /"(adPlacements|playerAds|adSlots|adBreakHeartbeatParams|adParams|adSafetyReason)"\s*:/g;
   const RENAMED_PREFIX = "ytst_no_ads_";
-  const ANTI_ADBLOCK_HINT = /ad[\s-]?block|terms of service|monetization|enforcement message/i;
   const MAX_DEPTH = 8;
   const MAX_NODES = 6e3;
   const rewriteAdKeys = (text) => {
@@ -11449,7 +11643,9 @@
     if (!status || typeof status !== "object") return false;
     if (status.enforcementMessageViewModel) return true;
     try {
-      return ANTI_ADBLOCK_HINT.test(JSON.stringify(status));
+      const text = JSON.stringify(status);
+      if (!ADBLOCK_HINT.test(text)) return false;
+      return Boolean(status.errorScreen) || ADBLOCK_TERMS_HINT.test(text);
     } catch {
       return false;
     }
@@ -12269,6 +12465,71 @@
     svg.appendChild(createSvgElement("path", { d: "M9.4 6.1v11.8L19 12 9.4 6.1Z" }));
     return svg;
   }
+  const UI_STRINGS = {
+    appName: "YT SuperTool",
+    appSubtitle: "Player, feed and blocking controls",
+    settings: "YouTube settings",
+    settingsTitle: "YT SuperTool settings",
+    settingGroups: "Setting groups",
+    defenceLayers: "Defence layers",
+    saved: "Saved",
+    savedLocally: "Saved locally",
+    reset: "Reset",
+    done: "Done",
+    close: "Close",
+    closeSettings: "Close settings",
+    defaultsRestored: "Defaults restored",
+    saveCategoriesFailed: "Could not save categories",
+    saveSettingFailed: "Could not save that setting",
+    saveCategoriesError: "Unable to save categories",
+    saveNoticeError: "Unable to save notice setting",
+    saveError: "Unable to save setting",
+    loadError: "Unable to load settings",
+    showSkipNotice: "Show a skip notice with undo",
+    undo: "Undo",
+    custom: "Custom",
+    customPlaybackSpeed: "Custom playback speed",
+    resetTo1x: "Reset to 1x",
+    playbackSpeed: "Playback speed",
+    playbackSpeedPresets: "Playback speed presets",
+    download: "Download",
+    downloadVideo: "Download video",
+    downloadThisVideo: "Download this video",
+    cancel: "Cancel",
+    readingPlayerResponse: "Reading player response...",
+    readFailed: "Could not read the player response",
+    directMp4: "Direct · MP4",
+    videoAudioSaved: "Video + audio · saved directly",
+    mp4Unavailable: "MP4 360p unavailable",
+    noSingleStream: "No single-stream video for this one",
+    highQuality: "MP4/MP3 (High Quality)",
+    copiesLink: "Copies the link, opens a new tab",
+    linkCopied: "Link copied — paste it on ytmp3pc.com",
+    copyFailed: "Could not copy the link",
+    downloadCancelled: "Download cancelled",
+    downloadFailedToast: "Download failed",
+    unknownError: "Unknown error",
+    downloadingMp4: "Downloading MP4...",
+    noFrame: "No frame available yet",
+    screenshotSaved: "Screenshot saved",
+    screenshotFailed: "This frame cannot be captured",
+    takeScreenshot: "Take screenshot",
+    pictureInPicture: "Picture in picture",
+    estimatedDislikes: "Estimated dislikes",
+    dislikeData: "Dislike data"
+  };
+  const UI_TEXT = {
+    versionTarget: (version, target) => `v${version} · ${String(target).toUpperCase()}`,
+    versionSettings: (version) => `v${version} · ${UI_STRINGS.settings}`,
+    manifestTarget: (version) => `MV${version}`,
+    speedPreset: (speed) => `${speed} speed`,
+    skipped: (label, seconds) => `Skipped ${label} · ${seconds}s`,
+    otherFormats: (label) => `Other formats · ${label}`,
+    menuFoot: (label) => `Only the single-stream MP4 downloads in place. High quality MP4 and MP3 continue on ${label} with the link copied for you.`,
+    downloadFailed: (reason) => `Download failed: ${reason}`,
+    downloadProgress: (percent, size) => `Downloading MP4 · ${percent}%${size ? ` · ${size}` : ""}`,
+    savedFile: (fileName) => `Saved · ${fileName}`
+  };
   function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
     const inputs = /* @__PURE__ */ new Map();
     const list = createElement("div", { className: "ytst-sb-list" });
@@ -12291,7 +12552,7 @@
     notice.id = `ytst-sb-notice-${Math.random().toString(36).slice(2, 8)}`;
     const noticeLabel = createElement("label", { className: "ytst-sb-notice", for: notice.id }, [
       notice,
-      createElement("span", { textContent: "Show a skip notice with undo" })
+      createElement("span", { textContent: UI_STRINGS.showSkipNotice })
     ]);
     const inner = createElement("div", { className: "ytst-sb-inner" }, [list, noticeLabel]);
     const element = createElement("div", {
@@ -12409,13 +12670,13 @@
     const buildSponsorAccordion = () => createSponsorAccordion({
       onChange: (value) => {
         void settings.set("sponsorblockCategories", JSON.stringify(value)).then((saved) => {
-          if (saved === false) toast?.show("Could not save categories");
+          if (saved === false) toast?.show(UI_STRINGS.saveCategoriesFailed);
           else flashSaved();
         });
       },
       onNoticeChange: (checked) => {
         void settings.set("sponsorblockNotice", checked).then((saved) => {
-          if (saved === false) toast?.show("Could not save that setting");
+          if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
           else flashSaved();
         });
       }
@@ -12459,7 +12720,7 @@
       for (const feature of features) {
         if (feature.dependsOn && !layerHeadingShown) {
           layerHeadingShown = true;
-          list.appendChild(createElement("div", { className: "ytst-section", textContent: "Defence layers" }));
+          list.appendChild(createElement("div", { className: "ytst-section", textContent: UI_STRINGS.defenceLayers }));
         }
         list.appendChild(buildRow(feature));
         if (feature.key === "sponsorblock") {
@@ -12483,10 +12744,10 @@
     };
     const flashSaved = () => {
       if (!statusText) return;
-      statusText.textContent = "Saved";
+      statusText.textContent = UI_STRINGS.saved;
       clearTimeout(statusTimer);
       statusTimer = setTimeout(() => {
-        statusText.textContent = "Saved locally";
+        statusText.textContent = UI_STRINGS.savedLocally;
       }, 1500);
     };
     const syncValues = () => {
@@ -12541,7 +12802,7 @@
       const rail = createElement("div", {
         className: "ytst-rail",
         role: "tablist",
-        "aria-label": "Setting groups",
+        "aria-label": UI_STRINGS.settingGroups,
         "aria-orientation": "vertical"
       });
       FEATURE_GROUPS.forEach((group) => rail.appendChild(buildTab(group)));
@@ -12549,20 +12810,20 @@
       FEATURE_GROUPS.forEach((group) => content.appendChild(buildGroupPanel(group)));
       statusText = createElement("span", {
         className: "ytst-status-text",
-        textContent: "Saved locally"
+        textContent: UI_STRINGS.savedLocally
       });
-      const resetButton = createElement("button", { type: "button", className: "ytst-button", textContent: "Reset" });
+      const resetButton = createElement("button", { type: "button", className: "ytst-button", textContent: UI_STRINGS.reset });
       resetButton.addEventListener("click", () => {
         void settings.reset().then(() => {
           syncValues();
           flashSaved();
-          toast?.show("Defaults restored");
+          toast?.show(UI_STRINGS.defaultsRestored);
         });
       });
       const doneButton = createElement("button", {
         type: "button",
         className: "ytst-button ytst-button-primary",
-        textContent: "Done"
+        textContent: UI_STRINGS.done
       });
       doneButton.addEventListener("click", () => closePanel());
       panelEl = createElement("section", {
@@ -12575,20 +12836,20 @@
         createElement("header", { className: "ytst-header" }, [
           createElement("span", { className: "ytst-brand", "aria-hidden": "true" }, [createBrandMark(16)]),
           createElement("div", { className: "ytst-header-copy" }, [
-            createElement("h1", { className: "ytst-title", id: "ytst-title", textContent: "YT SuperTool" }),
-            createElement("p", { className: "ytst-subtitle", textContent: "Player, feed and blocking controls" })
+            createElement("h1", { className: "ytst-title", id: "ytst-title", textContent: UI_STRINGS.appName }),
+            createElement("p", { className: "ytst-subtitle", textContent: UI_STRINGS.appSubtitle })
           ]),
           createElement("span", {
             className: "ytst-badge",
-            textContent: `v${meta.version || "2.3.0"} · ${String(meta.target || "mv3").toUpperCase()}`
+            textContent: UI_TEXT.versionTarget(meta.version || "2.3.1", meta.target || "mv3")
           }),
           createElement("div", { className: "ytst-header-actions" }, [
             (() => {
               const close = createElement("button", {
                 type: "button",
                 className: "ytst-icon-button",
-                "aria-label": "Close settings",
-                title: "Close"
+                "aria-label": UI_STRINGS.closeSettings,
+                title: UI_STRINGS.close
               }, [createIcon("close", 16)]);
               close.addEventListener("click", () => closePanel());
               return close;
@@ -12613,7 +12874,7 @@
         input.checked = next;
         void settings.set(key, next).then((saved) => {
           if (saved === false) {
-            toast?.show("Could not save that setting");
+            toast?.show(UI_STRINGS.saveSettingFailed);
             return;
           }
           flashSaved();
@@ -12699,8 +12960,8 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "ytst-header-button";
-      button.title = "YT SuperTool settings";
-      button.setAttribute("aria-label", "YT SuperTool settings");
+      button.title = UI_STRINGS.settingsTitle;
+      button.setAttribute("aria-label", UI_STRINGS.settingsTitle);
       button.appendChild(createIcon("sliders", 20));
       button.addEventListener("click", handleClick);
       const anchor = end.querySelector("#buttons, ytd-topbar-menu-button-renderer, ytd-notification-topbar-button-renderer");
@@ -12717,8 +12978,8 @@
       button.type = "button";
       button.className = "ytp-button ytst-player-button";
       button.dataset.ytst = "launcher";
-      button.title = "YT SuperTool settings";
-      button.setAttribute("aria-label", "YT SuperTool settings");
+      button.title = UI_STRINGS.settingsTitle;
+      button.setAttribute("aria-label", UI_STRINGS.settingsTitle);
       button.appendChild(createIcon("sliders", 24));
       button.addEventListener("click", handleClick);
       const anchor = controls.querySelector(".ytp-settings-button") || controls.querySelector(".ytp-subtitles-button");
@@ -12755,7 +13016,7 @@
   }
   const CACHE_TTL$2 = 60 * 1e3;
   const getVideoId$2 = () => new URLSearchParams(location.search).get("v") || location.pathname.match(/\/shorts\/([^/?]+)/)?.[1] || "";
-  const format = (value) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+  const format = (value) => new Intl.NumberFormat(void 0, { notation: "compact", maximumFractionDigits: 1 }).format(value);
   function createDislike({ bridge: bridge2 }) {
     const cache = /* @__PURE__ */ new Map();
     let enabled = false;
@@ -12777,9 +13038,8 @@
     }
     function findDislikeButton(segmented) {
       const selectors = [
-        'ytd-segmented-like-dislike-button-renderer button[aria-label*="dislike" i]',
         "dislike-button-view-model button",
-        'button[aria-label*="dislike" i]',
+        "ytd-segmented-like-dislike-button-renderer button:nth-of-type(2)",
         "#top-level-buttons-computed ytd-toggle-button-renderer:nth-child(2) button"
       ];
       return selectors.map((selector) => segmented?.querySelector(selector)).find(Boolean) || null;
@@ -12813,7 +13073,7 @@
       badge.className = "ytst-dislike-count";
       badge.setAttribute("data-ytst", "dislike");
       badge.setAttribute("data-video-id", videoId);
-      badge.setAttribute("aria-label", "Estimated dislikes");
+      badge.setAttribute("aria-label", UI_STRINGS.estimatedDislikes);
       badge.setAttribute("aria-live", "polite");
       badge.textContent = value === "—" ? "—" : format(value);
       return badge;
@@ -13016,28 +13276,12 @@
   const PROMO_SELECTOR = "yt-mealbar-promo-renderer";
   const WATCH_SELECTOR = `${SECTION_SELECTOR}, ${BANNER_SELECTOR}, ${PROMO_SELECTOR}`;
   const SECTION_REMOVED = /* @__PURE__ */ new WeakSet();
-  const CLEAN_HINTS = [
-    "Playables",
-    "Play games",
-    "Gaming",
-    "Live",
-    "Movies & TV",
-    "Chơi game trên YouTube",
-    "Chơi ngay không cần tải",
-    "Phim & TV",
-    "Trò chơi",
-    "Trực tiếp"
-  ];
   const isCleanHomepageSection = (section) => {
     if (section.querySelector("ytd-inline-survey-renderer, ytd-statement-banner-renderer, ytd-rich-shelf-renderer[is-live]")) {
       return true;
     }
     if (section.querySelector("ytd-mini-game-card-view-model, mini-game-card-view-model")) return true;
-    if (section.querySelector('a[href*="/playables"], a[href*="/mini-game"], a[href*="/feed/storefront"], a[href="/gaming"]')) {
-      return true;
-    }
-    const text = section.textContent;
-    return Boolean(text) && CLEAN_HINTS.some((hint) => text.includes(hint));
+    return Boolean(section.querySelector('a[href*="/playables"], a[href*="/mini-game"], a[href*="/feed/storefront"], a[href="/gaming"]'));
   };
   const dropPromo = (promo) => {
     if (!promo.isConnected) return;
@@ -13108,18 +13352,14 @@
   }
   const POPUP_SELECTORS = [
     ".yt-confirm-dialog-renderer",
-    `[aria-label="Confirm you're still watching"]`,
-    '.ytd-button-renderer[aria-label*="continue watching" i]',
     'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-macro-markers"]',
     "ytd-modal-with-title-and-button-renderer"
   ];
   const POPUP_SELECTOR = POPUP_SELECTORS.join(",");
   const CONTAINER_SELECTOR = '#dialog, [role="dialog"], ytd-popup-container, tp-yt-paper-dialog';
-  const PAUSE_TEXT = /continue\s+watching|video\s+paused|video đã tạm dừng|tiếp tục xem|vẫn (?:đang )?xem/i;
-  const PLAYBACK_ERROR_TEXT = /sự cố gây gián đoạn|gặp sự cố|playback.*interrupted|something went wrong/i;
   const hasPauseText = (element) => {
     const text = element.textContent || "";
-    return PAUSE_TEXT.test(text) || PLAYBACK_ERROR_TEXT.test(text);
+    return PAUSE_HINT.test(text) || PLAYBACK_ERROR_HINT.test(text);
   };
   function createNonstop() {
     let enabled = false;
@@ -13138,7 +13378,7 @@
       const host = popup.closest("#dialog, ytd-popup-container, tp-yt-paper-dialog");
       if (host && host !== popup && hasPauseText(host)) host.remove();
       else popup.remove();
-      if (PAUSE_TEXT.test(popup.textContent || "")) {
+      if (PAUSE_HINT.test(popup.textContent || "")) {
         const video = document.querySelector("video");
         if (video?.paused) video.play().catch(() => {
         });
@@ -13319,7 +13559,7 @@
       const undo = document.createElement("button");
       undo.type = "button";
       undo.className = "ytst-sb-undo";
-      undo.textContent = "Undo";
+      undo.textContent = UI_STRINGS.undo;
       undo.addEventListener("pointerdown", (event) => event.stopPropagation());
       undo.addEventListener("click", (event) => {
         event.preventDefault();
@@ -13337,7 +13577,7 @@
       const meta = SPONSOR_CATEGORIES[segment.category] || SPONSOR_CATEGORIES.sponsor;
       const seconds = Math.max(1, Math.round(segment.end - segment.start));
       notice.style.setProperty("--ytst-sb-color", meta.color);
-      notice.querySelector(".ytst-sb-label").textContent = `Skipped ${meta.label} · ${seconds}s`;
+      notice.querySelector(".ytst-sb-label").textContent = UI_TEXT.skipped(meta.label, seconds);
       clearTimeout(noticeTimer);
       notice.classList.add("is-visible");
       noticeTimer = setTimeout(hideNotice, NOTICE_DURATION);
@@ -13596,7 +13836,7 @@
           item.className = "ytst-speed-preset";
           item.dataset.value = String(value);
           item.setAttribute("role", "menuitemradio");
-          item.setAttribute("aria-label", `${shortSpeed(value)} speed`);
+          item.setAttribute("aria-label", UI_TEXT.speedPreset(shortSpeed(value)));
           const label = document.createElement("span");
           label.textContent = shortSpeed(value);
           const check = createIcon("check", 16);
@@ -13621,7 +13861,7 @@
       menu.appendChild(divider);
       const caption = document.createElement("div");
       caption.className = "ytst-speed-caption";
-      caption.textContent = "Custom";
+      caption.textContent = UI_STRINGS.custom;
       menu.appendChild(caption);
       const mini = document.createElement("input");
       mini.type = "range";
@@ -13630,14 +13870,14 @@
       mini.max = String(MAX_SPEED);
       mini.step = String(STEP);
       mini.value = String(currentSpeed);
-      mini.setAttribute("aria-label", "Custom playback speed");
+      mini.setAttribute("aria-label", UI_STRINGS.customPlaybackSpeed);
       mini.addEventListener("input", (event) => applySpeed(event.target.value));
       mini.addEventListener("click", (event) => event.stopPropagation());
       menu.appendChild(mini);
       const reset = document.createElement("button");
       reset.type = "button";
       reset.className = "ytst-speed-reset";
-      reset.textContent = "Reset to 1x";
+      reset.textContent = UI_STRINGS.resetTo1x;
       reset.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -13656,7 +13896,7 @@
     function buildContainer() {
       const element = document.createElement("div");
       element.className = "ytst-speed";
-      element.title = "Playback speed";
+      element.title = UI_STRINGS.playbackSpeed;
       const slider = document.createElement("input");
       slider.type = "range";
       slider.className = "ytst-speed-slider";
@@ -13664,7 +13904,7 @@
       slider.max = String(MAX_SPEED);
       slider.step = String(STEP);
       slider.value = String(currentSpeed);
-      slider.setAttribute("aria-label", "Playback speed");
+      slider.setAttribute("aria-label", UI_STRINGS.playbackSpeed);
       slider.addEventListener("input", (event) => applySpeed(event.target.value));
       slider.addEventListener("dblclick", (event) => {
         event.preventDefault();
@@ -13673,7 +13913,7 @@
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "ytst-speed-chip";
-      chip.setAttribute("aria-label", "Playback speed presets");
+      chip.setAttribute("aria-label", UI_STRINGS.playbackSpeedPresets);
       chip.setAttribute("aria-haspopup", "true");
       const value = document.createElement("span");
       value.className = "ytst-speed-value";
@@ -13852,7 +14092,7 @@
         const created = createPlayerControl({
           player,
           id: "pip",
-          label: "Picture in picture",
+          label: UI_STRINGS.pictureInPicture,
           icon: "pip",
           onClick: async () => {
             const video = player?.querySelector("video");
@@ -13880,7 +14120,7 @@
     const capture = (player) => {
       const video = player?.querySelector("video");
       if (!video || !video.videoWidth) {
-        toast?.show("No frame available yet");
+        toast?.show(UI_STRINGS.noFrame);
         return;
       }
       const canvas = document.createElement("canvas");
@@ -13892,10 +14132,10 @@
         link.download = `youtube-${Date.now()}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
-        toast?.show("Screenshot saved");
+        toast?.show(UI_STRINGS.screenshotSaved);
       } catch (error2) {
         console.warn("YT SuperTool screenshot blocked by CORS:", error2);
-        toast?.show("This frame cannot be captured");
+        toast?.show(UI_STRINGS.screenshotFailed);
       }
     };
     return {
@@ -13903,7 +14143,7 @@
         createPlayerControl({
           player,
           id: "screenshot",
-          label: "Take screenshot",
+          label: UI_STRINGS.takeScreenshot,
           icon: "camera",
           onClick: () => capture(player)
         });
@@ -14088,7 +14328,7 @@
       setBar(1);
       const cancel = progress.querySelector(".ytst-dl-cancel");
       if (cancel) {
-        cancel.textContent = "Close";
+        cancel.textContent = UI_STRINGS.close;
         cancel.onclick = () => removeProgress();
       }
       clearTimeout(progressTimer);
@@ -14096,12 +14336,12 @@
     };
     const failProgress = (error2) => {
       if (error2?.name === "AbortError") {
-        finishProgress("Download cancelled", "error", 1800);
+        finishProgress(UI_STRINGS.downloadCancelled, "error", 1800);
         return;
       }
       console.warn("YT SuperTool download failed:", error2);
-      finishProgress(`Download failed: ${error2?.message || "Unknown error"}`, "error", 9e3);
-      toast?.show("Download failed");
+      finishProgress(UI_TEXT.downloadFailed(error2?.message || UI_STRINGS.unknownError), "error", 9e3);
+      toast?.show(UI_STRINGS.downloadFailedToast);
     };
     const saveBlob = (blob, fileName) => {
       const url = URL.createObjectURL(blob);
@@ -14124,7 +14364,7 @@
           createElement("button", {
             type: "button",
             className: "ytst-dl-cancel",
-            textContent: "Cancel"
+            textContent: UI_STRINGS.cancel
           })
         ]),
         createElement("div", { className: "ytst-dl-bar" }, [
@@ -14168,10 +14408,10 @@
       menu = createElement("div", {
         className: "ytst-dl-menu",
         role: "menu",
-        "aria-label": "Download video"
+        "aria-label": UI_STRINGS.downloadVideo
       }, [
-        createElement("div", { className: "ytst-dl-menu-head", textContent: "Download" }),
-        createElement("div", { className: "ytst-dl-status", textContent: "Reading player response..." })
+        createElement("div", { className: "ytst-dl-menu-head", textContent: UI_STRINGS.download }),
+        createElement("div", { className: "ytst-dl-status", textContent: UI_STRINGS.readingPlayerResponse })
       ]);
       (document.body || document.documentElement).appendChild(menu);
       positionFloating(menu);
@@ -14191,9 +14431,9 @@
         positionFloating(menu);
       } catch (error2) {
         if (token !== menuToken || !menu) return;
-        const message = error2?.message || "Could not read the player response";
+        const message = error2?.message || UI_STRINGS.readFailed;
         menu.replaceChildren(
-          createElement("div", { className: "ytst-dl-menu-head", textContent: "Download" }),
+          createElement("div", { className: "ytst-dl-menu-head", textContent: UI_STRINGS.download }),
           createElement("div", { className: "ytst-dl-status", textContent: message })
         );
         positionFloating(menu);
@@ -14231,7 +14471,7 @@
     const openThirdPartyWithLink = async (videoId) => {
       const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
       const copied = await copyText(watchUrl);
-      toast?.show(copied ? "Link copied — paste it on ytmp3pc.com" : "Could not copy the link");
+      toast?.show(copied ? UI_STRINGS.linkCopied : UI_STRINGS.copyFailed);
       openThirdParty();
     };
     const renderMenu = (data, videoId) => {
@@ -14240,8 +14480,8 @@
       const muxed = data.muxed || null;
       const baseName = `${cleanFileName(title) || "video"} [${videoId}]`;
       const children = [
-        createElement("div", { className: "ytst-dl-menu-head", textContent: "Download" }),
-        createElement("div", { className: "ytst-dl-section", textContent: "Direct · MP4" })
+        createElement("div", { className: "ytst-dl-menu-head", textContent: UI_STRINGS.download }),
+        createElement("div", { className: "ytst-dl-section", textContent: UI_STRINGS.directMp4 })
       ];
       if (muxed) {
         children.push(createElement("button", {
@@ -14255,7 +14495,7 @@
               className: "ytst-dl-item-title",
               textContent: `MP4 ${muxed.qualityLabel || `${muxed.height || 360}p`}`
             }),
-            createElement("span", { className: "ytst-dl-item-note", textContent: "Video + audio · saved directly" })
+            createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.videoAudioSaved })
           ]),
           createElement("span", { className: "ytst-dl-item-meta", textContent: formatBytes(muxed.contentLength) })
         ]));
@@ -14267,14 +14507,14 @@
           disabled: true
         }, [
           createElement("span", { className: "ytst-dl-item-main" }, [
-            createElement("span", { className: "ytst-dl-item-title", textContent: "MP4 360p unavailable" }),
-            createElement("span", { className: "ytst-dl-item-note", textContent: "No single-stream video for this one" })
+            createElement("span", { className: "ytst-dl-item-title", textContent: UI_STRINGS.mp4Unavailable }),
+            createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.noSingleStream })
           ])
         ]));
       }
       children.push(createElement("div", {
         className: "ytst-dl-section",
-        textContent: `Other formats · ${THIRD_PARTY_LABEL}`
+        textContent: UI_TEXT.otherFormats(THIRD_PARTY_LABEL)
       }));
       children.push(createElement("button", {
         type: "button",
@@ -14283,14 +14523,14 @@
         dataset: { kind: "route" }
       }, [
         createElement("span", { className: "ytst-dl-item-main" }, [
-          createElement("span", { className: "ytst-dl-item-title", textContent: "MP4/MP3 (High Quality)" }),
-          createElement("span", { className: "ytst-dl-item-note", textContent: "Copies the link, opens a new tab" })
+          createElement("span", { className: "ytst-dl-item-title", textContent: UI_STRINGS.highQuality }),
+          createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.copiesLink })
         ]),
         createElement("span", { className: "ytst-dl-item-meta", textContent: "↗" })
       ]));
       children.push(createElement("div", {
         className: "ytst-dl-menu-foot",
-        textContent: `Only the single-stream MP4 downloads in place. High quality MP4 and MP3 continue on ${THIRD_PARTY_LABEL} with the link copied for you.`
+        textContent: UI_TEXT.menuFoot(THIRD_PARTY_LABEL)
       }));
       menu.replaceChildren(...children);
       menu.querySelectorAll(".ytst-dl-item[data-kind]").forEach((item) => {
@@ -14314,7 +14554,7 @@
     const startDirect = async (format2, baseName) => {
       const job = beginJob();
       if (!job) return;
-      showProgress("Downloading MP4...");
+      showProgress(UI_STRINGS.downloadingMp4);
       let lastPaint = 0;
       try {
         const blob = await fetchStream(format2.url, {
@@ -14325,13 +14565,13 @@
             if (now - lastPaint < 120) return;
             lastPaint = now;
             const size = total ? `${formatBytes(received)} of ${formatBytes(total)}` : formatBytes(received);
-            setStatus(`Downloading MP4 · ${Math.round(fraction * 100)}%${size ? ` · ${size}` : ""}`);
+            setStatus(UI_TEXT.downloadProgress(Math.round(fraction * 100), size));
           }
         });
         if (job.controller.signal.aborted) throw abortError();
         const fileName = `${baseName}.mp4`;
         saveBlob(blob, fileName);
-        finishProgress(`Saved · ${fileName}`, "done");
+        finishProgress(UI_TEXT.savedFile(fileName), "done");
       } catch (error2) {
         failProgress(error2);
       } finally {
@@ -14402,14 +14642,14 @@
         button = createElement("button", {
           type: "button",
           className: "ytst-dl-button",
-          title: "Download",
-          "aria-label": "Download this video",
+          title: UI_STRINGS.download,
+          "aria-label": UI_STRINGS.downloadThisVideo,
           "aria-haspopup": "menu",
           "aria-expanded": "false",
           dataset: { videoId }
         }, [
           createIcon("download", 22),
-          createElement("span", { className: "ytst-dl-label", textContent: "Download" }),
+          createElement("span", { className: "ytst-dl-label", textContent: UI_STRINGS.download }),
           caret
         ]);
         button.addEventListener("click", () => {
@@ -14481,14 +14721,12 @@
   ].join(",");
   const OVERLAY_SELECTOR = "tp-yt-iron-overlay-backdrop";
   const PLAYER_SELECTOR$1 = "#movie_player, .html5-video-player";
-  const WALL_HINT = /ad[\s-]?block|chặn quảng cáo/i;
-  const LEGAL_HINT = /terms of service|điều khoản|allow youtube ads|cho phép quảng cáo|video player will be blocked/i;
   const SCAN_INTERVAL = 1200;
   const isEnforcementWall = (element) => {
     if (!element) return false;
     if (element.tagName === "YTD-ENFORCEMENT-MESSAGE-VIEW-MODEL") return true;
     const text = (element.innerText || element.textContent || "").slice(0, 4e3);
-    if (!WALL_HINT.test(text) || !LEGAL_HINT.test(text)) return false;
+    if (!ADBLOCK_HINT.test(text) || !ADBLOCK_TERMS_HINT.test(text)) return false;
     return Boolean(element.closest("tp-yt-paper-dialog, ytd-popup-container")) || element.tagName.includes("DIALOG");
   };
   const resumePlayback = () => {
@@ -14888,7 +15126,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       apply();
       lifecycle.start();
     }
-    bridge.onMenuCommand?.("YT SuperTool settings", () => panel.toggle());
+    bridge.onMenuCommand?.(UI_STRINGS.settingsTitle, () => panel.toggle());
     return { settings, features, panel, launcher, apply };
   };
   async function initCore() {

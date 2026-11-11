@@ -1,4 +1,5 @@
 import { createPlayerControl, removePlayerControl } from '../ui/player-control.js';
+import { UI_STRINGS } from '../ui/strings.js';
 
 export function createPiP() {
   let onEnter = null;
@@ -18,7 +19,7 @@ export function createPiP() {
       const created = createPlayerControl({
         player,
         id: 'pip',
-        label: 'Picture in picture',
+        label: UI_STRINGS.pictureInPicture,
         icon: 'pip',
         onClick: async () => {
           const video = player?.querySelector('video');

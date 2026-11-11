@@ -1,4 +1,5 @@
 import { createIcon } from '../ui/icons.js';
+import { UI_STRINGS, UI_TEXT } from '../ui/strings.js';
 
 const MIN_SPEED = 0.25;
 const MAX_SPEED = 10;
@@ -160,7 +161,7 @@ export function createSpeed({ bridge }) {
         item.className = 'ytst-speed-preset';
         item.dataset.value = String(value);
         item.setAttribute('role', 'menuitemradio');
-        item.setAttribute('aria-label', `${shortSpeed(value)} speed`);
+        item.setAttribute('aria-label', UI_TEXT.speedPreset(shortSpeed(value)));
 
         const label = document.createElement('span');
         label.textContent = shortSpeed(value);
@@ -190,7 +191,7 @@ export function createSpeed({ bridge }) {
 
     const caption = document.createElement('div');
     caption.className = 'ytst-speed-caption';
-    caption.textContent = 'Custom';
+    caption.textContent = UI_STRINGS.custom;
     menu.appendChild(caption);
 
     const mini = document.createElement('input');
@@ -200,7 +201,7 @@ export function createSpeed({ bridge }) {
     mini.max = String(MAX_SPEED);
     mini.step = String(STEP);
     mini.value = String(currentSpeed);
-    mini.setAttribute('aria-label', 'Custom playback speed');
+    mini.setAttribute('aria-label', UI_STRINGS.customPlaybackSpeed);
     mini.addEventListener('input', (event) => applySpeed(event.target.value));
     mini.addEventListener('click', (event) => event.stopPropagation());
     menu.appendChild(mini);
@@ -208,7 +209,7 @@ export function createSpeed({ bridge }) {
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'ytst-speed-reset';
-    reset.textContent = 'Reset to 1x';
+    reset.textContent = UI_STRINGS.resetTo1x;
     reset.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -230,7 +231,7 @@ export function createSpeed({ bridge }) {
   function buildContainer() {
     const element = document.createElement('div');
     element.className = 'ytst-speed';
-    element.title = 'Playback speed';
+    element.title = UI_STRINGS.playbackSpeed;
 
     const slider = document.createElement('input');
     slider.type = 'range';
@@ -239,7 +240,7 @@ export function createSpeed({ bridge }) {
     slider.max = String(MAX_SPEED);
     slider.step = String(STEP);
     slider.value = String(currentSpeed);
-    slider.setAttribute('aria-label', 'Playback speed');
+    slider.setAttribute('aria-label', UI_STRINGS.playbackSpeed);
     slider.addEventListener('input', (event) => applySpeed(event.target.value));
     slider.addEventListener('dblclick', (event) => {
       event.preventDefault();
@@ -249,7 +250,7 @@ export function createSpeed({ bridge }) {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'ytst-speed-chip';
-    chip.setAttribute('aria-label', 'Playback speed presets');
+    chip.setAttribute('aria-label', UI_STRINGS.playbackSpeedPresets);
     chip.setAttribute('aria-haspopup', 'true');
     const value = document.createElement('span');
     value.className = 'ytst-speed-value';

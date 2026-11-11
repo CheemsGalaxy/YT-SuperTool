@@ -4,29 +4,12 @@ const PROMO_SELECTOR = 'yt-mealbar-promo-renderer';
 const WATCH_SELECTOR = `${SECTION_SELECTOR}, ${BANNER_SELECTOR}, ${PROMO_SELECTOR}`;
 const SECTION_REMOVED = new WeakSet();
 
-const CLEAN_HINTS = [
-  'Playables',
-  'Play games',
-  'Gaming',
-  'Live',
-  'Movies & TV',
-  'Chơi game trên YouTube',
-  'Chơi ngay không cần tải',
-  'Phim & TV',
-  'Trò chơi',
-  'Trực tiếp'
-];
-
 const isCleanHomepageSection = (section) => {
   if (section.querySelector('ytd-inline-survey-renderer, ytd-statement-banner-renderer, ytd-rich-shelf-renderer[is-live]')) {
     return true;
   }
   if (section.querySelector('ytd-mini-game-card-view-model, mini-game-card-view-model')) return true;
-  if (section.querySelector('a[href*="/playables"], a[href*="/mini-game"], a[href*="/feed/storefront"], a[href="/gaming"]')) {
-    return true;
-  }
-  const text = section.textContent;
-  return Boolean(text) && CLEAN_HINTS.some((hint) => text.includes(hint));
+  return Boolean(section.querySelector('a[href*="/playables"], a[href*="/mini-game"], a[href*="/feed/storefront"], a[href="/gaming"]'));
 };
 
 const dropPromo = (promo) => {

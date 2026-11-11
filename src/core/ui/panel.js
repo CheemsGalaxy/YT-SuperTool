@@ -2,6 +2,7 @@ import themeCss from './theme.css?inline';
 import { createElement } from '../dom-safe.js';
 import { createIcon, createBrandMark } from './icons.js';
 import { createSponsorAccordion } from './sponsor-accordion.js';
+import { UI_STRINGS, UI_TEXT } from './strings.js';
 import { FEATURE_GROUPS, featuresForGroup, STORAGE_KEYS } from '../settings-schema.js';
 
 const detectDark = () => {
@@ -85,13 +86,13 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
   const buildSponsorAccordion = () => createSponsorAccordion({
     onChange: (value) => {
       void settings.set('sponsorblockCategories', JSON.stringify(value)).then((saved) => {
-        if (saved === false) toast?.show('Could not save categories');
+        if (saved === false) toast?.show(UI_STRINGS.saveCategoriesFailed);
         else flashSaved();
       });
     },
     onNoticeChange: (checked) => {
       void settings.set('sponsorblockNotice', checked).then((saved) => {
-        if (saved === false) toast?.show('Could not save that setting');
+        if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
         else flashSaved();
       });
     }
@@ -140,7 +141,7 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
     for (const feature of features) {
       if (feature.dependsOn && !layerHeadingShown) {
         layerHeadingShown = true;
-        list.appendChild(createElement('div', { className: 'ytst-section', textContent: 'Defence layers' }));
+        list.appendChild(createElement('div', { className: 'ytst-section', textContent: UI_STRINGS.defenceLayers }));
       }
       list.appendChild(buildRow(feature));
       if (feature.key === 'sponsorblock') {
@@ -167,10 +168,10 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
 
   const flashSaved = () => {
     if (!statusText) return;
-    statusText.textContent = 'Saved';
+    statusText.textContent = UI_STRINGS.saved;
     clearTimeout(statusTimer);
     statusTimer = setTimeout(() => {
-      statusText.textContent = 'Saved locally';
+      statusText.textContent = UI_STRINGS.savedLocally;
     }, 1500);
   };
 
@@ -234,7 +235,7 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
     const rail = createElement('div', {
       className: 'ytst-rail',
       role: 'tablist',
-      'aria-label': 'Setting groups',
+      'aria-label': UI_STRINGS.settingGroups,
       'aria-orientation': 'vertical'
     });
     FEATURE_GROUPS.forEach((group) => rail.appendChild(buildTab(group)));
@@ -244,22 +245,22 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
 
     statusText = createElement('span', {
       className: 'ytst-status-text',
-      textContent: 'Saved locally'
+      textContent: UI_STRINGS.savedLocally
     });
 
-    const resetButton = createElement('button', { type: 'button', className: 'ytst-button', textContent: 'Reset' });
+    const resetButton = createElement('button', { type: 'button', className: 'ytst-button', textContent: UI_STRINGS.reset });
     resetButton.addEventListener('click', () => {
       void settings.reset().then(() => {
         syncValues();
         flashSaved();
-        toast?.show('Defaults restored');
+        toast?.show(UI_STRINGS.defaultsRestored);
       });
     });
 
     const doneButton = createElement('button', {
       type: 'button',
       className: 'ytst-button ytst-button-primary',
-      textContent: 'Done'
+      textContent: UI_STRINGS.done
     });
     doneButton.addEventListener('click', () => closePanel());
 
@@ -273,20 +274,20 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
       createElement('header', { className: 'ytst-header' }, [
         createElement('span', { className: 'ytst-brand', 'aria-hidden': 'true' }, [createBrandMark(16)]),
         createElement('div', { className: 'ytst-header-copy' }, [
-          createElement('h1', { className: 'ytst-title', id: 'ytst-title', textContent: 'YT SuperTool' }),
-          createElement('p', { className: 'ytst-subtitle', textContent: 'Player, feed and blocking controls' })
+          createElement('h1', { className: 'ytst-title', id: 'ytst-title', textContent: UI_STRINGS.appName }),
+          createElement('p', { className: 'ytst-subtitle', textContent: UI_STRINGS.appSubtitle })
         ]),
         createElement('span', {
           className: 'ytst-badge',
-          textContent: `v${meta.version || '2.3.0'} · ${String(meta.target || 'mv3').toUpperCase()}`
+          textContent: UI_TEXT.versionTarget(meta.version || '2.3.1', meta.target || 'mv3')
         }),
         createElement('div', { className: 'ytst-header-actions' }, [
           (() => {
             const close = createElement('button', {
               type: 'button',
               className: 'ytst-icon-button',
-              'aria-label': 'Close settings',
-              title: 'Close'
+              'aria-label': UI_STRINGS.closeSettings,
+              title: UI_STRINGS.close
             }, [createIcon('close', 16)]);
             close.addEventListener('click', () => closePanel());
             return close;
@@ -312,7 +313,7 @@ export function createPanel({ settings, storage, toast, meta = {} }) {
       input.checked = next;
       void settings.set(key, next).then((saved) => {
         if (saved === false) {
-          toast?.show('Could not save that setting');
+          toast?.show(UI_STRINGS.saveSettingFailed);
           return;
         }
         flashSaved();

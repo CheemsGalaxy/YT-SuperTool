@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YT SuperTool
 // @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
-// @version      2.3.0
+// @version      2.3.1
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
 // @author       CheemsGalaxy
 // @match        *://*.youtube.com/*

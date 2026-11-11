@@ -1,4 +1,5 @@
 import { createIcon } from './icons.js';
+import { UI_STRINGS } from './strings.js';
 
 export function createLauncher({ onOpen }) {
   const handleClick = (event) => {
@@ -16,8 +17,8 @@ export function createLauncher({ onOpen }) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'ytst-header-button';
-    button.title = 'YT SuperTool settings';
-    button.setAttribute('aria-label', 'YT SuperTool settings');
+    button.title = UI_STRINGS.settingsTitle;
+    button.setAttribute('aria-label', UI_STRINGS.settingsTitle);
     button.appendChild(createIcon('sliders', 20));
     button.addEventListener('click', handleClick);
 
@@ -37,8 +38,8 @@ export function createLauncher({ onOpen }) {
     button.type = 'button';
     button.className = 'ytp-button ytst-player-button';
     button.dataset.ytst = 'launcher';
-    button.title = 'YT SuperTool settings';
-    button.setAttribute('aria-label', 'YT SuperTool settings');
+    button.title = UI_STRINGS.settingsTitle;
+    button.setAttribute('aria-label', UI_STRINGS.settingsTitle);
     button.appendChild(createIcon('sliders', 24));
     button.addEventListener('click', handleClick);
 

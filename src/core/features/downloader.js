@@ -1,6 +1,7 @@
 import downloaderCss from './downloader.css?inline';
 import { createElement } from '../dom-safe.js';
 import { createIcon } from '../ui/icons.js';
+import { UI_STRINGS, UI_TEXT } from '../ui/strings.js';
 
 const PLAYER_ENDPOINT = '/youtubei/v1/player?prettyPrint=false';
 const CLIENTS = [
@@ -200,7 +201,7 @@ export function createDownloader({ bridge, toast }) {
     setBar(1);
     const cancel = progress.querySelector('.ytst-dl-cancel');
     if (cancel) {
-      cancel.textContent = 'Close';
+      cancel.textContent = UI_STRINGS.close;
       cancel.onclick = () => removeProgress();
     }
     clearTimeout(progressTimer);
@@ -209,12 +210,12 @@ export function createDownloader({ bridge, toast }) {
 
   const failProgress = (error) => {
     if (error?.name === 'AbortError') {
-      finishProgress('Download cancelled', 'error', 1800);
+      finishProgress(UI_STRINGS.downloadCancelled, 'error', 1800);
       return;
     }
     console.warn('YT SuperTool download failed:', error);
-    finishProgress(`Download failed: ${error?.message || 'Unknown error'}`, 'error', 9000);
-    toast?.show('Download failed');
+    finishProgress(UI_TEXT.downloadFailed(error?.message || UI_STRINGS.unknownError), 'error', 9000);
+    toast?.show(UI_STRINGS.downloadFailedToast);
   };
 
   const saveBlob = (blob, fileName) => {
@@ -239,7 +240,7 @@ export function createDownloader({ bridge, toast }) {
         createElement('button', {
           type: 'button',
           className: 'ytst-dl-cancel',
-          textContent: 'Cancel'
+          textContent: UI_STRINGS.cancel
         })
       ]),
       createElement('div', { className: 'ytst-dl-bar' }, [
@@ -287,10 +288,10 @@ export function createDownloader({ bridge, toast }) {
     menu = createElement('div', {
       className: 'ytst-dl-menu',
       role: 'menu',
-      'aria-label': 'Download video'
+      'aria-label': UI_STRINGS.downloadVideo
     }, [
-      createElement('div', { className: 'ytst-dl-menu-head', textContent: 'Download' }),
-      createElement('div', { className: 'ytst-dl-status', textContent: 'Reading player response...' })
+      createElement('div', { className: 'ytst-dl-menu-head', textContent: UI_STRINGS.download }),
+      createElement('div', { className: 'ytst-dl-status', textContent: UI_STRINGS.readingPlayerResponse })
     ]);
     (document.body || document.documentElement).appendChild(menu);
     positionFloating(menu);
@@ -311,9 +312,9 @@ export function createDownloader({ bridge, toast }) {
       positionFloating(menu);
     } catch (error) {
       if (token !== menuToken || !menu) return;
-      const message = error?.message || 'Could not read the player response';
+      const message = error?.message || UI_STRINGS.readFailed;
       menu.replaceChildren(
-        createElement('div', { className: 'ytst-dl-menu-head', textContent: 'Download' }),
+        createElement('div', { className: 'ytst-dl-menu-head', textContent: UI_STRINGS.download }),
         createElement('div', { className: 'ytst-dl-status', textContent: message })
       );
       positionFloating(menu);
@@ -355,7 +356,7 @@ export function createDownloader({ bridge, toast }) {
   const openThirdPartyWithLink = async (videoId) => {
     const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const copied = await copyText(watchUrl);
-    toast?.show(copied ? 'Link copied — paste it on ytmp3pc.com' : 'Could not copy the link');
+    toast?.show(copied ? UI_STRINGS.linkCopied : UI_STRINGS.copyFailed);
     openThirdParty();
   };
 
@@ -365,8 +366,8 @@ export function createDownloader({ bridge, toast }) {
     const muxed = data.muxed || null;
     const baseName = `${cleanFileName(title) || 'video'} [${videoId}]`;
     const children = [
-      createElement('div', { className: 'ytst-dl-menu-head', textContent: 'Download' }),
-      createElement('div', { className: 'ytst-dl-section', textContent: 'Direct · MP4' })
+      createElement('div', { className: 'ytst-dl-menu-head', textContent: UI_STRINGS.download }),
+      createElement('div', { className: 'ytst-dl-section', textContent: UI_STRINGS.directMp4 })
     ];
 
     if (muxed) {
@@ -381,7 +382,7 @@ export function createDownloader({ bridge, toast }) {
             className: 'ytst-dl-item-title',
             textContent: `MP4 ${muxed.qualityLabel || `${muxed.height || 360}p`}`
           }),
-          createElement('span', { className: 'ytst-dl-item-note', textContent: 'Video + audio · saved directly' })
+          createElement('span', { className: 'ytst-dl-item-note', textContent: UI_STRINGS.videoAudioSaved })
         ]),
         createElement('span', { className: 'ytst-dl-item-meta', textContent: formatBytes(muxed.contentLength) })
       ]));
@@ -393,15 +394,15 @@ export function createDownloader({ bridge, toast }) {
         disabled: true
       }, [
         createElement('span', { className: 'ytst-dl-item-main' }, [
-          createElement('span', { className: 'ytst-dl-item-title', textContent: 'MP4 360p unavailable' }),
-          createElement('span', { className: 'ytst-dl-item-note', textContent: 'No single-stream video for this one' })
+          createElement('span', { className: 'ytst-dl-item-title', textContent: UI_STRINGS.mp4Unavailable }),
+          createElement('span', { className: 'ytst-dl-item-note', textContent: UI_STRINGS.noSingleStream })
         ])
       ]));
     }
 
     children.push(createElement('div', {
       className: 'ytst-dl-section',
-      textContent: `Other formats · ${THIRD_PARTY_LABEL}`
+      textContent: UI_TEXT.otherFormats(THIRD_PARTY_LABEL)
     }));
 
     children.push(createElement('button', {
@@ -411,15 +412,15 @@ export function createDownloader({ bridge, toast }) {
       dataset: { kind: 'route' }
     }, [
       createElement('span', { className: 'ytst-dl-item-main' }, [
-        createElement('span', { className: 'ytst-dl-item-title', textContent: 'MP4/MP3 (High Quality)' }),
-        createElement('span', { className: 'ytst-dl-item-note', textContent: 'Copies the link, opens a new tab' })
+        createElement('span', { className: 'ytst-dl-item-title', textContent: UI_STRINGS.highQuality }),
+        createElement('span', { className: 'ytst-dl-item-note', textContent: UI_STRINGS.copiesLink })
       ]),
       createElement('span', { className: 'ytst-dl-item-meta', textContent: '↗' })
     ]));
 
     children.push(createElement('div', {
       className: 'ytst-dl-menu-foot',
-      textContent: `Only the single-stream MP4 downloads in place. High quality MP4 and MP3 continue on ${THIRD_PARTY_LABEL} with the link copied for you.`
+      textContent: UI_TEXT.menuFoot(THIRD_PARTY_LABEL)
     }));
 
     menu.replaceChildren(...children);
@@ -448,7 +449,7 @@ export function createDownloader({ bridge, toast }) {
   const startDirect = async (format, baseName) => {
     const job = beginJob();
     if (!job) return;
-    showProgress('Downloading MP4...');
+    showProgress(UI_STRINGS.downloadingMp4);
     let lastPaint = 0;
     try {
       const blob = await fetchStream(format.url, {
@@ -459,13 +460,13 @@ export function createDownloader({ bridge, toast }) {
           if (now - lastPaint < 120) return;
           lastPaint = now;
           const size = total ? `${formatBytes(received)} of ${formatBytes(total)}` : formatBytes(received);
-          setStatus(`Downloading MP4 · ${Math.round(fraction * 100)}%${size ? ` · ${size}` : ''}`);
+          setStatus(UI_TEXT.downloadProgress(Math.round(fraction * 100), size));
         }
       });
       if (job.controller.signal.aborted) throw abortError();
       const fileName = `${baseName}.mp4`;
       saveBlob(blob, fileName);
-      finishProgress(`Saved · ${fileName}`, 'done');
+      finishProgress(UI_TEXT.savedFile(fileName), 'done');
     } catch (error) {
       failProgress(error);
     } finally {
@@ -542,14 +543,14 @@ export function createDownloader({ bridge, toast }) {
       button = createElement('button', {
         type: 'button',
         className: 'ytst-dl-button',
-        title: 'Download',
-        'aria-label': 'Download this video',
+        title: UI_STRINGS.download,
+        'aria-label': UI_STRINGS.downloadThisVideo,
         'aria-haspopup': 'menu',
         'aria-expanded': 'false',
         dataset: { videoId }
       }, [
         createIcon('download', 22),
-        createElement('span', { className: 'ytst-dl-label', textContent: 'Download' }),
+        createElement('span', { className: 'ytst-dl-label', textContent: UI_STRINGS.download }),
         caret
       ]);
       button.addEventListener('click', () => {

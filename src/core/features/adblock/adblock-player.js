@@ -1,3 +1,5 @@
+import { ADBLOCK_HINT, ADBLOCK_TERMS_HINT } from '../../locale-patterns.js';
+
 const AD_KEYS = [
   'adPlacements',
   'playerAds',
@@ -10,7 +12,6 @@ const AD_KEYS = [
 const AD_KEYS_SET = new Set(AD_KEYS);
 const AD_KEY_PATTERN = /"(adPlacements|playerAds|adSlots|adBreakHeartbeatParams|adParams|adSafetyReason)"\s*:/g;
 const RENAMED_PREFIX = 'ytst_no_ads_';
-const ANTI_ADBLOCK_HINT = /ad[\s-]?block|terms of service|monetization|enforcement message/i;
 const MAX_DEPTH = 8;
 const MAX_NODES = 6000;
 
@@ -23,7 +24,9 @@ const hasAntiAdblockMessage = (status) => {
   if (!status || typeof status !== 'object') return false;
   if (status.enforcementMessageViewModel) return true;
   try {
-    return ANTI_ADBLOCK_HINT.test(JSON.stringify(status));
+    const text = JSON.stringify(status);
+    if (!ADBLOCK_HINT.test(text)) return false;
+    return Boolean(status.errorScreen) || ADBLOCK_TERMS_HINT.test(text);
   } catch {
     return false;
   }

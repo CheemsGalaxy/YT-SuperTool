@@ -1,5 +1,6 @@
 import { createElement } from '../dom-safe.js';
 import { SPONSOR_CATEGORIES } from '../settings-schema.js';
+import { UI_STRINGS } from './strings.js';
 
 export function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
   const inputs = new Map();
@@ -25,7 +26,7 @@ export function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
   notice.id = `ytst-sb-notice-${Math.random().toString(36).slice(2, 8)}`;
   const noticeLabel = createElement('label', { className: 'ytst-sb-notice', for: notice.id }, [
     notice,
-    createElement('span', { textContent: 'Show a skip notice with undo' })
+    createElement('span', { textContent: UI_STRINGS.showSkipNotice })
   ]);
 
   const inner = createElement('div', { className: 'ytst-sb-inner' }, [list, noticeLabel]);

@@ -1,4 +1,5 @@
 import { SPONSOR_CATEGORIES } from '../settings-schema.js';
+import { UI_STRINGS, UI_TEXT } from '../ui/strings.js';
 
 const API_BASE = 'https://sponsor.ajay.app/api';
 const CACHE_TTL = 30 * 60 * 1000;
@@ -172,7 +173,7 @@ export function createSponsorBlock({ bridge }) {
     const undo = document.createElement('button');
     undo.type = 'button';
     undo.className = 'ytst-sb-undo';
-    undo.textContent = 'Undo';
+    undo.textContent = UI_STRINGS.undo;
     undo.addEventListener('pointerdown', (event) => event.stopPropagation());
     undo.addEventListener('click', (event) => {
       event.preventDefault();
@@ -192,7 +193,7 @@ export function createSponsorBlock({ bridge }) {
     const meta = SPONSOR_CATEGORIES[segment.category] || SPONSOR_CATEGORIES.sponsor;
     const seconds = Math.max(1, Math.round(segment.end - segment.start));
     notice.style.setProperty('--ytst-sb-color', meta.color);
-    notice.querySelector('.ytst-sb-label').textContent = `Skipped ${meta.label} · ${seconds}s`;
+    notice.querySelector('.ytst-sb-label').textContent = UI_TEXT.skipped(meta.label, seconds);
     clearTimeout(noticeTimer);
     notice.classList.add('is-visible');
     noticeTimer = setTimeout(hideNotice, NOTICE_DURATION);
