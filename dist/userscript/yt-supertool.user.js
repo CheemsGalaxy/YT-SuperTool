@@ -6,6 +6,7 @@
 // @downloadURL  https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
 // @author       CheemsGalaxy
+// @license      MIT
 // @match        *://*.youtube.com/*
 // @exclude      *://music.youtube.com/*
 // @exclude      *://studio.youtube.com/*
@@ -15269,6 +15270,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
     globalThis.__ytstApp = start();
     return globalThis.__ytstApp;
   }
+  // @license      MIT
   installAdblockStealth(bridge.mainWindow);
   installAdblockPrune(bridge.mainWindow);
   installNetworkGuard(bridge.mainWindow);
