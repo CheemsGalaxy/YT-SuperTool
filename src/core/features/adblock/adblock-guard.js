@@ -8,7 +8,15 @@ const WALL_SELECTOR = [
 
 const OVERLAY_SELECTOR = 'tp-yt-iron-overlay-backdrop';
 const PLAYER_SELECTOR = '#movie_player, .html5-video-player';
+const AD_CLOSE_SELECTOR = [
+  '.ytp-ad-overlay-close-button',
+  '.ytp-ad-overlay-close-container button',
+  '.ytp-ad-skip-button',
+  '.ytp-ad-skip-button-modern',
+  '.ytp-skip-ad-button'
+].join(',');
 const SCAN_INTERVAL = 1200;
+const CLICK_COOLDOWN = 600;
 
 const isEnforcementWall = (element) => {
   if (!element) return false;
@@ -36,32 +44,42 @@ const resumePlayback = () => {
   }
 };
 
+const removeNode = (element) => {
+  try {
+    element.remove();
+  } catch {
+
+  }
+};
+
 export function createAdblockGuard() {
   let observer = null;
   let interval = 0;
   let scheduled = 0;
+  let lastClick = 0;
   let started = false;
 
+  const clearPlayerAds = () => {
+    const now = Date.now();
+    if (now - lastClick < CLICK_COOLDOWN) return;
+    const button = document.querySelector(AD_CLOSE_SELECTOR);
+    if (!button || button.disabled || !button.isConnected) return;
+    lastClick = now;
+    try {
+      button.click();
+    } catch {
+
+    }
+  };
+
   const clearWall = () => {
+    clearPlayerAds();
+
     const walls = [...document.querySelectorAll(WALL_SELECTOR)].filter(isEnforcementWall);
     if (!walls.length) return;
 
-    for (const wall of walls) {
-      try {
-        wall.remove();
-      } catch {
-
-      }
-    }
-
-    document.querySelectorAll(OVERLAY_SELECTOR).forEach((element) => {
-      try {
-        element.remove();
-      } catch {
-
-      }
-    });
-
+    walls.forEach(removeNode);
+    document.querySelectorAll(OVERLAY_SELECTOR).forEach(removeNode);
     document.body?.style.removeProperty('overflow');
     document.documentElement?.style.removeProperty('overflow');
     resumePlayback();
@@ -75,6 +93,13 @@ export function createAdblockGuard() {
     }, 250);
   };
 
+  const onNavigate = () => {
+    clearTimeout(scheduled);
+    scheduled = 0;
+    clearWall();
+    schedule();
+  };
+
   const start = () => {
     if (started) return;
     started = true;
@@ -84,6 +109,7 @@ export function createAdblockGuard() {
       observer.observe(root, { childList: true, subtree: true });
     }
     interval = setInterval(clearWall, SCAN_INTERVAL);
+    document.addEventListener('yt-navigate-finish', onNavigate, { passive: true });
     clearWall();
   };
 
@@ -96,6 +122,7 @@ export function createAdblockGuard() {
     scheduled = 0;
     clearInterval(interval);
     interval = 0;
+    document.removeEventListener('yt-navigate-finish', onNavigate);
   };
 
   return { start, stop };

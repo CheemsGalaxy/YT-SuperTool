@@ -3,6 +3,7 @@ import { compileCosmeticCss } from './adblock-cosmetic.js';
 import { COSMETIC_FILTERS } from './adblock-filters.js';
 import { createAdblockGuard } from './adblock-guard.js';
 import { createAdblockSkipper } from './adblock-skipper.js';
+import { syncAdblockCache } from './adblock-state.js';
 
 const cosmeticCss = `${baseCosmeticCss}\n${compileCosmeticCss(COSMETIC_FILTERS)}`;
 
@@ -34,6 +35,7 @@ export function createAdblock({ bridge, settings }) {
     setFlag(FLAGS.prune, prune);
     setFlag(FLAGS.cosmetic, cosmetic);
 
+    syncAdblockCache(window, master, prune);
     bridge.setNetworkBlocking?.(master);
 
     if (cosmetic && !cosmeticInjected) {
@@ -65,6 +67,7 @@ export function createAdblock({ bridge, settings }) {
       setFlag(FLAGS.master, false);
       setFlag(FLAGS.prune, false);
       setFlag(FLAGS.cosmetic, false);
+      bridge.setNetworkBlocking?.(false);
       skipper?.stop();
       guard?.stop();
     }

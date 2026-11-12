@@ -13209,6 +13209,12 @@ ${scripts.join("\n\n")}}
     "||2mdn.net^",
     "||moatads.com^",
     "||imasdk.googleapis.com^",
+    "||ads.youtube.com^",
+    "||adclick.g.doubleclick.net^",
+    "||googleads4.g.doubleclick.net^",
+    "||doubleverify.com^",
+    "||adsafeprotected.com^",
+    "||googlevideo.com/videoplayback*adformat=",
     "||google.com/pagead/",
     "||google.com/ads/",
     "! Measurement and trackers",
@@ -13251,7 +13257,7 @@ ${scripts.join("\n\n")}}
   let blocker = null;
   let context = null;
   let starting = false;
-  let enabled = true;
+  let enabled = false;
   const getBlocker = () => {
     if (!blocker) {
       blocker = WebExtensionBlocker.parse(NETWORK_FILTERS.join("\n"), ENGINE_CONFIG);
@@ -13295,14 +13301,14 @@ ${scripts.join("\n\n")}}
     if (manifestVersion !== 2) return false;
     try {
       const stored = await browser.storage.local.get("adblock");
-      enabled = stored.adblock !== false;
+      enabled = stored.adblock === true;
     } catch {
-      enabled = true;
+      enabled = false;
     }
     if (enabled) await startBlocking();
     browser.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== "local" || !("adblock" in changes)) return;
-      enabled = changes.adblock.newValue !== false;
+      enabled = changes.adblock.newValue === true;
       if (enabled) void startBlocking();
       else stopBlocking();
     });
@@ -13326,11 +13332,41 @@ ${scripts.join("\n\n")}}
       return "";
     }
   }
-  function enableAdRuleset() {
+  function setAdRuleset(enabled2) {
     try {
-      ext?.declarativeNetRequest?.updateEnabledRulesets({ enableRulesetIds: [AD_RULESET_ID] });
+      const rules = ext?.declarativeNetRequest;
+      if (!rules?.updateEnabledRulesets) return;
+      const update = enabled2 ? rules.updateEnabledRulesets({ enableRulesetIds: [AD_RULESET_ID] }) : rules.updateEnabledRulesets({ disableRulesetIds: [AD_RULESET_ID] });
+      if (update && typeof update.then === "function") update.catch(() => {
+      });
     } catch {
     }
+  }
+  function readAdblockSetting() {
+    return new Promise((resolve) => {
+      try {
+        const storage = ext?.storage?.local;
+        if (!storage?.get) {
+          resolve(false);
+          return;
+        }
+        const result = storage.get({ adblock: false }, (value) => {
+          if (ext.runtime?.lastError) {
+            resolve(false);
+            return;
+          }
+          resolve(value?.adblock === true);
+        });
+        if (result && typeof result.then === "function") {
+          result.then((value) => resolve(value?.adblock === true)).catch(() => resolve(false));
+        }
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+  async function syncAdRuleset() {
+    setAdRuleset(await readAdblockSetting());
   }
   function reloadYouTubeTabs(tabs) {
     (tabs || []).forEach((tab) => {
@@ -13405,12 +13441,12 @@ ${scripts.join("\n\n")}}
     await ext.tabs.create({ url: target });
     return { ok: true };
   }
-  enableAdRuleset();
+  void syncAdRuleset();
   initAdblockBackground().catch((error2) => {
     console.warn("YT SuperTool adblock background failed to start:", error2);
   });
   ext.runtime.onInstalled.addListener((details) => {
-    enableAdRuleset();
+    void syncAdRuleset();
     if (details.reason === "update" || details.reason === "install") {
       try {
         const query = ext.tabs.query({ url: "*://*.youtube.com/*" });
@@ -13494,9 +13530,9 @@ ${scripts.join("\n\n")}}
         const update = message.enabled ? rules.updateEnabledRulesets({ enableRulesetIds: [AD_RULESET_ID] }) : rules.updateEnabledRulesets({ disableRulesetIds: [AD_RULESET_ID] });
         if (update && typeof update.then === "function") {
           update.then(() => sendResponse({ ok: true })).catch((error2) => sendResponse({ ok: false, error: error2.message }));
-        } else {
-          sendResponse({ ok: true });
+          return true;
         }
+        sendResponse({ ok: true });
       } catch (error2) {
         sendResponse({ ok: false, error: error2.message });
       }

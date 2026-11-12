@@ -1,12 +1,12 @@
 import { isPlayerEndpoint, sanitizePlayerResponse } from './adblock-player.js';
+import { isAdblockEnabled, readAdblockPruneCache } from './adblock-state.js';
 
 const isPruningEnabled = (win) => {
-  const root = win?.document?.documentElement;
-  if (!root) return true;
-  const data = root.dataset || {};
-  if (data.ytstAdblock === 'off') return false;
-  if (data.ytstAdblockPrune === 'off') return false;
-  return true;
+  const data = win?.document?.documentElement?.dataset || {};
+  if (data.ytstAdblock === 'off' || data.ytstAdblockPrune === 'off') return false;
+  if (!isAdblockEnabled(win)) return false;
+  if (data.ytstAdblockPrune === 'on') return true;
+  return readAdblockPruneCache(win) !== false;
 };
 
 const prune = (win, value) => {
@@ -16,6 +16,11 @@ const prune = (win, value) => {
 
 const bindPlayerResponse = (win, name) => {
   let current;
+  try {
+    current = prune(win, win[name]);
+  } catch {
+    current = undefined;
+  }
   try {
     Object.defineProperty(win, name, {
       configurable: true,

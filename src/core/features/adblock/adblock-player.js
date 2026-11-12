@@ -6,23 +6,57 @@ const AD_KEYS = [
   'adSlots',
   'adBreakHeartbeatParams',
   'adParams',
-  'adSafetyReason'
+  'adSafetyReason',
+  'adBreakParams',
+  'playerAdParams',
+  'adConfig',
+  'adBreakServiceRenderer',
+  'adBreakService',
+  'adBreak',
+  'adBreaks',
+  'adPod',
+  'adPods',
+  'adVideoId',
+  'adVideoIds',
+  'adThumbnail',
+  'adThumbnailDetails',
+  'paidContentOverlay'
 ];
 
 const AD_KEYS_SET = new Set(AD_KEYS);
-const AD_KEY_PATTERN = /"(adPlacements|playerAds|adSlots|adBreakHeartbeatParams|adParams|adSafetyReason)"\s*:/g;
+const AD_KEY_PATTERN = new RegExp(
+  `"(${AD_KEYS.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})"\\s*:`,
+  'g'
+);
 const RENAMED_PREFIX = 'ytst_no_ads_';
-const MAX_DEPTH = 8;
-const MAX_NODES = 6000;
+const MAX_DEPTH = 12;
+const MAX_NODES = 12000;
 
 export const rewriteAdKeys = (text) => {
   if (typeof text !== 'string' || text.length === 0) return text;
   return text.replace(AD_KEY_PATTERN, (match, key) => `"${RENAMED_PREFIX}${key}":`);
 };
 
+export const sanitizeResponseText = (text) => {
+  if (typeof text !== 'string' || text.length === 0) return text;
+  const rewritten = rewriteAdKeys(text);
+  const hasEnforcement = text.includes('enforcementMessageViewModel')
+    || text.includes('adBlockMessageViewModel')
+    || (text.includes('errorScreen') && ADBLOCK_HINT.test(text));
+  if (!hasEnforcement) return rewritten;
+
+  try {
+    const parsed = JSON.parse(rewritten);
+    sanitizePlayerResponse(parsed);
+    return JSON.stringify(parsed);
+  } catch {
+    return rewritten;
+  }
+};
+
 const hasAntiAdblockMessage = (status) => {
   if (!status || typeof status !== 'object') return false;
-  if (status.enforcementMessageViewModel) return true;
+  if (status.enforcementMessageViewModel || status.adBlockMessageViewModel) return true;
   try {
     const text = JSON.stringify(status);
     if (!ADBLOCK_HINT.test(text)) return false;
@@ -35,8 +69,10 @@ const hasAntiAdblockMessage = (status) => {
 const sanitizePlayabilityStatus = (status) => {
   if (!status || typeof status !== 'object') return;
 
-  const enforced = status.status === 'ERROR' && hasAntiAdblockMessage(status);
+  const enforced = Boolean(status.enforcementMessageViewModel || status.adBlockMessageViewModel)
+    || (status.status === 'ERROR' && hasAntiAdblockMessage(status));
   delete status.enforcementMessageViewModel;
+  delete status.adBlockMessageViewModel;
 
   if (enforced) {
     status.status = 'OK';
@@ -74,7 +110,7 @@ const walk = (node, depth, counter) => {
       }
       continue;
     }
-    if (key === 'enforcementMessageViewModel') {
+    if (key === 'enforcementMessageViewModel' || key === 'adBlockMessageViewModel') {
       try {
         delete node[key];
       } catch {
@@ -97,17 +133,26 @@ export function sanitizePlayerResponse(payload) {
 }
 
 export const isPlayerEndpoint = (url) => (
-  typeof url === 'string' && /\/youtubei\/v1\/(?:player|next|get_watch)\b/.test(url)
+  typeof url === 'string'
+  && /\/youtubei\/v1\/(?:player|next|get_watch|reel|reel_watch_sequence|updated_metadata)\b/.test(url)
 );
+
+export const isYouTubeAdEndpoint = (url) => {
+  if (typeof url !== 'string' || url.length === 0) return false;
+  return /\/youtubei\/v1\/ads(?:\/|\b)/.test(url)
+    || /\/pagead\//.test(url)
+    || /\/api\/stats\/(?:ads|atr|delayplay)\b/.test(url)
+    || /\/ptracking\b/.test(url)
+    || /[?&]adformat=/.test(url)
+    || /\/get_video_info\?.*(?:adformat|ad_type)=/.test(url);
+};
 
 export const hasAdPayload = (text) => {
   if (typeof text !== 'string' || text.length === 0) return false;
-  return text.includes('adPlacements')
-    || text.includes('playerAds')
-    || text.includes('adSlots')
-    || text.includes('adBreakHeartbeatParams')
-    || text.includes('enforcementMessageViewModel')
-    || text.includes('errorScreen');
+  if (text.includes('enforcementMessageViewModel')
+    || text.includes('adBlockMessageViewModel')
+    || text.includes('errorScreen')) return true;
+  return AD_KEYS.some((key) => text.includes(key));
 };
 
 export default sanitizePlayerResponse;

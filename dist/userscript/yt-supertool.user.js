@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YT SuperTool
 // @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
-// @version      2.4.0
+// @version      2.4.1
 // @updateURL    https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @downloadURL  https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
@@ -200,7 +200,7 @@
     };
     return {
       env: "userscript",
-      version: "2.4.0",
+      version: "2.4.1",
       storage,
       network,
       injector,
@@ -11371,6 +11371,12 @@
     "||2mdn.net^",
     "||moatads.com^",
     "||imasdk.googleapis.com^",
+    "||ads.youtube.com^",
+    "||adclick.g.doubleclick.net^",
+    "||googleads4.g.doubleclick.net^",
+    "||doubleverify.com^",
+    "||adsafeprotected.com^",
+    "||googlevideo.com/videoplayback*adformat=",
     "||google.com/pagead/",
     "||google.com/ads/",
     "! Measurement and trackers",
@@ -11405,6 +11411,7 @@
     "youtube.com##ytd-statement-banner-renderer",
     "youtube.com##ytd-display-ad-renderer",
     "youtube.com##ytd-promoted-sparkles-web-renderer",
+    "youtube.com##ytd-promoted-sparkles-text-search-renderer",
     "youtube.com##ytd-promoted-video-renderer",
     "youtube.com##ytd-compact-promoted-video-renderer",
     "youtube.com##ytd-video-masthead-ad-v3-renderer",
@@ -11416,17 +11423,24 @@
     "youtube.com##ytd-ads-engagement-panel-content-renderer",
     "youtube.com##ytm-promoted-sparkles-web-renderer",
     "youtube.com##ytd-rich-item-renderer:has(ytd-ad-slot-renderer)",
+    "youtube.com##ytd-rich-item-renderer:has(ytd-in-feed-ad-layout-renderer)",
     "youtube.com##ytd-rich-section-renderer:has(ytd-ad-slot-renderer)",
+    "youtube.com##ytd-rich-section-renderer:has(ytd-in-feed-ad-layout-renderer)",
     "youtube.com##ytd-item-section-renderer > #contents > ytd-ad-slot-renderer",
+    "youtube.com##ytd-item-section-renderer > #contents > ytd-in-feed-ad-layout-renderer",
     "youtube.com##ytd-rich-grid-row:has(ytd-ad-slot-renderer)",
     "youtube.com###masthead-ad",
     "youtube.com###player-ads",
     "youtube.com##.ytp-ad-overlay-container",
     "youtube.com##.ytp-ad-overlay-slot",
-    "youtube.com##.ytp-ad-module",
     "youtube.com##.ytp-ad-image-overlay",
+    "youtube.com##.ytp-ad-text-overlay",
+    "youtube.com##.ytp-ad-player-overlay",
+    "youtube.com##.ytp-ad-survey",
     "youtube.com##.ytp-ad-progress-list",
     "youtube.com##.ytp-ad-preview-container",
+    "youtube.com##.ytp-ad-badge",
+    "youtube.com##.ytp-ad-simple-ad-badge",
     "youtube.com##.ytp-featured-product",
     "youtube.com##.ytp-ad-suggested-action",
     "youtube.com##.ytp-suggested-action:has(.ytp-ad-suggested-action)"
@@ -11632,20 +11646,50 @@
     "adSlots",
     "adBreakHeartbeatParams",
     "adParams",
-    "adSafetyReason"
+    "adSafetyReason",
+    "adBreakParams",
+    "playerAdParams",
+    "adConfig",
+    "adBreakServiceRenderer",
+    "adBreakService",
+    "adBreak",
+    "adBreaks",
+    "adPod",
+    "adPods",
+    "adVideoId",
+    "adVideoIds",
+    "adThumbnail",
+    "adThumbnailDetails",
+    "paidContentOverlay"
   ];
   const AD_KEYS_SET = new Set(AD_KEYS);
-  const AD_KEY_PATTERN = /"(adPlacements|playerAds|adSlots|adBreakHeartbeatParams|adParams|adSafetyReason)"\s*:/g;
+  const AD_KEY_PATTERN = new RegExp(
+    `"(${AD_KEYS.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})"\\s*:`,
+    "g"
+  );
   const RENAMED_PREFIX = "ytst_no_ads_";
-  const MAX_DEPTH = 8;
-  const MAX_NODES = 6e3;
+  const MAX_DEPTH = 12;
+  const MAX_NODES = 12e3;
   const rewriteAdKeys = (text) => {
     if (typeof text !== "string" || text.length === 0) return text;
     return text.replace(AD_KEY_PATTERN, (match, key) => `"${RENAMED_PREFIX}${key}":`);
   };
+  const sanitizeResponseText = (text) => {
+    if (typeof text !== "string" || text.length === 0) return text;
+    const rewritten = rewriteAdKeys(text);
+    const hasEnforcement = text.includes("enforcementMessageViewModel") || text.includes("adBlockMessageViewModel") || text.includes("errorScreen") && ADBLOCK_HINT.test(text);
+    if (!hasEnforcement) return rewritten;
+    try {
+      const parsed = JSON.parse(rewritten);
+      sanitizePlayerResponse(parsed);
+      return JSON.stringify(parsed);
+    } catch {
+      return rewritten;
+    }
+  };
   const hasAntiAdblockMessage = (status) => {
     if (!status || typeof status !== "object") return false;
-    if (status.enforcementMessageViewModel) return true;
+    if (status.enforcementMessageViewModel || status.adBlockMessageViewModel) return true;
     try {
       const text = JSON.stringify(status);
       if (!ADBLOCK_HINT.test(text)) return false;
@@ -11656,8 +11700,9 @@
   };
   const sanitizePlayabilityStatus = (status) => {
     if (!status || typeof status !== "object") return;
-    const enforced = status.status === "ERROR" && hasAntiAdblockMessage(status);
+    const enforced = Boolean(status.enforcementMessageViewModel || status.adBlockMessageViewModel) || status.status === "ERROR" && hasAntiAdblockMessage(status);
     delete status.enforcementMessageViewModel;
+    delete status.adBlockMessageViewModel;
     if (enforced) {
       status.status = "OK";
       delete status.reason;
@@ -11690,7 +11735,7 @@
         }
         continue;
       }
-      if (key === "enforcementMessageViewModel") {
+      if (key === "enforcementMessageViewModel" || key === "adBlockMessageViewModel") {
         try {
           delete node[key];
         } catch {
@@ -11710,10 +11755,41 @@
     walk(payload, 0, { count: 0 });
     return payload;
   }
-  const isPlayerEndpoint = (url) => typeof url === "string" && /\/youtubei\/v1\/(?:player|next|get_watch)\b/.test(url);
+  const isPlayerEndpoint = (url) => typeof url === "string" && /\/youtubei\/v1\/(?:player|next|get_watch|reel|reel_watch_sequence|updated_metadata)\b/.test(url);
+  const isYouTubeAdEndpoint = (url) => {
+    if (typeof url !== "string" || url.length === 0) return false;
+    return /\/youtubei\/v1\/ads(?:\/|\b)/.test(url) || /\/pagead\//.test(url) || /\/api\/stats\/(?:ads|atr|delayplay)\b/.test(url) || /\/ptracking\b/.test(url) || /[?&]adformat=/.test(url) || /\/get_video_info\?.*(?:adformat|ad_type)=/.test(url);
+  };
   const hasAdPayload = (text) => {
     if (typeof text !== "string" || text.length === 0) return false;
-    return text.includes("adPlacements") || text.includes("playerAds") || text.includes("adSlots") || text.includes("adBreakHeartbeatParams") || text.includes("enforcementMessageViewModel") || text.includes("errorScreen");
+    if (text.includes("enforcementMessageViewModel") || text.includes("adBlockMessageViewModel") || text.includes("errorScreen")) return true;
+    return AD_KEYS.some((key) => text.includes(key));
+  };
+  const MASTER_KEY = "yt_supertool_adblock";
+  const PRUNE_KEY = "yt_supertool_adblock_prune";
+  const readFlag = (win, key) => {
+    try {
+      const value = win?.localStorage?.getItem(key);
+      if (value === "1") return true;
+      if (value === "0") return false;
+    } catch {
+    }
+    return null;
+  };
+  const readAdblockCache = (win) => readFlag(win, MASTER_KEY);
+  const readAdblockPruneCache = (win) => readFlag(win, PRUNE_KEY);
+  const isAdblockEnabled = (win) => {
+    const dataset = win?.document?.documentElement?.dataset;
+    if (dataset?.ytstAdblock === "on") return true;
+    if (dataset?.ytstAdblock === "off") return false;
+    return readAdblockCache(win) === true;
+  };
+  const syncAdblockCache = (win, enabled, prune2 = enabled) => {
+    try {
+      win?.localStorage?.setItem(MASTER_KEY, enabled ? "1" : "0");
+      win?.localStorage?.setItem(PRUNE_KEY, enabled && prune2 ? "1" : "0");
+    } catch {
+    }
   };
   const ENGINE_CONFIG = {
     loadNetworkFilters: true,
@@ -11747,10 +11823,6 @@
     if (typeof win?.requestIdleCallback === "function") win.requestIdleCallback(run, { timeout: 1e3 });
     else win?.setTimeout?.(run, 0);
   };
-  const isBlockingEnabled = (win) => {
-    const dataset = win?.document?.documentElement?.dataset;
-    return !dataset || dataset.ytstAdblock !== "off";
-  };
   function matchRequest(win, url, type = "xmlhttprequest") {
     if (!url) return null;
     const matcher = getEngine();
@@ -11768,6 +11840,18 @@
     }
     return null;
   }
+  const jsonResponse = (win, body = "{}") => {
+    const ResponseCtor = win?.Response || globalThis.Response;
+    try {
+      return new ResponseCtor(body, {
+        status: 200,
+        statusText: "OK",
+        headers: { "content-type": "application/json" }
+      });
+    } catch {
+      return void 0;
+    }
+  };
   const blockResponse = (win) => {
     const ResponseCtor = win?.Response || globalThis.Response;
     try {
@@ -11781,7 +11865,7 @@
       if (!response || !response.ok) return response;
       const text = await response.clone().text();
       if (!hasAdPayload(text)) return response;
-      const rewritten = rewriteAdKeys(text);
+      const rewritten = sanitizeResponseText(text);
       if (rewritten === text) return response;
       const HeadersCtor = win?.Headers || globalThis.Headers;
       const ResponseCtor = win?.Response || globalThis.Response;
@@ -11807,17 +11891,34 @@
       } catch {
         url = "";
       }
-      if (isBlockingEnabled(win) && matchRequest(win, url)) {
-        const blocked = blockResponse(win);
+      if (isAdblockEnabled(win) && matchRequest(win, url)) {
+        const blocked = isYouTubeAdEndpoint(url) ? jsonResponse(win) : blockResponse(win);
         if (blocked) return Promise.resolve(blocked);
         return Promise.reject(new win.TypeError("Failed to fetch"));
       }
       const result = nativeFetch.apply(this, arguments);
-      if (!isPlayerEndpoint(url) || !isBlockingEnabled(win)) return result;
+      if (!isPlayerEndpoint(url) || !isAdblockEnabled(win)) return result;
       return Promise.resolve(result).then((response) => sanitizeFetchResponse(win, response));
     };
     Object.defineProperty(patchedFetch, "__ytstAdblock", { value: true });
     win.fetch = patchedFetch;
+  };
+  const installBeaconHook = (win) => {
+    const navigatorObject = win?.navigator;
+    const nativeBeacon = navigatorObject?.sendBeacon;
+    if (typeof nativeBeacon !== "function" || nativeBeacon.__ytstAdblock) return;
+    const patchedBeacon = function sendBeacon(url, data) {
+      try {
+        if (isAdblockEnabled(win) && matchRequest(win, String(url), "ping")) return true;
+      } catch {
+      }
+      return nativeBeacon.call(navigatorObject, url, data);
+    };
+    Object.defineProperty(patchedBeacon, "__ytstAdblock", { value: true });
+    try {
+      navigatorObject.sendBeacon = patchedBeacon;
+    } catch {
+    }
   };
   const readResponseText = (xhr, descriptor) => {
     try {
@@ -11830,6 +11931,10 @@
     let parsed = false;
     let cachedText;
     let cachedJson;
+    try {
+      xhr.__ytstSanitized = true;
+    } catch {
+    }
     const parse2 = () => {
       if (parsed) return;
       parsed = true;
@@ -11838,17 +11943,18 @@
         const raw = responseType === "" || responseType === "text" ? readResponseText(xhr, textDescriptor) : null;
         let text = raw;
         if (!text && responseType === "json" && responseDescriptor?.get) {
-          const value = responseDescriptor.get.call(xhr);
-          if (value && typeof value === "object") {
-            cachedJson = value;
-            text = JSON.stringify(value);
+          const value2 = responseDescriptor.get.call(xhr);
+          if (value2 && typeof value2 === "object") {
+            cachedJson = value2;
+            text = JSON.stringify(value2);
           }
         }
         if (!text || !hasAdPayload(text)) return;
-        const rewritten = rewriteAdKeys(text);
+        const rewritten = sanitizeResponseText(text);
         if (rewritten === text) return;
+        const value = JSON.parse(rewritten);
         cachedText = rewritten;
-        cachedJson = JSON.parse(rewritten);
+        cachedJson = value;
       } catch {
       }
     };
@@ -11876,19 +11982,43 @@
       });
     }
   };
+  const defineValue = (target, name, value) => {
+    try {
+      Object.defineProperty(target, name, { configurable: true, value });
+    } catch {
+    }
+  };
   const fakeBlockedXhr = (win, xhr, url) => {
+    const token = {};
+    try {
+      xhr.__ytstBlocked = true;
+      xhr.__ytstBlockedToken = token;
+    } catch {
+    }
     const finish = () => {
+      if (xhr.__ytstBlockedToken !== token) return;
       try {
-        const body = xhr.responseType === "json" ? {} : xhr.responseType === "" || xhr.responseType === "text" ? "{}" : null;
-        Object.defineProperty(xhr, "readyState", { configurable: true, value: 4 });
-        Object.defineProperty(xhr, "status", { configurable: true, value: 200 });
-        Object.defineProperty(xhr, "statusText", { configurable: true, value: "OK" });
-        Object.defineProperty(xhr, "responseURL", { configurable: true, value: url });
-        Object.defineProperty(xhr, "responseText", { configurable: true, value: "{}" });
-        Object.defineProperty(xhr, "response", { configurable: true, value: body });
+        const body = "{}";
+        defineValue(xhr, "readyState", 4);
+        defineValue(xhr, "status", 200);
+        defineValue(xhr, "statusText", "OK");
+        defineValue(xhr, "responseURL", url);
+        defineValue(xhr, "responseText", body);
+        defineValue(xhr, "response", xhr.responseType === "json" ? {} : body);
+        defineValue(xhr, "getResponseHeader", (name) => String(name).toLowerCase() === "content-type" ? "application/json" : null);
+        defineValue(xhr, "getAllResponseHeaders", () => "content-type: application/json\r\n");
         xhr.dispatchEvent(new win.Event("readystatechange"));
+        const ProgressCtor = win.ProgressEvent;
+        if (typeof ProgressCtor === "function") {
+          xhr.dispatchEvent(new ProgressCtor("progress", {
+            lengthComputable: true,
+            loaded: body.length,
+            total: body.length
+          }));
+        }
         xhr.dispatchEvent(new win.Event("load"));
         xhr.dispatchEvent(new win.Event("loadend"));
+        delete xhr.__ytstBlockedToken;
       } catch {
       }
     };
@@ -11905,6 +12035,23 @@
     const responseDescriptor = Object.getOwnPropertyDescriptor(proto, "response");
     proto.open = function open(method, url, ...rest) {
       try {
+        if (this.__ytstSanitized) {
+          delete this.responseText;
+          delete this.response;
+          this.__ytstSanitized = false;
+        }
+        if (this.__ytstBlocked) {
+          delete this.readyState;
+          delete this.status;
+          delete this.statusText;
+          delete this.responseURL;
+          delete this.responseText;
+          delete this.response;
+          delete this.getResponseHeader;
+          delete this.getAllResponseHeaders;
+          delete this.__ytstBlockedToken;
+          this.__ytstBlocked = false;
+        }
         this.__ytstUrl = typeof url === "string" ? url : String(url || "");
       } catch {
       }
@@ -11912,11 +12059,11 @@
     };
     proto.send = function send(body) {
       const url = this.__ytstUrl || "";
-      if (isBlockingEnabled(win) && matchRequest(win, url)) {
+      if (isAdblockEnabled(win) && matchRequest(win, url)) {
         fakeBlockedXhr(win, this, url);
         return void 0;
       }
-      if (isPlayerEndpoint(url) && isBlockingEnabled(win)) {
+      if (isPlayerEndpoint(url) && isAdblockEnabled(win)) {
         installSanitizedXhrGetters(this, textDescriptor, responseDescriptor);
       }
       return nativeSend.call(this, body);
@@ -11928,6 +12075,7 @@
     try {
       installFetchHook(win);
       installXhrHook(win);
+      installBeaconHook(win);
       win.__ytstNetworkGuard = true;
       warmEngine(win);
       return true;
@@ -11937,12 +12085,11 @@
     }
   }
   const isPruningEnabled = (win) => {
-    const root = win?.document?.documentElement;
-    if (!root) return true;
-    const data = root.dataset || {};
-    if (data.ytstAdblock === "off") return false;
-    if (data.ytstAdblockPrune === "off") return false;
-    return true;
+    const data = win?.document?.documentElement?.dataset || {};
+    if (data.ytstAdblock === "off" || data.ytstAdblockPrune === "off") return false;
+    if (!isAdblockEnabled(win)) return false;
+    if (data.ytstAdblockPrune === "on") return true;
+    return readAdblockPruneCache(win) !== false;
   };
   const prune = (win, value) => {
     if (!isPruningEnabled(win)) return value;
@@ -11950,6 +12097,11 @@
   };
   const bindPlayerResponse = (win, name) => {
     let current;
+    try {
+      current = prune(win, win[name]);
+    } catch {
+      current = void 0;
+    }
     try {
       Object.defineProperty(win, name, {
         configurable: true,
@@ -11987,11 +12139,19 @@
       return false;
     }
   }
+  const AD_FLAGS = [
+    "web_enable_ab_rsp_cl",
+    "ab_pl_man",
+    "adblock_detection",
+    "adblock_detection_enabled",
+    "enable_adblock_detection",
+    "adblock_detection_message"
+  ];
   const allowInstreamAd = () => true;
-  const defineFlag = (win, name, value) => {
-    const ObjectCtor = win?.Object || Object;
+  const defineFlag = (target, name, value) => {
+    if (!target) return false;
     try {
-      ObjectCtor.defineProperty(ObjectCtor.prototype, name, {
+      Object.defineProperty(target, name, {
         configurable: true,
         get: () => value,
         set: () => {
@@ -12002,36 +12162,86 @@
       return false;
     }
   };
+  const patchFlags = (flags) => {
+    if (!flags || typeof flags !== "object") return false;
+    let changed = false;
+    AD_FLAGS.forEach((name) => {
+      if (name in flags) {
+        flags[name] = false;
+        changed = true;
+      }
+    });
+    return changed;
+  };
   const disableDetectionExperiments = (win) => {
+    if (!isAdblockEnabled(win)) return false;
+    let patched = false;
     try {
       const config = win?.yt?.config_;
-      if (!config) return false;
-      const flags = config.EXPERIMENT_FLAGS;
-      if (flags) {
-        flags.web_enable_ab_rsp_cl = false;
-        flags.ab_pl_man = false;
+      const flags = config?.EXPERIMENT_FLAGS;
+      if (patchFlags(flags)) patched = true;
+      const popups = config?.openPopupConfig?.supportedPopups;
+      if (popups?.adBlockMessageViewModel) {
+        popups.adBlockMessageViewModel = false;
+        patched = true;
       }
-      const popups = config.openPopupConfig?.supportedPopups;
-      if (popups) popups.adBlockMessageViewModel = false;
-      return true;
     } catch {
-      return false;
     }
+    try {
+      const ytcfg = win?.ytcfg;
+      if (!ytcfg) return patched;
+      if (typeof ytcfg.get === "function") {
+        try {
+          if (patchFlags(ytcfg.get("EXPERIMENT_FLAGS"))) patched = true;
+        } catch {
+        }
+      }
+      if (typeof ytcfg.set === "function" && !ytcfg.set.__ytstAdblock) {
+        const nativeSet = ytcfg.set;
+        const patchedSet = function set(key, value) {
+          if (key === "EXPERIMENT_FLAGS" && isAdblockEnabled(win)) patchFlags(value);
+          return nativeSet.call(this, key, value);
+        };
+        Object.defineProperty(patchedSet, "__ytstAdblock", { value: true });
+        try {
+          ytcfg.set = patchedSet;
+          patched = true;
+        } catch {
+        }
+      }
+    } catch {
+    }
+    return patched;
   };
   function installAdblockStealth(win = globalThis) {
     if (!win || win.__ytstStealth) return false;
+    const ObjectCtor = win.Object || Object;
+    defineFlag(ObjectCtor.prototype, "adBlocksFound", false);
+    defineFlag(ObjectCtor.prototype, "hasAllowedInstreamAd", allowInstreamAd);
     defineFlag(win, "adBlocksFound", false);
     defineFlag(win, "hasAllowedInstreamAd", allowInstreamAd);
-    const schedule = win.setInterval || win.setTimeout;
-    const cancel = win.clearInterval || win.clearTimeout;
+    const useInterval = typeof win.setInterval === "function";
+    const schedule = useInterval ? win.setInterval : win.setTimeout;
+    const cancel = useInterval ? win.clearInterval : win.clearTimeout;
     if (typeof schedule === "function") {
       let attempts = 0;
-      const timer = schedule(() => {
+      const timer = schedule.call(win, () => {
         attempts += 1;
         if (disableDetectionExperiments(win) || attempts >= 40) {
-          cancel?.(timer);
+          cancel.call(win, timer);
         }
       }, 250);
+    }
+    try {
+      const root = win.document?.documentElement;
+      const Observer = win.MutationObserver;
+      if (root && typeof Observer === "function") {
+        const observer = new Observer(() => {
+          if (isAdblockEnabled(win)) disableDetectionExperiments(win);
+        });
+        observer.observe(root, { attributes: true, attributeFilter: ["data-ytst-adblock"] });
+      }
+    } catch {
     }
     disableDetectionExperiments(win);
     win.__ytstStealth = true;
@@ -12889,7 +13099,7 @@
           ]),
           createElement("span", {
             className: "ytst-badge",
-            textContent: UI_TEXT.versionTarget(meta.version || "2.4.0", meta.target || "mv3")
+            textContent: UI_TEXT.versionTarget(meta.version || "2.4.1", meta.target || "mv3")
           }),
           createElement("div", { className: "ytst-header-actions" }, [
             (() => {
@@ -14819,7 +15029,7 @@
       }
     };
   }
-  const baseCosmeticCss = 'html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-in-feed-ad-layout-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-banner-promo-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #masthead-ad,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #player-ads,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"],\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-featured-product,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-container,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-slot,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-module,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-image-overlay,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-sparkles-web-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-display-ad-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-compact-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-advertiser-info-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-v3-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-merch-shelf-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-item-renderer:has(ytd-ad-slot-renderer),\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-item-section-renderer > #contents > ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-section-renderer:has(ytd-ad-slot-renderer),\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-consent-bump-v2-lightbox:has(~ ytd-ad-slot-renderer) {\n  display: none !important;\n}\n';
+  const baseCosmeticCss = 'html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-in-feed-ad-layout-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-banner-promo-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #masthead-ad,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #player-ads,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"],\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-featured-product,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-container,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-slot,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-image-overlay,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-sparkles-web-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-display-ad-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-compact-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-advertiser-info-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-v3-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-merch-shelf-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-item-renderer:has(ytd-ad-slot-renderer),\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-item-section-renderer > #contents > ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-section-renderer:has(ytd-ad-slot-renderer) {\n  display: none !important;\n}\n';
   const COSMETIC_PREFIX = 'html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"]';
   const parseSelector = (rule) => {
     if (typeof rule !== "string") return null;
@@ -14853,7 +15063,15 @@
   ].join(",");
   const OVERLAY_SELECTOR = "tp-yt-iron-overlay-backdrop";
   const PLAYER_SELECTOR$1 = "#movie_player, .html5-video-player";
+  const AD_CLOSE_SELECTOR = [
+    ".ytp-ad-overlay-close-button",
+    ".ytp-ad-overlay-close-container button",
+    ".ytp-ad-skip-button",
+    ".ytp-ad-skip-button-modern",
+    ".ytp-skip-ad-button"
+  ].join(",");
   const SCAN_INTERVAL = 1200;
+  const CLICK_COOLDOWN$1 = 600;
   const isEnforcementWall = (element) => {
     if (!element) return false;
     if (element.tagName === "YTD-ENFORCEMENT-MESSAGE-VIEW-MODEL") return true;
@@ -14877,26 +15095,35 @@
       }
     }
   };
+  const removeNode = (element) => {
+    try {
+      element.remove();
+    } catch {
+    }
+  };
   function createAdblockGuard() {
     let observer = null;
     let interval = 0;
     let scheduled = 0;
+    let lastClick = 0;
     let started = false;
+    const clearPlayerAds = () => {
+      const now = Date.now();
+      if (now - lastClick < CLICK_COOLDOWN$1) return;
+      const button = document.querySelector(AD_CLOSE_SELECTOR);
+      if (!button || button.disabled || !button.isConnected) return;
+      lastClick = now;
+      try {
+        button.click();
+      } catch {
+      }
+    };
     const clearWall = () => {
+      clearPlayerAds();
       const walls = [...document.querySelectorAll(WALL_SELECTOR)].filter(isEnforcementWall);
       if (!walls.length) return;
-      for (const wall of walls) {
-        try {
-          wall.remove();
-        } catch {
-        }
-      }
-      document.querySelectorAll(OVERLAY_SELECTOR).forEach((element) => {
-        try {
-          element.remove();
-        } catch {
-        }
-      });
+      walls.forEach(removeNode);
+      document.querySelectorAll(OVERLAY_SELECTOR).forEach(removeNode);
       document.body?.style.removeProperty("overflow");
       document.documentElement?.style.removeProperty("overflow");
       resumePlayback();
@@ -14908,6 +15135,12 @@
         clearWall();
       }, 250);
     };
+    const onNavigate = () => {
+      clearTimeout(scheduled);
+      scheduled = 0;
+      clearWall();
+      schedule();
+    };
     const start2 = () => {
       if (started) return;
       started = true;
@@ -14917,6 +15150,7 @@
         observer.observe(root, { childList: true, subtree: true });
       }
       interval = setInterval(clearWall, SCAN_INTERVAL);
+      document.addEventListener("yt-navigate-finish", onNavigate, { passive: true });
       clearWall();
     };
     const stop = () => {
@@ -14928,6 +15162,7 @@
       scheduled = 0;
       clearInterval(interval);
       interval = 0;
+      document.removeEventListener("yt-navigate-finish", onNavigate);
     };
     return { start: start2, stop };
   }
@@ -14937,36 +15172,62 @@
     ".ytp-ad-skip-button-modern",
     ".ytp-skip-ad-button",
     ".ytp-ad-skip-button-container button",
+    ".ytp-ad-skip-button-slot button",
     "button.ytp-ad-skip-button-modern"
   ];
+  const CLOSE_SELECTORS = [
+    ".ytp-ad-overlay-close-button",
+    ".ytp-ad-overlay-close-container button"
+  ];
   const AD_CLASSES = ["ad-showing", "ad-interrupting"];
+  const AD_OVERLAY_SELECTOR = ".ytp-ad-player-overlay, .ytp-ad-overlay-container, .ytp-ad-text-overlay";
   const TICK_INTERVAL = 250;
   const CLICK_COOLDOWN = 400;
   const findPlayer = () => document.querySelector(PLAYER_SELECTOR);
-  const isAdShowing = (player) => Boolean(player) && AD_CLASSES.some((name) => player.classList.contains(name));
+  const isAdShowing = (player) => {
+    if (!player) return false;
+    if (AD_CLASSES.some((name) => player.classList.contains(name))) return true;
+    const overlay = player.querySelector(AD_OVERLAY_SELECTOR);
+    return Boolean(overlay && overlay.getClientRects().length);
+  };
   const findVideo = (player) => player?.querySelector("video") || document.querySelector("video");
-  const findSkipButton = (player) => {
-    for (const selector of SKIP_SELECTORS) {
+  const findButton = (player, selectors) => {
+    for (const selector of selectors) {
       const button = player?.querySelector(selector) || document.querySelector(selector);
       if (button && !button.disabled && button.isConnected) return button;
     }
     return null;
+  };
+  const isPlayerMutation = (mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.target?.closest?.(PLAYER_SELECTOR)) return true;
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.matches?.(PLAYER_SELECTOR) || node.querySelector?.(PLAYER_SELECTOR)) return true;
+      }
+    }
+    return false;
   };
   function createAdblockSkipper() {
     let observer = null;
     let interval = 0;
     let debounce = 0;
     let mutedState = null;
+    let skipApiUsed = false;
     let lastClick = 0;
+    let lastClose = 0;
     let started = false;
     const stopInterval = () => {
       clearInterval(interval);
       interval = 0;
     };
     const restore = () => {
-      if (!mutedState) return;
+      if (!mutedState) {
+        stopInterval();
+        return;
+      }
       const video = mutedState.video;
-      if (video) {
+      if (video?.isConnected) {
         try {
           video.muted = mutedState.muted;
           video.playbackRate = mutedState.rate;
@@ -14974,7 +15235,18 @@
         }
       }
       mutedState = null;
+      skipApiUsed = false;
       stopInterval();
+    };
+    const closeOverlay = (player, now) => {
+      if (now - lastClose < CLICK_COOLDOWN) return;
+      const close = findButton(player, CLOSE_SELECTORS);
+      if (!close) return;
+      lastClose = now;
+      try {
+        close.click();
+      } catch {
+      }
     };
     const tick = () => {
       if (!started) return;
@@ -14984,7 +15256,10 @@
         return;
       }
       const video = findVideo(player);
-      if (!video) return;
+      if (!video) {
+        restore();
+        return;
+      }
       if (!mutedState) {
         mutedState = { video, muted: video.muted, rate: video.playbackRate };
         try {
@@ -14993,8 +15268,16 @@
         }
       }
       const now = Date.now();
+      closeOverlay(player, now);
+      if (!skipApiUsed && typeof player.skipAd === "function") {
+        skipApiUsed = true;
+        try {
+          player.skipAd();
+        } catch {
+        }
+      }
       if (now - lastClick > CLICK_COOLDOWN) {
-        const skip = findSkipButton(player);
+        const skip = findButton(player, SKIP_SELECTORS);
         if (skip) {
           lastClick = now;
           try {
@@ -15004,17 +15287,19 @@
           }
         }
       }
-      if (Number.isFinite(video.duration) && video.duration > 0) {
-        if (video.duration - video.currentTime > 0.15) {
+      if (player.classList.contains("ad-showing")) {
+        if (Number.isFinite(video.duration) && video.duration > 0) {
+          if (video.duration - video.currentTime > 0.15) {
+            try {
+              video.currentTime = video.duration;
+            } catch {
+            }
+          }
+        } else if (video.playbackRate < 16) {
           try {
-            video.currentTime = video.duration;
+            video.playbackRate = 16;
           } catch {
           }
-        }
-      } else if (video.playbackRate < 16) {
-        try {
-          video.playbackRate = 16;
-        } catch {
         }
       }
       if (!interval) interval = setInterval(tick, TICK_INTERVAL);
@@ -15022,6 +15307,10 @@
     const schedule = () => {
       clearTimeout(debounce);
       debounce = setTimeout(tick, 120);
+    };
+    const handleMutations = (mutations) => {
+      if (!started || !isPlayerMutation(mutations)) return;
+      schedule();
     };
     const onNavigate = () => {
       restore();
@@ -15034,9 +15323,9 @@
           return;
         }
         started = true;
-        const root = document.body || document.documentElement;
+        const root = document.documentElement || document.body;
         if (!root) return;
-        observer = new MutationObserver(schedule);
+        observer = new MutationObserver(handleMutations);
         observer.observe(root, {
           childList: true,
           subtree: true,
@@ -15082,6 +15371,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       setFlag(FLAGS.master, master);
       setFlag(FLAGS.prune, prune2);
       setFlag(FLAGS.cosmetic, cosmetic);
+      syncAdblockCache(window, master, prune2);
       bridge2.setNetworkBlocking?.(master);
       if (cosmetic && !cosmeticInjected) {
         bridge2.injector.injectStyle(cosmeticCss, "ytst-adblock-cosmetic");
@@ -15108,6 +15398,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
         setFlag(FLAGS.master, false);
         setFlag(FLAGS.prune, false);
         setFlag(FLAGS.cosmetic, false);
+        bridge2.setNetworkBlocking?.(false);
         skipper?.stop();
         guard?.stop();
       }
@@ -15207,7 +15498,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
         else apply();
       }, 200);
     };
-    const isPlayerMutation = (mutations) => mutations.some((mutation) => {
+    const isPlayerMutation2 = (mutations) => mutations.some((mutation) => {
       if (mutation.target?.closest?.(".html5-video-player")) return true;
       if (mutation.target?.matches?.("#player, #movie_player, .html5-video-player, .ytp-left-controls, .ytp-right-controls")) return true;
       return [...mutation.addedNodes].some((node) => {
@@ -15224,7 +15515,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       if (settings.get("adblock")) features.adblock?.update?.(mutations);
       panel.syncTheme();
       if (!document.querySelector(".ytst-header-button")) launcher.ensureHeader();
-      if (isPlayerMutation(mutations)) initPlayerFeatures();
+      if (isPlayerMutation2(mutations)) initPlayerFeatures();
     };
     const handleNavigation = () => {
       playerRetryCount = 0;

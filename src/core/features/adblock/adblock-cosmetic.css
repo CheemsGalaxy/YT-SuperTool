@@ -7,7 +7,6 @@ html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-engagement-pan
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-featured-product,
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-container,
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-slot,
-html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-module,
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-image-overlay,
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-sparkles-web-renderer,
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-video-renderer,
@@ -18,7 +17,6 @@ html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-merch-shelf-renderer,
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-item-renderer:has(ytd-ad-slot-renderer),
 html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-item-section-renderer > #contents > ytd-ad-slot-renderer,
-html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-section-renderer:has(ytd-ad-slot-renderer),
-html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-consent-bump-v2-lightbox:has(~ ytd-ad-slot-renderer) {
+html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-section-renderer:has(ytd-ad-slot-renderer) {
   display: none !important;
 }

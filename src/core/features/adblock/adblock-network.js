@@ -1,6 +1,7 @@
 import { FiltersEngine, Request } from '@ghostery/adblocker';
 import { NETWORK_FILTERS } from './adblock-filters.js';
-import { hasAdPayload, isPlayerEndpoint, rewriteAdKeys } from './adblock-player.js';
+import { hasAdPayload, isPlayerEndpoint, isYouTubeAdEndpoint, sanitizeResponseText } from './adblock-player.js';
+import { isAdblockEnabled } from './adblock-state.js';
 
 const ENGINE_CONFIG = {
   loadNetworkFilters: true,
@@ -38,11 +39,6 @@ const warmEngine = (win) => {
   else win?.setTimeout?.(run, 0);
 };
 
-const isBlockingEnabled = (win) => {
-  const dataset = win?.document?.documentElement?.dataset;
-  return !dataset || dataset.ytstAdblock !== 'off';
-};
-
 export function matchRequest(win, url, type = 'xmlhttprequest') {
   if (!url) return null;
   const matcher = getEngine();
@@ -62,6 +58,19 @@ export function matchRequest(win, url, type = 'xmlhttprequest') {
   return null;
 }
 
+const jsonResponse = (win, body = '{}') => {
+  const ResponseCtor = win?.Response || globalThis.Response;
+  try {
+    return new ResponseCtor(body, {
+      status: 200,
+      statusText: 'OK',
+      headers: { 'content-type': 'application/json' }
+    });
+  } catch {
+    return undefined;
+  }
+};
+
 const blockResponse = (win) => {
   const ResponseCtor = win?.Response || globalThis.Response;
   try {
@@ -77,7 +86,7 @@ const sanitizeFetchResponse = async (win, response) => {
     const text = await response.clone().text();
     if (!hasAdPayload(text)) return response;
 
-    const rewritten = rewriteAdKeys(text);
+    const rewritten = sanitizeResponseText(text);
     if (rewritten === text) return response;
 
     const HeadersCtor = win?.Headers || globalThis.Headers;
@@ -108,20 +117,42 @@ const installFetchHook = (win) => {
       url = '';
     }
 
-    if (isBlockingEnabled(win) && matchRequest(win, url)) {
-      const blocked = blockResponse(win);
+    if (isAdblockEnabled(win) && matchRequest(win, url)) {
+      const blocked = isYouTubeAdEndpoint(url) ? jsonResponse(win) : blockResponse(win);
       if (blocked) return Promise.resolve(blocked);
       return Promise.reject(new win.TypeError('Failed to fetch'));
     }
 
     const result = nativeFetch.apply(this, arguments);
-    if (!isPlayerEndpoint(url) || !isBlockingEnabled(win)) return result;
+    if (!isPlayerEndpoint(url) || !isAdblockEnabled(win)) return result;
 
     return Promise.resolve(result).then((response) => sanitizeFetchResponse(win, response));
   };
 
   Object.defineProperty(patchedFetch, '__ytstAdblock', { value: true });
   win.fetch = patchedFetch;
+};
+
+const installBeaconHook = (win) => {
+  const navigatorObject = win?.navigator;
+  const nativeBeacon = navigatorObject?.sendBeacon;
+  if (typeof nativeBeacon !== 'function' || nativeBeacon.__ytstAdblock) return;
+
+  const patchedBeacon = function sendBeacon(url, data) {
+    try {
+      if (isAdblockEnabled(win) && matchRequest(win, String(url), 'ping')) return true;
+    } catch {
+
+    }
+    return nativeBeacon.call(navigatorObject, url, data);
+  };
+
+  Object.defineProperty(patchedBeacon, '__ytstAdblock', { value: true });
+  try {
+    navigatorObject.sendBeacon = patchedBeacon;
+  } catch {
+
+  }
 };
 
 const readResponseText = (xhr, descriptor) => {
@@ -136,6 +167,11 @@ const installSanitizedXhrGetters = (xhr, textDescriptor, responseDescriptor) => 
   let parsed = false;
   let cachedText;
   let cachedJson;
+  try {
+    xhr.__ytstSanitized = true;
+  } catch {
+
+  }
 
   const parse = () => {
     if (parsed) return;
@@ -156,11 +192,12 @@ const installSanitizedXhrGetters = (xhr, textDescriptor, responseDescriptor) => 
       }
 
       if (!text || !hasAdPayload(text)) return;
-      const rewritten = rewriteAdKeys(text);
+      const rewritten = sanitizeResponseText(text);
       if (rewritten === text) return;
 
+      const value = JSON.parse(rewritten);
       cachedText = rewritten;
-      cachedJson = JSON.parse(rewritten);
+      cachedJson = value;
     } catch {
 
     }
@@ -192,19 +229,49 @@ const installSanitizedXhrGetters = (xhr, textDescriptor, responseDescriptor) => 
   }
 };
 
+const defineValue = (target, name, value) => {
+  try {
+    Object.defineProperty(target, name, { configurable: true, value });
+  } catch {
+
+  }
+};
+
 const fakeBlockedXhr = (win, xhr, url) => {
+  const token = {};
+  try {
+    xhr.__ytstBlocked = true;
+    xhr.__ytstBlockedToken = token;
+  } catch {
+
+  }
   const finish = () => {
+    if (xhr.__ytstBlockedToken !== token) return;
     try {
-      const body = xhr.responseType === 'json' ? {} : (xhr.responseType === '' || xhr.responseType === 'text' ? '{}' : null);
-      Object.defineProperty(xhr, 'readyState', { configurable: true, value: 4 });
-      Object.defineProperty(xhr, 'status', { configurable: true, value: 200 });
-      Object.defineProperty(xhr, 'statusText', { configurable: true, value: 'OK' });
-      Object.defineProperty(xhr, 'responseURL', { configurable: true, value: url });
-      Object.defineProperty(xhr, 'responseText', { configurable: true, value: '{}' });
-      Object.defineProperty(xhr, 'response', { configurable: true, value: body });
+      const body = '{}';
+      defineValue(xhr, 'readyState', 4);
+      defineValue(xhr, 'status', 200);
+      defineValue(xhr, 'statusText', 'OK');
+      defineValue(xhr, 'responseURL', url);
+      defineValue(xhr, 'responseText', body);
+      defineValue(xhr, 'response', xhr.responseType === 'json' ? {} : body);
+      defineValue(xhr, 'getResponseHeader', (name) => (
+        String(name).toLowerCase() === 'content-type' ? 'application/json' : null
+      ));
+      defineValue(xhr, 'getAllResponseHeaders', () => 'content-type: application/json\r\n');
+
       xhr.dispatchEvent(new win.Event('readystatechange'));
+      const ProgressCtor = win.ProgressEvent;
+      if (typeof ProgressCtor === 'function') {
+        xhr.dispatchEvent(new ProgressCtor('progress', {
+          lengthComputable: true,
+          loaded: body.length,
+          total: body.length
+        }));
+      }
       xhr.dispatchEvent(new win.Event('load'));
       xhr.dispatchEvent(new win.Event('loadend'));
+      delete xhr.__ytstBlockedToken;
     } catch {
 
     }
@@ -226,6 +293,23 @@ const installXhrHook = (win) => {
 
   proto.open = function open(method, url, ...rest) {
     try {
+      if (this.__ytstSanitized) {
+        delete this.responseText;
+        delete this.response;
+        this.__ytstSanitized = false;
+      }
+      if (this.__ytstBlocked) {
+        delete this.readyState;
+        delete this.status;
+        delete this.statusText;
+        delete this.responseURL;
+        delete this.responseText;
+        delete this.response;
+        delete this.getResponseHeader;
+        delete this.getAllResponseHeaders;
+        delete this.__ytstBlockedToken;
+        this.__ytstBlocked = false;
+      }
       this.__ytstUrl = typeof url === 'string' ? url : String(url || '');
     } catch {
 
@@ -235,11 +319,11 @@ const installXhrHook = (win) => {
 
   proto.send = function send(body) {
     const url = this.__ytstUrl || '';
-    if (isBlockingEnabled(win) && matchRequest(win, url)) {
+    if (isAdblockEnabled(win) && matchRequest(win, url)) {
       fakeBlockedXhr(win, this, url);
       return undefined;
     }
-    if (isPlayerEndpoint(url) && isBlockingEnabled(win)) {
+    if (isPlayerEndpoint(url) && isAdblockEnabled(win)) {
       installSanitizedXhrGetters(this, textDescriptor, responseDescriptor);
     }
     return nativeSend.call(this, body);
@@ -253,6 +337,7 @@ export function installNetworkGuard(win) {
   try {
     installFetchHook(win);
     installXhrHook(win);
+    installBeaconHook(win);
     win.__ytstNetworkGuard = true;
     warmEngine(win);
     return true;

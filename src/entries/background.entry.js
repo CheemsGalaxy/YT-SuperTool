@@ -23,12 +23,47 @@ function getVideoId(url) {
   }
 }
 
-function enableAdRuleset() {
+function setAdRuleset(enabled) {
   try {
-    ext?.declarativeNetRequest?.updateEnabledRulesets({ enableRulesetIds: [AD_RULESET_ID] });
+    const rules = ext?.declarativeNetRequest;
+    if (!rules?.updateEnabledRulesets) return;
+    const update = enabled
+      ? rules.updateEnabledRulesets({ enableRulesetIds: [AD_RULESET_ID] })
+      : rules.updateEnabledRulesets({ disableRulesetIds: [AD_RULESET_ID] });
+    if (update && typeof update.then === 'function') update.catch(() => {});
   } catch {
 
   }
+}
+
+function readAdblockSetting() {
+  return new Promise((resolve) => {
+    try {
+      const storage = ext?.storage?.local;
+      if (!storage?.get) {
+        resolve(false);
+        return;
+      }
+      const result = storage.get({ adblock: false }, (value) => {
+        if (ext.runtime?.lastError) {
+          resolve(false);
+          return;
+        }
+        resolve(value?.adblock === true);
+      });
+      if (result && typeof result.then === 'function') {
+        result
+          .then((value) => resolve(value?.adblock === true))
+          .catch(() => resolve(false));
+      }
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+async function syncAdRuleset() {
+  setAdRuleset(await readAdblockSetting());
 }
 
 function reloadYouTubeTabs(tabs) {
@@ -119,14 +154,14 @@ async function openDownloadTab(message, sender) {
   return { ok: true };
 }
 
-enableAdRuleset();
+void syncAdRuleset();
 
 initAdblockBackground().catch((error) => {
   console.warn('YT SuperTool adblock background failed to start:', error);
 });
 
 ext.runtime.onInstalled.addListener((details) => {
-  enableAdRuleset();
+  void syncAdRuleset();
   if (details.reason === 'update' || details.reason === 'install') {
     try {
       const query = ext.tabs.query({ url: '*://*.youtube.com/*' });
@@ -235,9 +270,9 @@ ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
         update
           .then(() => sendResponse({ ok: true }))
           .catch((error) => sendResponse({ ok: false, error: error.message }));
-      } else {
-        sendResponse({ ok: true });
+        return true;
       }
+      sendResponse({ ok: true });
     } catch (error) {
       sendResponse({ ok: false, error: error.message });
     }

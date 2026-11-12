@@ -201,20 +201,50 @@
     "adSlots",
     "adBreakHeartbeatParams",
     "adParams",
-    "adSafetyReason"
+    "adSafetyReason",
+    "adBreakParams",
+    "playerAdParams",
+    "adConfig",
+    "adBreakServiceRenderer",
+    "adBreakService",
+    "adBreak",
+    "adBreaks",
+    "adPod",
+    "adPods",
+    "adVideoId",
+    "adVideoIds",
+    "adThumbnail",
+    "adThumbnailDetails",
+    "paidContentOverlay"
   ];
   const AD_KEYS_SET = new Set(AD_KEYS);
-  const AD_KEY_PATTERN = /"(adPlacements|playerAds|adSlots|adBreakHeartbeatParams|adParams|adSafetyReason)"\s*:/g;
+  const AD_KEY_PATTERN = new RegExp(
+    `"(${AD_KEYS.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})"\\s*:`,
+    "g"
+  );
   const RENAMED_PREFIX = "ytst_no_ads_";
-  const MAX_DEPTH = 8;
-  const MAX_NODES = 6e3;
+  const MAX_DEPTH = 12;
+  const MAX_NODES = 12e3;
   const rewriteAdKeys = (text) => {
     if (typeof text !== "string" || text.length === 0) return text;
     return text.replace(AD_KEY_PATTERN, (match, key) => `"${RENAMED_PREFIX}${key}":`);
   };
+  const sanitizeResponseText = (text) => {
+    if (typeof text !== "string" || text.length === 0) return text;
+    const rewritten = rewriteAdKeys(text);
+    const hasEnforcement = text.includes("enforcementMessageViewModel") || text.includes("adBlockMessageViewModel") || text.includes("errorScreen") && ADBLOCK_HINT.test(text);
+    if (!hasEnforcement) return rewritten;
+    try {
+      const parsed = JSON.parse(rewritten);
+      sanitizePlayerResponse(parsed);
+      return JSON.stringify(parsed);
+    } catch {
+      return rewritten;
+    }
+  };
   const hasAntiAdblockMessage = (status) => {
     if (!status || typeof status !== "object") return false;
-    if (status.enforcementMessageViewModel) return true;
+    if (status.enforcementMessageViewModel || status.adBlockMessageViewModel) return true;
     try {
       const text = JSON.stringify(status);
       if (!ADBLOCK_HINT.test(text)) return false;
@@ -225,8 +255,9 @@
   };
   const sanitizePlayabilityStatus = (status) => {
     if (!status || typeof status !== "object") return;
-    const enforced = status.status === "ERROR" && hasAntiAdblockMessage(status);
+    const enforced = Boolean(status.enforcementMessageViewModel || status.adBlockMessageViewModel) || status.status === "ERROR" && hasAntiAdblockMessage(status);
     delete status.enforcementMessageViewModel;
+    delete status.adBlockMessageViewModel;
     if (enforced) {
       status.status = "OK";
       delete status.reason;
@@ -259,7 +290,7 @@
         }
         continue;
       }
-      if (key === "enforcementMessageViewModel") {
+      if (key === "enforcementMessageViewModel" || key === "adBlockMessageViewModel") {
         try {
           delete node[key];
         } catch {
@@ -279,18 +310,41 @@
     walk$1(payload, 0, { count: 0 });
     return payload;
   }
-  const isPlayerEndpoint = (url) => typeof url === "string" && /\/youtubei\/v1\/(?:player|next|get_watch)\b/.test(url);
+  const isPlayerEndpoint = (url) => typeof url === "string" && /\/youtubei\/v1\/(?:player|next|get_watch|reel|reel_watch_sequence|updated_metadata)\b/.test(url);
+  const isYouTubeAdEndpoint = (url) => {
+    if (typeof url !== "string" || url.length === 0) return false;
+    return /\/youtubei\/v1\/ads(?:\/|\b)/.test(url) || /\/pagead\//.test(url) || /\/api\/stats\/(?:ads|atr|delayplay)\b/.test(url) || /\/ptracking\b/.test(url) || /[?&]adformat=/.test(url) || /\/get_video_info\?.*(?:adformat|ad_type)=/.test(url);
+  };
   const hasAdPayload = (text) => {
     if (typeof text !== "string" || text.length === 0) return false;
-    return text.includes("adPlacements") || text.includes("playerAds") || text.includes("adSlots") || text.includes("adBreakHeartbeatParams") || text.includes("enforcementMessageViewModel") || text.includes("errorScreen");
+    if (text.includes("enforcementMessageViewModel") || text.includes("adBlockMessageViewModel") || text.includes("errorScreen")) return true;
+    return AD_KEYS.some((key) => text.includes(key));
+  };
+  const MASTER_KEY = "yt_supertool_adblock";
+  const PRUNE_KEY = "yt_supertool_adblock_prune";
+  const readFlag = (win, key) => {
+    try {
+      const value = win?.localStorage?.getItem(key);
+      if (value === "1") return true;
+      if (value === "0") return false;
+    } catch {
+    }
+    return null;
+  };
+  const readAdblockCache = (win) => readFlag(win, MASTER_KEY);
+  const readAdblockPruneCache = (win) => readFlag(win, PRUNE_KEY);
+  const isAdblockEnabled = (win) => {
+    const dataset = win?.document?.documentElement?.dataset;
+    if (dataset?.ytstAdblock === "on") return true;
+    if (dataset?.ytstAdblock === "off") return false;
+    return readAdblockCache(win) === true;
   };
   const isPruningEnabled = (win) => {
-    const root = win?.document?.documentElement;
-    if (!root) return true;
-    const data = root.dataset || {};
-    if (data.ytstAdblock === "off") return false;
-    if (data.ytstAdblockPrune === "off") return false;
-    return true;
+    const data = win?.document?.documentElement?.dataset || {};
+    if (data.ytstAdblock === "off" || data.ytstAdblockPrune === "off") return false;
+    if (!isAdblockEnabled(win)) return false;
+    if (data.ytstAdblockPrune === "on") return true;
+    return readAdblockPruneCache(win) !== false;
   };
   const prune = (win, value) => {
     if (!isPruningEnabled(win)) return value;
@@ -298,6 +352,11 @@
   };
   const bindPlayerResponse = (win, name) => {
     let current;
+    try {
+      current = prune(win, win[name]);
+    } catch {
+      current = void 0;
+    }
     try {
       Object.defineProperty(win, name, {
         configurable: true,
@@ -335,11 +394,19 @@
       return false;
     }
   }
+  const AD_FLAGS = [
+    "web_enable_ab_rsp_cl",
+    "ab_pl_man",
+    "adblock_detection",
+    "adblock_detection_enabled",
+    "enable_adblock_detection",
+    "adblock_detection_message"
+  ];
   const allowInstreamAd = () => true;
-  const defineFlag = (win, name, value) => {
-    const ObjectCtor = win?.Object || Object;
+  const defineFlag = (target, name, value) => {
+    if (!target) return false;
     try {
-      ObjectCtor.defineProperty(ObjectCtor.prototype, name, {
+      Object.defineProperty(target, name, {
         configurable: true,
         get: () => value,
         set: () => {
@@ -350,36 +417,86 @@
       return false;
     }
   };
+  const patchFlags = (flags) => {
+    if (!flags || typeof flags !== "object") return false;
+    let changed = false;
+    AD_FLAGS.forEach((name) => {
+      if (name in flags) {
+        flags[name] = false;
+        changed = true;
+      }
+    });
+    return changed;
+  };
   const disableDetectionExperiments = (win) => {
+    if (!isAdblockEnabled(win)) return false;
+    let patched = false;
     try {
       const config = win?.yt?.config_;
-      if (!config) return false;
-      const flags = config.EXPERIMENT_FLAGS;
-      if (flags) {
-        flags.web_enable_ab_rsp_cl = false;
-        flags.ab_pl_man = false;
+      const flags = config?.EXPERIMENT_FLAGS;
+      if (patchFlags(flags)) patched = true;
+      const popups = config?.openPopupConfig?.supportedPopups;
+      if (popups?.adBlockMessageViewModel) {
+        popups.adBlockMessageViewModel = false;
+        patched = true;
       }
-      const popups = config.openPopupConfig?.supportedPopups;
-      if (popups) popups.adBlockMessageViewModel = false;
-      return true;
     } catch {
-      return false;
     }
+    try {
+      const ytcfg = win?.ytcfg;
+      if (!ytcfg) return patched;
+      if (typeof ytcfg.get === "function") {
+        try {
+          if (patchFlags(ytcfg.get("EXPERIMENT_FLAGS"))) patched = true;
+        } catch {
+        }
+      }
+      if (typeof ytcfg.set === "function" && !ytcfg.set.__ytstAdblock) {
+        const nativeSet = ytcfg.set;
+        const patchedSet = function set(key, value) {
+          if (key === "EXPERIMENT_FLAGS" && isAdblockEnabled(win)) patchFlags(value);
+          return nativeSet.call(this, key, value);
+        };
+        Object.defineProperty(patchedSet, "__ytstAdblock", { value: true });
+        try {
+          ytcfg.set = patchedSet;
+          patched = true;
+        } catch {
+        }
+      }
+    } catch {
+    }
+    return patched;
   };
   function installAdblockStealth(win = globalThis) {
     if (!win || win.__ytstStealth) return false;
+    const ObjectCtor = win.Object || Object;
+    defineFlag(ObjectCtor.prototype, "adBlocksFound", false);
+    defineFlag(ObjectCtor.prototype, "hasAllowedInstreamAd", allowInstreamAd);
     defineFlag(win, "adBlocksFound", false);
     defineFlag(win, "hasAllowedInstreamAd", allowInstreamAd);
-    const schedule = win.setInterval || win.setTimeout;
-    const cancel = win.clearInterval || win.clearTimeout;
+    const useInterval = typeof win.setInterval === "function";
+    const schedule = useInterval ? win.setInterval : win.setTimeout;
+    const cancel = useInterval ? win.clearInterval : win.clearTimeout;
     if (typeof schedule === "function") {
       let attempts = 0;
-      const timer = schedule(() => {
+      const timer = schedule.call(win, () => {
         attempts += 1;
         if (disableDetectionExperiments(win) || attempts >= 40) {
-          cancel?.(timer);
+          cancel.call(win, timer);
         }
       }, 250);
+    }
+    try {
+      const root = win.document?.documentElement;
+      const Observer = win.MutationObserver;
+      if (root && typeof Observer === "function") {
+        const observer = new Observer(() => {
+          if (isAdblockEnabled(win)) disableDetectionExperiments(win);
+        });
+        observer.observe(root, { attributes: true, attributeFilter: ["data-ytst-adblock"] });
+      }
+    } catch {
     }
     disableDetectionExperiments(win);
     win.__ytstStealth = true;
@@ -11530,6 +11647,12 @@
     "||2mdn.net^",
     "||moatads.com^",
     "||imasdk.googleapis.com^",
+    "||ads.youtube.com^",
+    "||adclick.g.doubleclick.net^",
+    "||googleads4.g.doubleclick.net^",
+    "||doubleverify.com^",
+    "||adsafeprotected.com^",
+    "||googlevideo.com/videoplayback*adformat=",
     "||google.com/pagead/",
     "||google.com/ads/",
     "! Measurement and trackers",
@@ -11589,10 +11712,6 @@
     if (typeof win?.requestIdleCallback === "function") win.requestIdleCallback(run, { timeout: 1e3 });
     else win?.setTimeout?.(run, 0);
   };
-  const isBlockingEnabled = (win) => {
-    const dataset = win?.document?.documentElement?.dataset;
-    return !dataset || dataset.ytstAdblock !== "off";
-  };
   function matchRequest(win, url, type = "xmlhttprequest") {
     if (!url) return null;
     const matcher = getEngine();
@@ -11610,6 +11729,18 @@
     }
     return null;
   }
+  const jsonResponse = (win, body = "{}") => {
+    const ResponseCtor = win?.Response || globalThis.Response;
+    try {
+      return new ResponseCtor(body, {
+        status: 200,
+        statusText: "OK",
+        headers: { "content-type": "application/json" }
+      });
+    } catch {
+      return void 0;
+    }
+  };
   const blockResponse = (win) => {
     const ResponseCtor = win?.Response || globalThis.Response;
     try {
@@ -11623,7 +11754,7 @@
       if (!response || !response.ok) return response;
       const text = await response.clone().text();
       if (!hasAdPayload(text)) return response;
-      const rewritten = rewriteAdKeys(text);
+      const rewritten = sanitizeResponseText(text);
       if (rewritten === text) return response;
       const HeadersCtor = win?.Headers || globalThis.Headers;
       const ResponseCtor = win?.Response || globalThis.Response;
@@ -11649,17 +11780,34 @@
       } catch {
         url = "";
       }
-      if (isBlockingEnabled(win) && matchRequest(win, url)) {
-        const blocked = blockResponse(win);
+      if (isAdblockEnabled(win) && matchRequest(win, url)) {
+        const blocked = isYouTubeAdEndpoint(url) ? jsonResponse(win) : blockResponse(win);
         if (blocked) return Promise.resolve(blocked);
         return Promise.reject(new win.TypeError("Failed to fetch"));
       }
       const result = nativeFetch.apply(this, arguments);
-      if (!isPlayerEndpoint(url) || !isBlockingEnabled(win)) return result;
+      if (!isPlayerEndpoint(url) || !isAdblockEnabled(win)) return result;
       return Promise.resolve(result).then((response) => sanitizeFetchResponse(win, response));
     };
     Object.defineProperty(patchedFetch, "__ytstAdblock", { value: true });
     win.fetch = patchedFetch;
+  };
+  const installBeaconHook = (win) => {
+    const navigatorObject = win?.navigator;
+    const nativeBeacon = navigatorObject?.sendBeacon;
+    if (typeof nativeBeacon !== "function" || nativeBeacon.__ytstAdblock) return;
+    const patchedBeacon = function sendBeacon(url, data) {
+      try {
+        if (isAdblockEnabled(win) && matchRequest(win, String(url), "ping")) return true;
+      } catch {
+      }
+      return nativeBeacon.call(navigatorObject, url, data);
+    };
+    Object.defineProperty(patchedBeacon, "__ytstAdblock", { value: true });
+    try {
+      navigatorObject.sendBeacon = patchedBeacon;
+    } catch {
+    }
   };
   const readResponseText = (xhr, descriptor) => {
     try {
@@ -11672,6 +11820,10 @@
     let parsed = false;
     let cachedText;
     let cachedJson;
+    try {
+      xhr.__ytstSanitized = true;
+    } catch {
+    }
     const parse2 = () => {
       if (parsed) return;
       parsed = true;
@@ -11680,17 +11832,18 @@
         const raw = responseType === "" || responseType === "text" ? readResponseText(xhr, textDescriptor) : null;
         let text = raw;
         if (!text && responseType === "json" && responseDescriptor?.get) {
-          const value = responseDescriptor.get.call(xhr);
-          if (value && typeof value === "object") {
-            cachedJson = value;
-            text = JSON.stringify(value);
+          const value2 = responseDescriptor.get.call(xhr);
+          if (value2 && typeof value2 === "object") {
+            cachedJson = value2;
+            text = JSON.stringify(value2);
           }
         }
         if (!text || !hasAdPayload(text)) return;
-        const rewritten = rewriteAdKeys(text);
+        const rewritten = sanitizeResponseText(text);
         if (rewritten === text) return;
+        const value = JSON.parse(rewritten);
         cachedText = rewritten;
-        cachedJson = JSON.parse(rewritten);
+        cachedJson = value;
       } catch {
       }
     };
@@ -11718,19 +11871,43 @@
       });
     }
   };
+  const defineValue = (target, name, value) => {
+    try {
+      Object.defineProperty(target, name, { configurable: true, value });
+    } catch {
+    }
+  };
   const fakeBlockedXhr = (win, xhr, url) => {
+    const token = {};
+    try {
+      xhr.__ytstBlocked = true;
+      xhr.__ytstBlockedToken = token;
+    } catch {
+    }
     const finish = () => {
+      if (xhr.__ytstBlockedToken !== token) return;
       try {
-        const body = xhr.responseType === "json" ? {} : xhr.responseType === "" || xhr.responseType === "text" ? "{}" : null;
-        Object.defineProperty(xhr, "readyState", { configurable: true, value: 4 });
-        Object.defineProperty(xhr, "status", { configurable: true, value: 200 });
-        Object.defineProperty(xhr, "statusText", { configurable: true, value: "OK" });
-        Object.defineProperty(xhr, "responseURL", { configurable: true, value: url });
-        Object.defineProperty(xhr, "responseText", { configurable: true, value: "{}" });
-        Object.defineProperty(xhr, "response", { configurable: true, value: body });
+        const body = "{}";
+        defineValue(xhr, "readyState", 4);
+        defineValue(xhr, "status", 200);
+        defineValue(xhr, "statusText", "OK");
+        defineValue(xhr, "responseURL", url);
+        defineValue(xhr, "responseText", body);
+        defineValue(xhr, "response", xhr.responseType === "json" ? {} : body);
+        defineValue(xhr, "getResponseHeader", (name) => String(name).toLowerCase() === "content-type" ? "application/json" : null);
+        defineValue(xhr, "getAllResponseHeaders", () => "content-type: application/json\r\n");
         xhr.dispatchEvent(new win.Event("readystatechange"));
+        const ProgressCtor = win.ProgressEvent;
+        if (typeof ProgressCtor === "function") {
+          xhr.dispatchEvent(new ProgressCtor("progress", {
+            lengthComputable: true,
+            loaded: body.length,
+            total: body.length
+          }));
+        }
         xhr.dispatchEvent(new win.Event("load"));
         xhr.dispatchEvent(new win.Event("loadend"));
+        delete xhr.__ytstBlockedToken;
       } catch {
       }
     };
@@ -11747,6 +11924,23 @@
     const responseDescriptor = Object.getOwnPropertyDescriptor(proto, "response");
     proto.open = function open(method, url, ...rest) {
       try {
+        if (this.__ytstSanitized) {
+          delete this.responseText;
+          delete this.response;
+          this.__ytstSanitized = false;
+        }
+        if (this.__ytstBlocked) {
+          delete this.readyState;
+          delete this.status;
+          delete this.statusText;
+          delete this.responseURL;
+          delete this.responseText;
+          delete this.response;
+          delete this.getResponseHeader;
+          delete this.getAllResponseHeaders;
+          delete this.__ytstBlockedToken;
+          this.__ytstBlocked = false;
+        }
         this.__ytstUrl = typeof url === "string" ? url : String(url || "");
       } catch {
       }
@@ -11754,11 +11948,11 @@
     };
     proto.send = function send(body) {
       const url = this.__ytstUrl || "";
-      if (isBlockingEnabled(win) && matchRequest(win, url)) {
+      if (isAdblockEnabled(win) && matchRequest(win, url)) {
         fakeBlockedXhr(win, this, url);
         return void 0;
       }
-      if (isPlayerEndpoint(url) && isBlockingEnabled(win)) {
+      if (isPlayerEndpoint(url) && isAdblockEnabled(win)) {
         installSanitizedXhrGetters(this, textDescriptor, responseDescriptor);
       }
       return nativeSend.call(this, body);
@@ -11770,6 +11964,7 @@
     try {
       installFetchHook(win);
       installXhrHook(win);
+      installBeaconHook(win);
       win.__ytstNetworkGuard = true;
       warmEngine(win);
       return true;

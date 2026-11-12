@@ -142,7 +142,7 @@
     };
     return {
       env: target2,
-      version: api?.runtime?.getManifest?.().version || "2.4.0",
+      version: api?.runtime?.getManifest?.().version || "2.4.1",
       storage,
       network,
       injector,
@@ -1023,7 +1023,7 @@
           ]),
           createElement("span", {
             className: "ytst-badge",
-            textContent: UI_TEXT.versionTarget(meta.version || "2.4.0", meta.target || "mv3")
+            textContent: UI_TEXT.versionTarget(meta.version || "2.4.1", meta.target || "mv3")
           }),
           createElement("div", { className: "ytst-header-actions" }, [
             (() => {
@@ -3148,7 +3148,7 @@
       }
     };
   }
-  const baseCosmeticCss = 'html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-in-feed-ad-layout-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-banner-promo-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #masthead-ad,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #player-ads,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"],\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-featured-product,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-container,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-slot,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-module,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-image-overlay,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-sparkles-web-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-display-ad-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-compact-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-advertiser-info-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-v3-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-merch-shelf-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-item-renderer:has(ytd-ad-slot-renderer),\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-item-section-renderer > #contents > ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-section-renderer:has(ytd-ad-slot-renderer),\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-consent-bump-v2-lightbox:has(~ ytd-ad-slot-renderer) {\n  display: none !important;\n}\n';
+  const baseCosmeticCss = 'html[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-in-feed-ad-layout-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-banner-promo-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #masthead-ad,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] #player-ads,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"],\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-featured-product,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-container,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-overlay-slot,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] .ytp-ad-image-overlay,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-sparkles-web-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-display-ad-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-compact-promoted-video-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-advertiser-info-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-video-masthead-ad-v3-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-merch-shelf-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-item-renderer:has(ytd-ad-slot-renderer),\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-item-section-renderer > #contents > ytd-ad-slot-renderer,\nhtml[data-ytst-adblock="on"][data-ytst-adblock-cosmetic="on"] ytd-rich-section-renderer:has(ytd-ad-slot-renderer) {\n  display: none !important;\n}\n';
   const COSMETIC_FILTERS = [
     "youtube.com##ytd-ad-slot-renderer",
     "youtube.com##ytd-in-feed-ad-layout-renderer",
@@ -3156,6 +3156,7 @@
     "youtube.com##ytd-statement-banner-renderer",
     "youtube.com##ytd-display-ad-renderer",
     "youtube.com##ytd-promoted-sparkles-web-renderer",
+    "youtube.com##ytd-promoted-sparkles-text-search-renderer",
     "youtube.com##ytd-promoted-video-renderer",
     "youtube.com##ytd-compact-promoted-video-renderer",
     "youtube.com##ytd-video-masthead-ad-v3-renderer",
@@ -3167,17 +3168,24 @@
     "youtube.com##ytd-ads-engagement-panel-content-renderer",
     "youtube.com##ytm-promoted-sparkles-web-renderer",
     "youtube.com##ytd-rich-item-renderer:has(ytd-ad-slot-renderer)",
+    "youtube.com##ytd-rich-item-renderer:has(ytd-in-feed-ad-layout-renderer)",
     "youtube.com##ytd-rich-section-renderer:has(ytd-ad-slot-renderer)",
+    "youtube.com##ytd-rich-section-renderer:has(ytd-in-feed-ad-layout-renderer)",
     "youtube.com##ytd-item-section-renderer > #contents > ytd-ad-slot-renderer",
+    "youtube.com##ytd-item-section-renderer > #contents > ytd-in-feed-ad-layout-renderer",
     "youtube.com##ytd-rich-grid-row:has(ytd-ad-slot-renderer)",
     "youtube.com###masthead-ad",
     "youtube.com###player-ads",
     "youtube.com##.ytp-ad-overlay-container",
     "youtube.com##.ytp-ad-overlay-slot",
-    "youtube.com##.ytp-ad-module",
     "youtube.com##.ytp-ad-image-overlay",
+    "youtube.com##.ytp-ad-text-overlay",
+    "youtube.com##.ytp-ad-player-overlay",
+    "youtube.com##.ytp-ad-survey",
     "youtube.com##.ytp-ad-progress-list",
     "youtube.com##.ytp-ad-preview-container",
+    "youtube.com##.ytp-ad-badge",
+    "youtube.com##.ytp-ad-simple-ad-badge",
     "youtube.com##.ytp-featured-product",
     "youtube.com##.ytp-ad-suggested-action",
     "youtube.com##.ytp-suggested-action:has(.ytp-ad-suggested-action)"
@@ -3215,7 +3223,15 @@
   ].join(",");
   const OVERLAY_SELECTOR = "tp-yt-iron-overlay-backdrop";
   const PLAYER_SELECTOR$1 = "#movie_player, .html5-video-player";
+  const AD_CLOSE_SELECTOR = [
+    ".ytp-ad-overlay-close-button",
+    ".ytp-ad-overlay-close-container button",
+    ".ytp-ad-skip-button",
+    ".ytp-ad-skip-button-modern",
+    ".ytp-skip-ad-button"
+  ].join(",");
   const SCAN_INTERVAL = 1200;
+  const CLICK_COOLDOWN$1 = 600;
   const isEnforcementWall = (element) => {
     if (!element) return false;
     if (element.tagName === "YTD-ENFORCEMENT-MESSAGE-VIEW-MODEL") return true;
@@ -3239,26 +3255,35 @@
       }
     }
   };
+  const removeNode = (element) => {
+    try {
+      element.remove();
+    } catch {
+    }
+  };
   function createAdblockGuard() {
     let observer = null;
     let interval = 0;
     let scheduled = 0;
+    let lastClick = 0;
     let started = false;
+    const clearPlayerAds = () => {
+      const now = Date.now();
+      if (now - lastClick < CLICK_COOLDOWN$1) return;
+      const button = document.querySelector(AD_CLOSE_SELECTOR);
+      if (!button || button.disabled || !button.isConnected) return;
+      lastClick = now;
+      try {
+        button.click();
+      } catch {
+      }
+    };
     const clearWall = () => {
+      clearPlayerAds();
       const walls = [...document.querySelectorAll(WALL_SELECTOR)].filter(isEnforcementWall);
       if (!walls.length) return;
-      for (const wall of walls) {
-        try {
-          wall.remove();
-        } catch {
-        }
-      }
-      document.querySelectorAll(OVERLAY_SELECTOR).forEach((element) => {
-        try {
-          element.remove();
-        } catch {
-        }
-      });
+      walls.forEach(removeNode);
+      document.querySelectorAll(OVERLAY_SELECTOR).forEach(removeNode);
       document.body?.style.removeProperty("overflow");
       document.documentElement?.style.removeProperty("overflow");
       resumePlayback();
@@ -3270,6 +3295,12 @@
         clearWall();
       }, 250);
     };
+    const onNavigate = () => {
+      clearTimeout(scheduled);
+      scheduled = 0;
+      clearWall();
+      schedule();
+    };
     const start2 = () => {
       if (started) return;
       started = true;
@@ -3279,6 +3310,7 @@
         observer.observe(root, { childList: true, subtree: true });
       }
       interval = setInterval(clearWall, SCAN_INTERVAL);
+      document.addEventListener("yt-navigate-finish", onNavigate, { passive: true });
       clearWall();
     };
     const stop = () => {
@@ -3290,6 +3322,7 @@
       scheduled = 0;
       clearInterval(interval);
       interval = 0;
+      document.removeEventListener("yt-navigate-finish", onNavigate);
     };
     return { start: start2, stop };
   }
@@ -3299,36 +3332,62 @@
     ".ytp-ad-skip-button-modern",
     ".ytp-skip-ad-button",
     ".ytp-ad-skip-button-container button",
+    ".ytp-ad-skip-button-slot button",
     "button.ytp-ad-skip-button-modern"
   ];
+  const CLOSE_SELECTORS = [
+    ".ytp-ad-overlay-close-button",
+    ".ytp-ad-overlay-close-container button"
+  ];
   const AD_CLASSES = ["ad-showing", "ad-interrupting"];
+  const AD_OVERLAY_SELECTOR = ".ytp-ad-player-overlay, .ytp-ad-overlay-container, .ytp-ad-text-overlay";
   const TICK_INTERVAL = 250;
   const CLICK_COOLDOWN = 400;
   const findPlayer = () => document.querySelector(PLAYER_SELECTOR);
-  const isAdShowing = (player) => Boolean(player) && AD_CLASSES.some((name) => player.classList.contains(name));
+  const isAdShowing = (player) => {
+    if (!player) return false;
+    if (AD_CLASSES.some((name) => player.classList.contains(name))) return true;
+    const overlay = player.querySelector(AD_OVERLAY_SELECTOR);
+    return Boolean(overlay && overlay.getClientRects().length);
+  };
   const findVideo = (player) => player?.querySelector("video") || document.querySelector("video");
-  const findSkipButton = (player) => {
-    for (const selector of SKIP_SELECTORS) {
+  const findButton = (player, selectors) => {
+    for (const selector of selectors) {
       const button = player?.querySelector(selector) || document.querySelector(selector);
       if (button && !button.disabled && button.isConnected) return button;
     }
     return null;
+  };
+  const isPlayerMutation = (mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.target?.closest?.(PLAYER_SELECTOR)) return true;
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.matches?.(PLAYER_SELECTOR) || node.querySelector?.(PLAYER_SELECTOR)) return true;
+      }
+    }
+    return false;
   };
   function createAdblockSkipper() {
     let observer = null;
     let interval = 0;
     let debounce = 0;
     let mutedState = null;
+    let skipApiUsed = false;
     let lastClick = 0;
+    let lastClose = 0;
     let started = false;
     const stopInterval = () => {
       clearInterval(interval);
       interval = 0;
     };
     const restore = () => {
-      if (!mutedState) return;
+      if (!mutedState) {
+        stopInterval();
+        return;
+      }
       const video = mutedState.video;
-      if (video) {
+      if (video?.isConnected) {
         try {
           video.muted = mutedState.muted;
           video.playbackRate = mutedState.rate;
@@ -3336,7 +3395,18 @@
         }
       }
       mutedState = null;
+      skipApiUsed = false;
       stopInterval();
+    };
+    const closeOverlay = (player, now) => {
+      if (now - lastClose < CLICK_COOLDOWN) return;
+      const close = findButton(player, CLOSE_SELECTORS);
+      if (!close) return;
+      lastClose = now;
+      try {
+        close.click();
+      } catch {
+      }
     };
     const tick = () => {
       if (!started) return;
@@ -3346,7 +3416,10 @@
         return;
       }
       const video = findVideo(player);
-      if (!video) return;
+      if (!video) {
+        restore();
+        return;
+      }
       if (!mutedState) {
         mutedState = { video, muted: video.muted, rate: video.playbackRate };
         try {
@@ -3355,8 +3428,16 @@
         }
       }
       const now = Date.now();
+      closeOverlay(player, now);
+      if (!skipApiUsed && typeof player.skipAd === "function") {
+        skipApiUsed = true;
+        try {
+          player.skipAd();
+        } catch {
+        }
+      }
       if (now - lastClick > CLICK_COOLDOWN) {
-        const skip = findSkipButton(player);
+        const skip = findButton(player, SKIP_SELECTORS);
         if (skip) {
           lastClick = now;
           try {
@@ -3366,17 +3447,19 @@
           }
         }
       }
-      if (Number.isFinite(video.duration) && video.duration > 0) {
-        if (video.duration - video.currentTime > 0.15) {
+      if (player.classList.contains("ad-showing")) {
+        if (Number.isFinite(video.duration) && video.duration > 0) {
+          if (video.duration - video.currentTime > 0.15) {
+            try {
+              video.currentTime = video.duration;
+            } catch {
+            }
+          }
+        } else if (video.playbackRate < 16) {
           try {
-            video.currentTime = video.duration;
+            video.playbackRate = 16;
           } catch {
           }
-        }
-      } else if (video.playbackRate < 16) {
-        try {
-          video.playbackRate = 16;
-        } catch {
         }
       }
       if (!interval) interval = setInterval(tick, TICK_INTERVAL);
@@ -3384,6 +3467,10 @@
     const schedule = () => {
       clearTimeout(debounce);
       debounce = setTimeout(tick, 120);
+    };
+    const handleMutations = (mutations) => {
+      if (!started || !isPlayerMutation(mutations)) return;
+      schedule();
     };
     const onNavigate = () => {
       restore();
@@ -3396,9 +3483,9 @@
           return;
         }
         started = true;
-        const root = document.body || document.documentElement;
+        const root = document.documentElement || document.body;
         if (!root) return;
-        observer = new MutationObserver(schedule);
+        observer = new MutationObserver(handleMutations);
         observer.observe(root, {
           childList: true,
           subtree: true,
@@ -3419,6 +3506,15 @@
       }
     };
   }
+  const MASTER_KEY = "yt_supertool_adblock";
+  const PRUNE_KEY = "yt_supertool_adblock_prune";
+  const syncAdblockCache = (win, enabled, prune = enabled) => {
+    try {
+      win?.localStorage?.setItem(MASTER_KEY, enabled ? "1" : "0");
+      win?.localStorage?.setItem(PRUNE_KEY, enabled && prune ? "1" : "0");
+    } catch {
+    }
+  };
   const cosmeticCss = `${baseCosmeticCss}
 ${compileCosmeticCss(COSMETIC_FILTERS)}`;
   const FLAGS = {
@@ -3444,6 +3540,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       setFlag(FLAGS.master, master);
       setFlag(FLAGS.prune, prune);
       setFlag(FLAGS.cosmetic, cosmetic);
+      syncAdblockCache(window, master, prune);
       bridge2.setNetworkBlocking?.(master);
       if (cosmetic && !cosmeticInjected) {
         bridge2.injector.injectStyle(cosmeticCss, "ytst-adblock-cosmetic");
@@ -3470,6 +3567,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
         setFlag(FLAGS.master, false);
         setFlag(FLAGS.prune, false);
         setFlag(FLAGS.cosmetic, false);
+        bridge2.setNetworkBlocking?.(false);
         skipper?.stop();
         guard?.stop();
       }
@@ -3569,7 +3667,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
         else apply();
       }, 200);
     };
-    const isPlayerMutation = (mutations) => mutations.some((mutation) => {
+    const isPlayerMutation2 = (mutations) => mutations.some((mutation) => {
       if (mutation.target?.closest?.(".html5-video-player")) return true;
       if (mutation.target?.matches?.("#player, #movie_player, .html5-video-player, .ytp-left-controls, .ytp-right-controls")) return true;
       return [...mutation.addedNodes].some((node) => {
@@ -3586,7 +3684,7 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       if (settings.get("adblock")) features.adblock?.update?.(mutations);
       panel.syncTheme();
       if (!document.querySelector(".ytst-header-button")) launcher.ensureHeader();
-      if (isPlayerMutation(mutations)) initPlayerFeatures();
+      if (isPlayerMutation2(mutations)) initPlayerFeatures();
     };
     const handleNavigation = () => {
       playerRetryCount = 0;

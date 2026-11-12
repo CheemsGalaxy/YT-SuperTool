@@ -18,7 +18,7 @@ const ENGINE_CONFIG = {
 let blocker = null;
 let context = null;
 let starting = false;
-let enabled = true;
+let enabled = false;
 
 const getBlocker = () => {
   if (!blocker) {
@@ -69,16 +69,16 @@ export async function initAdblockBackground() {
 
   try {
     const stored = await browser.storage.local.get('adblock');
-    enabled = stored.adblock !== false;
+    enabled = stored.adblock === true;
   } catch {
-    enabled = true;
+    enabled = false;
   }
 
   if (enabled) await startBlocking();
 
   browser.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== 'local' || !('adblock' in changes)) return;
-    enabled = changes.adblock.newValue !== false;
+    enabled = changes.adblock.newValue === true;
     if (enabled) void startBlocking();
     else stopBlocking();
   });

@@ -44,7 +44,7 @@
     "rule_resources": [
       {
         "id": "yt-adblock",
-        "enabled": true,
+        "enabled": false,
         "path": "rules/yt-adblock-dnr.json"
       }
     ]
