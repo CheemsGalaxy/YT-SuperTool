@@ -4,7 +4,7 @@
 // @version      2.4.1
 // @updateURL    https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @downloadURL  https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
-// @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots.
+// @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots. Ad blocking is off by default and may not work, since YouTube keeps changing its detection. For best results, use uBlock Origin or uBO Lite.
 // @author       CheemsGalaxy
 // @license      MIT
 // @match        *://*.youtube.com/*
