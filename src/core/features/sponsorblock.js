@@ -7,6 +7,8 @@ const CACHE_MAX = 120;
 const TICK_INTERVAL = 250;
 const MIN_SEGMENT_LENGTH = 0.5;
 const NOTICE_DURATION = 5000;
+const RETRY_BASE = 2000;
+const RETRY_MAX = 30000;
 
 const getPlayer = () => document.querySelector('#movie_player') || document.querySelector('.html5-video-player');
 const getVideo = () => getPlayer()?.querySelector('video') || document.querySelector('video');
@@ -76,7 +78,81 @@ export function createSponsorBlock({ bridge }) {
   let noticeEl = null;
   let noticeTimer = 0;
   let noticeEnabled = true;
+  let progressEnabled = true;
   let seekingBound = false;
+  let trackEl = null;
+  let trackSignature = '';
+  let segmentRevision = 0;
+  let loadingVideoId = '';
+  let loadedVideoId = '';
+  let loadError = { videoId: '', attempt: 0, retryAt: 0 };
+
+  const resetLoad = () => {
+    loadingVideoId = '';
+    loadedVideoId = '';
+    loadError = { videoId: '', attempt: 0, retryAt: 0 };
+  };
+
+  function setSegments(list) {
+    segments = list;
+    segmentRevision += 1;
+  }
+
+  function getProgressBar(player) {
+    return player?.querySelector('.ytp-progress-bar') || null;
+  }
+
+  function ensureTrack(player) {
+    const bar = getProgressBar(player);
+    if (!bar) return null;
+    if (trackEl?.isConnected && trackEl.parentElement === bar) return trackEl;
+    trackEl?.remove();
+    trackEl = document.createElement('div');
+    trackEl.className = 'ytst-sb-track';
+    trackEl.setAttribute('aria-hidden', 'true');
+    bar.prepend(trackEl);
+    trackSignature = '';
+    return trackEl;
+  }
+
+  function renderSegments(video) {
+    if (!progressEnabled) {
+      removeTrack();
+      return;
+    }
+    const track = ensureTrack(getPlayer());
+    if (!track) return;
+    const duration = Number(video?.duration) || 0;
+    const signature = `${segmentRevision}|${duration}`;
+    const empty = segments.length > 0 && duration > 0 && track.childElementCount === 0;
+    if (signature === trackSignature && !empty) return;
+    trackSignature = signature;
+    track.replaceChildren();
+    if (!duration || !segments.length) return;
+
+    const fragment = document.createDocumentFragment();
+    for (const segment of segments) {
+      const start = Math.min(Math.max(segment.start, 0), duration);
+      const end = Math.min(Math.max(segment.end, start), duration);
+      const span = end - start;
+      if (span <= 0) continue;
+      const meta = SPONSOR_CATEGORIES[segment.category] || SPONSOR_CATEGORIES.sponsor;
+      const bar = document.createElement('span');
+      bar.className = 'ytst-sb-segment';
+      bar.dataset.category = segment.category;
+      bar.style.left = `${(start / duration) * 100}%`;
+      bar.style.width = `${(span / duration) * 100}%`;
+      bar.style.backgroundColor = meta.color;
+      fragment.appendChild(bar);
+    }
+    track.appendChild(fragment);
+  }
+
+  function removeTrack() {
+    trackEl?.remove();
+    trackEl = null;
+    trackSignature = '';
+  }
 
   async function activeCategories() {
     const categories = normalizeCategories(await storage.get('sponsorblockCategories', null));
@@ -131,31 +207,65 @@ export function createSponsorBlock({ bridge }) {
     return promise;
   }
 
+  const isCurrent = (token, videoId) => enabled && token === fetchToken && videoId === currentVideoId;
+
+  function scheduleRetry(videoId) {
+    const attempt = loadError.videoId === videoId ? loadError.attempt + 1 : 1;
+    const delay = Math.min(RETRY_MAX, RETRY_BASE * 2 ** (attempt - 1));
+    loadError = { videoId, attempt, retryAt: Date.now() + delay };
+  }
+
   async function loadSegments(videoId) {
     const token = ++fetchToken;
-    segments = [];
+    loadingVideoId = videoId;
+    loadedVideoId = '';
+    setSegments([]);
     skipped = new Set();
     lastSkip = null;
     hideNotice();
-    if (!enabled || !videoId) return;
+    renderSegments(getVideo());
+    if (!enabled || !videoId) {
+      loadingVideoId = '';
+      return;
+    }
 
     const categories = await activeCategories().catch(() => []);
-    if (!enabled || token !== fetchToken || videoId !== currentVideoId || !categories.length) return;
+    if (!isCurrent(token, videoId)) {
+      if (token === fetchToken) loadingVideoId = '';
+      return;
+    }
+    if (!categories.length) {
+      loadingVideoId = '';
+      loadedVideoId = videoId;
+      return;
+    }
 
     const cached = getCached(videoId, categories);
     if (cached) {
-      segments = cached;
+      loadingVideoId = '';
+      loadedVideoId = videoId;
+      loadError = { videoId: '', attempt: 0, retryAt: 0 };
+      setSegments(cached);
+      renderSegments(getVideo());
       return;
     }
 
     const result = await fetchSegments(videoId, categories);
-    if (!enabled || token !== fetchToken || videoId !== currentVideoId) return;
+    if (!isCurrent(token, videoId)) {
+      if (token === fetchToken) loadingVideoId = '';
+      return;
+    }
+    loadingVideoId = '';
     if (!result.ok) {
+      scheduleRetry(videoId);
       console.warn('YT SuperTool could not load SponsorBlock segments:', result.error);
       return;
     }
-    segments = normalizeSegments(result.segments);
+    loadedVideoId = videoId;
+    loadError = { videoId: '', attempt: 0, retryAt: 0 };
+    setSegments(normalizeSegments(result.segments));
     setCache(videoId, categories, segments);
+    renderSegments(getVideo());
   }
 
   function ensureNotice() {
@@ -240,6 +350,15 @@ export function createSponsorBlock({ bridge }) {
       return;
     }
 
+    if (videoId && loadingVideoId !== videoId && loadedVideoId !== videoId) {
+      const retryAt = loadError.videoId === videoId ? loadError.retryAt : 0;
+      if (Date.now() >= retryAt) {
+        void loadSegments(videoId);
+        return;
+      }
+    }
+
+    renderSegments(video);
     if (!segments.length || video.readyState < 1) return;
     const duration = Number(video.duration);
     if (!Number.isFinite(duration) || duration <= 0) return;
@@ -264,26 +383,50 @@ export function createSponsorBlock({ bridge }) {
 
   function onStorageChanged(changes) {
     if (changes.sponsorblockNotice) noticeEnabled = Boolean(changes.sponsorblockNotice.newValue);
+    if (changes.sponsorblockProgressBar) {
+      progressEnabled = changes.sponsorblockProgressBar.newValue !== false;
+      if (progressEnabled) renderSegments(getVideo());
+      else removeTrack();
+    }
     if (changes.sponsorblockCategories) {
       segmentCache.clear();
-      if (enabled) void loadSegments(currentVideoId);
+      const videoId = getVideoId();
+      if (enabled && videoId) {
+        currentVideoId = videoId;
+        void loadSegments(videoId);
+      }
     }
   }
 
-  storage.onChanged(onStorageChanged, ['sponsorblockCategories', 'sponsorblockNotice']);
+  storage.onChanged(onStorageChanged, ['sponsorblockCategories', 'sponsorblockNotice', 'sponsorblockProgressBar']);
   storage.get('sponsorblockNotice', true)
     .then((value) => {
       noticeEnabled = Boolean(value);
     })
     .catch((error) => console.error('YT SuperTool could not load SponsorBlock notice setting:', error));
+  storage.get('sponsorblockProgressBar', true)
+    .then((value) => {
+      progressEnabled = value !== false;
+      if (!progressEnabled) removeTrack();
+      else renderSegments(getVideo());
+    })
+    .catch((error) => console.error('YT SuperTool could not load SponsorBlock bar setting:', error));
 
   document.addEventListener('yt-navigate-finish', () => {
     if (!enabled) return;
-    currentVideoId = '';
-    segments = [];
+    const videoId = getVideoId();
+    if (videoId === currentVideoId) {
+      renderSegments(getVideo());
+      return;
+    }
+    currentVideoId = videoId;
+    setSegments([]);
     skipped = new Set();
     lastSkip = null;
     hideNotice();
+    removeTrack();
+    resetLoad();
+    if (videoId) void loadSegments(videoId);
   }, { passive: true });
 
   return {
@@ -294,6 +437,8 @@ export function createSponsorBlock({ bridge }) {
         if (videoId && videoId !== currentVideoId) {
           currentVideoId = videoId;
           void loadSegments(videoId);
+        } else {
+          renderSegments(getVideo());
         }
         return;
       }
@@ -313,11 +458,13 @@ export function createSponsorBlock({ bridge }) {
         seekingBound = false;
       }
       fetchToken += 1;
-      segments = [];
+      setSegments([]);
       skipped = new Set();
       lastSkip = null;
       currentVideoId = '';
+      resetLoad();
       hideNotice();
+      removeTrack();
       noticeEl?.remove();
       noticeEl = null;
     }

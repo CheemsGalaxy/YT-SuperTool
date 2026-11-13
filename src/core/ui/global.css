@@ -452,6 +452,41 @@ html:not([dark]) .ytst-speed-reset:hover {
 .ytst-sb-undo:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+.ytst-sb-track {
+  position: absolute;
+  inset: 0;
+  z-index: 42;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  transform: scaleY(0.6);
+  transform-origin: center;
+  transition: transform 100ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.ytp-big-mode .ytst-sb-track {
+  transform: translateY(-0.5px) scaleY(0.625);
+}
+
+.ytp-delhi-modern .ytst-sb-track {
+  transform: scaleY(0.667);
+}
+
+.ytp-progress-bar-container:hover:not([aria-disabled="true"]) .ytst-sb-track,
+.ytp-drag .ytst-sb-track,
+.ytp-touch-mode .ytst-sb-track {
+  transform: none;
+}
+
+.ytst-sb-segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 1px;
+  pointer-events: none;
+}
+
 .ytst-toast {
   position: fixed;
   left: 24px;
@@ -519,6 +554,7 @@ html[data-ytst-no-shorts="on"] [class*="ytGridShelfViewModelGridShelfBottomButto
 @media (prefers-reduced-motion: reduce) {
   .ytst-toast,
   .ytst-sb-notice,
+  .ytst-sb-track,
   .ytst-speed-chevron,
   .ytst-speed-chip {
     transition-duration: 0ms;

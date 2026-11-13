@@ -95,6 +95,12 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
         if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
         else flashSaved();
       });
+    },
+    onProgressChange: (checked) => {
+      void settings.set('sponsorblockProgressBar', checked).then((saved) => {
+        if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
+        else flashSaved();
+      });
     }
   });
 
@@ -199,6 +205,7 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
     sponsorAccordion?.setOpen(Boolean(settings.get('sponsorblock')));
     sponsorAccordion?.setCategories(settings.get('sponsorblockCategories'));
     sponsorAccordion?.setNotice(settings.get('sponsorblockNotice'));
+    sponsorAccordion?.setProgress(settings.get('sponsorblockProgressBar'));
   };
 
   const syncTheme = () => {
@@ -320,7 +327,7 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
         ]),
         createElement('span', {
           className: 'ytst-badge',
-          textContent: UI_TEXT.versionTarget(meta.version || '2.4.1', meta.target || 'mv3')
+          textContent: UI_TEXT.versionTarget(meta.version || '2.4.2', meta.target || 'mv3')
         }),
         createElement('div', { className: 'ytst-header-actions' }, [
           (() => {

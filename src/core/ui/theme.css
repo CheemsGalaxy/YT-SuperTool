@@ -617,6 +617,12 @@
   border-top: 1px solid var(--ytst-line);
 }
 
+.ytst-sb-progress {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ytst-overlay,
   .ytst-panel,

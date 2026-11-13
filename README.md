@@ -15,7 +15,7 @@ YT SuperTool là bộ công cụ YouTube tất cả trong một: chặn quảng 
 
 [Bản phát hành](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
-Phiên bản hiện tại: 2.4.1
+Phiên bản hiện tại: 2.4.2
 
 ### Tải xuống
 
@@ -33,7 +33,7 @@ Phiên bản hiện tại: 2.4.1
 | Ẩn Shorts | Xóa kệ Shorts, tab và thẻ trong feed. | Bật |
 | Dọn trang chủ | Ẩn promo, khảo sát, Playables và kệ live. | Bật |
 | Khôi phục dislike | Hiển thị số dislike ước tính từ API Return YouTube Dislike. | Bật |
-| SponsorBlock | Bỏ qua đoạn sponsor, self-promo và nhắc tương tác do cộng đồng gửi. | Bật |
+| SponsorBlock | Bỏ qua đoạn sponsor, self-promo và nhắc tương tác do cộng đồng gửi; tô màu các đoạn trên thanh tiến trình. | Bật |
 | Tự động xem tiếp | Đóng hộp thoại "Video paused. Continue watching?". | Bật |
 | Tốc độ phát | Thêm thanh tốc độ, preset và phím tắt `<` / `>`. | Bật |
 | Picture in picture | Mở video hiện tại trong cửa sổ nổi. | Bật |
@@ -216,7 +216,7 @@ YT SuperTool is an all-in-one YouTube enhancer: optional three-layer ad blocking
 
 [Releases](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
-Current version: 2.4.1
+Current version: 2.4.2
 
 ### Downloads
 
@@ -234,7 +234,7 @@ Current version: 2.4.1
 | Hide Shorts | Removes Shorts shelves, tabs, and feed cards. | On |
 | Clean homepage | Hides promos, surveys, Playables, and live shelves. | On |
 | Return dislike | Shows estimated dislike counts from the Return YouTube Dislike API. | On |
-| SponsorBlock | Skips community-submitted sponsor, self-promo, and interaction segments. | On |
+| SponsorBlock | Skips community-submitted sponsor, self-promo, and interaction segments, and colors them on the progress bar. | On |
 | Auto continue | Dismisses the "Video paused. Continue watching?" prompt. | On |
 | Playback speed | Adds a speed slider, presets, and `<` / `>` shortcuts. | On |
 | Picture in picture | Opens the current video in a floating window. | On |

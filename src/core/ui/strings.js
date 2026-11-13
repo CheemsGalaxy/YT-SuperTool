@@ -19,6 +19,7 @@ export const UI_STRINGS = {
   saveError: 'Unable to save setting',
   loadError: 'Unable to load settings',
   showSkipNotice: 'Show a skip notice with undo',
+  showProgressBar: 'Show segment colors on the progress bar',
   undo: 'Undo',
   custom: 'Custom',
   customPlaybackSpeed: 'Custom playback speed',

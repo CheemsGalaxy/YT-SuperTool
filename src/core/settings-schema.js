@@ -131,6 +131,7 @@ export const FEATURES = [
 export const EXTRA_DEFAULTS = {
   sponsorblockCategories: null,
   sponsorblockNotice: true,
+  sponsorblockProgressBar: true,
   playbackSpeed: 1
 };
 

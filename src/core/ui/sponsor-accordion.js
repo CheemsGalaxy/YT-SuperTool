@@ -2,7 +2,7 @@ import { createElement } from '../dom-safe.js';
 import { SPONSOR_CATEGORIES } from '../settings-schema.js';
 import { UI_STRINGS } from './strings.js';
 
-export function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
+export function createSponsorAccordion({ onChange, onNoticeChange, onProgressChange } = {}) {
   const inputs = new Map();
   const list = createElement('div', { className: 'ytst-sb-list' });
 
@@ -29,7 +29,18 @@ export function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
     createElement('span', { textContent: UI_STRINGS.showSkipNotice })
   ]);
 
-  const inner = createElement('div', { className: 'ytst-sb-inner' }, [list, noticeLabel]);
+  const progress = createElement('input', { type: 'checkbox' });
+  progress.checked = true;
+  progress.id = `ytst-sb-progress-${Math.random().toString(36).slice(2, 8)}`;
+  const progressLabel = createElement('label', {
+    className: 'ytst-sb-notice ytst-sb-progress',
+    for: progress.id
+  }, [
+    progress,
+    createElement('span', { textContent: UI_STRINGS.showProgressBar })
+  ]);
+
+  const inner = createElement('div', { className: 'ytst-sb-inner' }, [list, noticeLabel, progressLabel]);
   const element = createElement('div', {
     className: 'ytst-sb',
     'aria-hidden': 'true',
@@ -43,6 +54,7 @@ export function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
 
   list.addEventListener('change', () => onChange?.(getCategories()));
   notice.addEventListener('change', () => onNoticeChange?.(Boolean(notice.checked)));
+  progress.addEventListener('change', () => onProgressChange?.(Boolean(progress.checked)));
 
   const setOpen = (open) => {
     const next = Boolean(open);
@@ -73,6 +85,9 @@ export function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
     setCategories,
     setNotice: (value) => {
       notice.checked = Boolean(value);
+    },
+    setProgress: (value) => {
+      progress.checked = Boolean(value);
     },
     getCategories
   };

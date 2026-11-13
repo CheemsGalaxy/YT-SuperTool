@@ -1,6 +1,6 @@
 {
   "name": "yt-supertool",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "private": true,
   "type": "module",
   "description": "Single-core, multi-target YouTube enhancer (userscript + MV2 + MV3).",
