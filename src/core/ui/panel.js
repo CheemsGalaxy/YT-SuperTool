@@ -1,9 +1,9 @@
 import themeCss from './theme.css?inline';
 import { createElement } from '../dom-safe.js';
 import { createIcon, createBrandMark } from './icons.js';
-import { createSponsorAccordion } from './sponsor-accordion.js';
+import { createSettingsTree } from './settings-tree.js';
 import { UI_STRINGS, UI_TEXT } from './strings.js';
-import { FEATURE_GROUPS, featuresForGroup, STORAGE_KEYS } from '../settings-schema.js';
+import { STORAGE_KEYS } from '../settings-schema.js';
 
 const detectDark = () => {
   const root = document.documentElement;
@@ -23,154 +23,18 @@ const detectDark = () => {
 };
 
 export function createPanel({ settings, storage, toast, update, meta = {} }) {
-  const rows = new Map();
-  const tabs = new Map();
-  const panels = new Map();
-  const groupMeta = new Map();
-
   let host = null;
   let shadow = null;
   let overlay = null;
   let panelEl = null;
-  let content = null;
+  let tree = null;
   let statusText = null;
   let previousFocus = null;
   let statusTimer = 0;
+  let unsubscribeSettings = null;
+  let unsubscribeStorage = null;
   let open = false;
-  let activeGroup = FEATURE_GROUPS[0].id;
-  let sponsorAccordion = null;
   let themeSignature = '';
-
-  const buildRow = (feature) => {
-    const input = createElement('input', {
-      type: 'checkbox',
-      className: 'ytst-switch-input',
-      id: `ytst-${feature.key}`,
-      role: 'switch',
-      'aria-describedby': `ytst-desc-${feature.key}`
-    });
-    input.dataset.key = feature.key;
-
-    const metaCell = createElement('span', { className: 'ytst-row-meta' });
-    if (feature.badge) {
-      metaCell.appendChild(createElement('span', {
-        className: 'ytst-badge-layer',
-        textContent: feature.badge
-      }));
-    }
-
-    const row = createElement('label', {
-      className: 'ytst-row',
-      for: `ytst-${feature.key}`
-    }, [
-      createElement('span', { className: 'ytst-row-icon' }, [createIcon(feature.icon, 20)]),
-      createElement('span', { className: 'ytst-row-copy' }, [
-        createElement('span', { className: 'ytst-row-label', textContent: feature.label }),
-        createElement('span', {
-          className: 'ytst-row-desc',
-          id: `ytst-desc-${feature.key}`,
-          textContent: feature.description
-        })
-      ]),
-      metaCell,
-      input,
-      createElement('span', { className: 'ytst-switch', 'aria-hidden': 'true' }, [
-        createElement('span', { className: 'ytst-switch-thumb' })
-      ])
-    ]);
-
-    rows.set(feature.key, { row, input, feature });
-    return row;
-  };
-
-  const buildSponsorAccordion = () => createSponsorAccordion({
-    onChange: (value) => {
-      void settings.set('sponsorblockCategories', JSON.stringify(value)).then((saved) => {
-        if (saved === false) toast?.show(UI_STRINGS.saveCategoriesFailed);
-        else flashSaved();
-      });
-    },
-    onNoticeChange: (checked) => {
-      void settings.set('sponsorblockNotice', checked).then((saved) => {
-        if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
-        else flashSaved();
-      });
-    },
-    onProgressChange: (checked) => {
-      void settings.set('sponsorblockProgressBar', checked).then((saved) => {
-        if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
-        else flashSaved();
-      });
-    }
-  });
-
-  const buildTab = (group) => {
-    const features = featuresForGroup(group.id);
-    const tab = createElement('button', {
-      type: 'button',
-      className: 'ytst-tab',
-      role: 'tab',
-      id: `ytst-tab-${group.id}`,
-      'aria-controls': `ytst-panel-${group.id}`,
-      'aria-selected': 'false',
-      tabindex: '-1'
-    }, [
-      createIcon(group.icon, 16),
-      createElement('span', { textContent: group.label }),
-      createElement('span', { className: 'ytst-tab-count', textContent: String(features.length) })
-    ]);
-
-    tab.addEventListener('click', () => show(group.id));
-    tabs.set(group.id, tab);
-    return tab;
-  };
-
-  const buildGroupPanel = (group) => {
-    const features = featuresForGroup(group.id);
-    const activeMeta = createElement('span', { className: 'ytst-group-meta' });
-    groupMeta.set(group.id, activeMeta);
-
-    const wrapper = createElement('div', {
-      className: 'ytst-tabpanel',
-      id: `ytst-panel-${group.id}`,
-      role: 'tabpanel',
-      'aria-labelledby': `ytst-tab-${group.id}`
-    }, [
-      createElement('div', { className: 'ytst-group-head' }, [
-        createElement('h2', { className: 'ytst-group-title', textContent: group.label }),
-        activeMeta
-      ])
-    ]);
-
-    const list = createElement('div', { className: 'ytst-group' });
-    let layerHeadingShown = false;
-    for (const feature of features) {
-      if (feature.dependsOn && !layerHeadingShown) {
-        layerHeadingShown = true;
-        list.appendChild(createElement('div', { className: 'ytst-section', textContent: UI_STRINGS.defenceLayers }));
-      }
-      list.appendChild(buildRow(feature));
-      if (feature.key === 'sponsorblock') {
-        sponsorAccordion = buildSponsorAccordion();
-        list.appendChild(sponsorAccordion.element);
-      }
-    }
-    wrapper.appendChild(list);
-
-    panels.set(group.id, wrapper);
-    return wrapper;
-  };
-
-  const show = (groupId) => {
-    activeGroup = groupId;
-    tabs.forEach((tab, id) => {
-      tab.setAttribute('aria-selected', String(id === groupId));
-      tab.tabIndex = id === groupId ? 0 : -1;
-    });
-    panels.forEach((node, id) => {
-      node.hidden = id !== groupId;
-    });
-  };
 
   const flashSaved = () => {
     if (!statusText) return;
@@ -188,24 +52,7 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
   };
 
   const syncValues = () => {
-    rows.forEach(({ input, row, feature }) => {
-      input.checked = Boolean(settings.get(feature.key));
-      const blocked = Boolean(feature.dependsOn && !settings.get(feature.dependsOn));
-      input.disabled = blocked;
-      row.classList.toggle('is-disabled', blocked);
-    });
-
-    groupMeta.forEach((node, groupId) => {
-      const features = featuresForGroup(groupId)
-        .filter((feature) => !feature.dependsOn || settings.get(feature.dependsOn));
-      const active = features.filter((feature) => settings.get(feature.key)).length;
-      node.textContent = `${active}/${features.length}`;
-    });
-
-    sponsorAccordion?.setOpen(Boolean(settings.get('sponsorblock')));
-    sponsorAccordion?.setCategories(settings.get('sponsorblockCategories'));
-    sponsorAccordion?.setNotice(settings.get('sponsorblockNotice'));
-    sponsorAccordion?.setProgress(settings.get('sponsorblockProgressBar'));
+    tree?.sync(settings.values);
   };
 
   const syncTheme = () => {
@@ -233,28 +80,54 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
+    const active = shadow?.activeElement;
+    if (event.shiftKey && active === first) {
       event.preventDefault();
       last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
+    } else if (!event.shiftKey && active === last) {
       event.preventDefault();
       first.focus();
     }
   };
 
+  const saveCategories = (value) => {
+    void settings.set('sponsorblockCategories', JSON.stringify(value)).then((saved) => {
+      if (saved === false) toast?.show(UI_STRINGS.saveCategoriesFailed);
+      else flashSaved();
+    });
+  };
+
+  const saveSponsorSetting = (key, value) => {
+    void settings.set(key, value).then((saved) => {
+      if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
+      else flashSaved();
+    });
+  };
+
+  const buildTree = () => createSettingsTree({
+    prefix: 'ytst',
+    orientation: 'vertical',
+    rowClass: 'ytst-row',
+    switchInputClass: 'ytst-switch-input',
+    badgeClass: 'ytst-badge-layer',
+    showTabCount: true,
+    onChange: (key, value) => {
+      void settings.set(key, value).then((saved) => {
+        if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
+        else flashSaved();
+      });
+    },
+    onCategoriesChange: saveCategories,
+    onNoticeChange: (value) => saveSponsorSetting('sponsorblockNotice', value),
+    onProgressChange: (value) => saveSponsorSetting('sponsorblockProgressBar', value)
+  });
+
   const ensureMounted = () => {
     if (host?.isConnected) return;
 
-    const rail = createElement('div', {
-      className: 'ytst-rail',
-      role: 'tablist',
-      'aria-label': UI_STRINGS.settingGroups,
-      'aria-orientation': 'vertical'
-    });
-    FEATURE_GROUPS.forEach((group) => rail.appendChild(buildTab(group)));
-
-    content = createElement('div', { className: 'ytst-content' });
-    FEATURE_GROUPS.forEach((group) => content.appendChild(buildGroupPanel(group)));
+    tree = buildTree();
+    const rail = tree.rail;
+    const content = tree.content;
 
     statusText = createElement('span', {
       className: 'ytst-status-text',
@@ -327,7 +200,7 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
         ]),
         createElement('span', {
           className: 'ytst-badge',
-          textContent: UI_TEXT.versionTarget(meta.version || '2.4.2', meta.target || 'mv3')
+          textContent: UI_TEXT.versionTarget(meta.version || '2.4.3', meta.target || 'mv3')
         }),
         createElement('div', { className: 'ytst-header-actions' }, [
           (() => {
@@ -352,34 +225,6 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
       ])
     ]);
 
-    content.addEventListener('change', (event) => {
-      const input = event.target;
-      if (!input?.classList?.contains('ytst-switch-input')) return;
-      const key = input.dataset.key;
-      if (!key) return;
-      const next = Boolean(input.checked);
-      input.checked = next;
-      void settings.set(key, next).then((saved) => {
-        if (saved === false) {
-          toast?.show(UI_STRINGS.saveSettingFailed);
-          return;
-        }
-        flashSaved();
-      });
-    });
-
-    rail.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-      event.preventDefault();
-      const ids = [...tabs.keys()];
-      const index = ids.indexOf(activeGroup);
-      const next = event.key === 'ArrowDown'
-        ? ids[(index + 1) % ids.length]
-        : ids[(index - 1 + ids.length) % ids.length];
-      show(next);
-      tabs.get(next)?.focus();
-    });
-
     overlay = createElement('div', { className: 'ytst-overlay', 'data-open': 'false' }, [panelEl]);
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay) closePanel();
@@ -392,13 +237,14 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
     shadow.appendChild(overlay);
     (document.body || document.documentElement).appendChild(host);
 
-    settings.subscribe(() => syncValues());
+    unsubscribeSettings?.();
+    unsubscribeSettings = settings.subscribe(() => syncValues());
 
-    storage?.onChanged?.(() => {
+    unsubscribeStorage?.();
+    unsubscribeStorage = storage?.onChanged?.(() => {
       if (open) syncValues();
-    }, STORAGE_KEYS);
+    }, STORAGE_KEYS) || null;
 
-    show(activeGroup);
     syncTheme();
     syncValues();
   };

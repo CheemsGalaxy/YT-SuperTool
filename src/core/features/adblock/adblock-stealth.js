@@ -9,73 +9,52 @@ const AD_FLAGS = [
   'adblock_detection_message'
 ];
 
-const allowInstreamAd = () => true;
-
-const defineFlag = (target, name, value) => {
-  if (!target) return false;
-  try {
-    Object.defineProperty(target, name, {
-      configurable: true,
-      get: () => value,
-      set: () => {}
-    });
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 const patchFlags = (flags) => {
   if (!flags || typeof flags !== 'object') return false;
   let changed = false;
   AD_FLAGS.forEach((name) => {
-    if (name in flags) {
+    if (!(name in flags)) return;
+    try {
       flags[name] = false;
       changed = true;
+    } catch {
+
     }
   });
   return changed;
 };
 
-const disableDetectionExperiments = (win) => {
+const patchConfig = (win) => {
   if (!isAdblockEnabled(win)) return false;
   let patched = false;
-  try {
-    const config = win?.yt?.config_;
-    const flags = config?.EXPERIMENT_FLAGS;
-    if (patchFlags(flags)) patched = true;
 
-    const popups = config?.openPopupConfig?.supportedPopups;
+  const configs = [
+    win?.yt?.config_,
+    win?.ytplayer?.config,
+    win?.ytcfg?.data_
+  ];
+
+  for (const config of configs) {
+    if (!config || typeof config !== 'object') continue;
+    if (patchFlags(config.EXPERIMENT_FLAGS)) patched = true;
+    if (patchFlags(config.args)) patched = true;
+
+    const popups = config.openPopupConfig?.supportedPopups;
     if (popups?.adBlockMessageViewModel) {
-      popups.adBlockMessageViewModel = false;
-      patched = true;
-    }
-  } catch {
-
-  }
-
-  try {
-    const ytcfg = win?.ytcfg;
-    if (!ytcfg) return patched;
-
-    if (typeof ytcfg.get === 'function') {
       try {
-        if (patchFlags(ytcfg.get('EXPERIMENT_FLAGS'))) patched = true;
+        popups.adBlockMessageViewModel = false;
+        patched = true;
       } catch {
 
       }
     }
+  }
 
-    if (typeof ytcfg.set === 'function' && !ytcfg.set.__ytstAdblock) {
-      const nativeSet = ytcfg.set;
-      const patchedSet = function set(key, value) {
-        if (key === 'EXPERIMENT_FLAGS' && isAdblockEnabled(win)) patchFlags(value);
-        return nativeSet.call(this, key, value);
-      };
-      Object.defineProperty(patchedSet, '__ytstAdblock', { value: true });
+  try {
+    const ytcfg = win?.ytcfg;
+    if (ytcfg && typeof ytcfg.get === 'function') {
       try {
-        ytcfg.set = patchedSet;
-        patched = true;
+        if (patchFlags(ytcfg.get('EXPERIMENT_FLAGS'))) patched = true;
       } catch {
 
       }
@@ -87,45 +66,103 @@ const disableDetectionExperiments = (win) => {
   return patched;
 };
 
-export function installAdblockStealth(win = globalThis) {
-  if (!win || win.__ytstStealth) return false;
+const installConfigHook = (win) => {
+  const ytcfg = win?.ytcfg;
+  if (!ytcfg || typeof ytcfg.set !== 'function' || ytcfg.set.__ytstAdblock) return null;
+  const nativeSet = ytcfg.set;
+  const patchedSet = function set(key, value) {
+    if (key === 'EXPERIMENT_FLAGS' && isAdblockEnabled(win)) patchFlags(value);
+    return nativeSet.call(this, key, value);
+  };
+  Object.defineProperty(patchedSet, '__ytstAdblock', { value: true });
+  try {
+    ytcfg.set = patchedSet;
+    return nativeSet;
+  } catch {
+    return null;
+  }
+};
 
-  const ObjectCtor = win.Object || Object;
-  defineFlag(ObjectCtor.prototype, 'adBlocksFound', false);
-  defineFlag(ObjectCtor.prototype, 'hasAllowedInstreamAd', allowInstreamAd);
-  defineFlag(win, 'adBlocksFound', false);
-  defineFlag(win, 'hasAllowedInstreamAd', allowInstreamAd);
+export function createAdblockStealth(win = globalThis) {
+  let timer = 0;
+  let observer = null;
+  let started = false;
+  let restoreSet = null;
 
-  const useInterval = typeof win.setInterval === 'function';
-  const schedule = useInterval ? win.setInterval : win.setTimeout;
-  const cancel = useInterval ? win.clearInterval : win.clearTimeout;
+  const stop = () => {
+    if (!started) return false;
+    started = false;
+    if (timer) win.clearInterval?.(timer);
+    timer = 0;
+    observer?.disconnect();
+    observer = null;
+    if (restoreSet && win.ytcfg) {
+      try {
+        win.ytcfg.set = restoreSet;
+      } catch {
 
-  if (typeof schedule === 'function') {
+      }
+    }
+    restoreSet = null;
+    return true;
+  };
+
+  const start = () => {
+    if (started || !win || !isAdblockEnabled(win)) return started;
+    started = true;
+    restoreSet = installConfigHook(win);
+
     let attempts = 0;
-    const timer = schedule.call(win, () => {
+    const interval = win.setInterval || globalThis.setInterval;
+    timer = interval.call(win, () => {
       attempts += 1;
-      if (disableDetectionExperiments(win) || attempts >= 40) {
-        cancel.call(win, timer);
+      if (patchConfig(win) || attempts >= 40) {
+        win.clearInterval?.(timer);
+        timer = 0;
       }
     }, 250);
-  }
 
-  try {
-    const root = win.document?.documentElement;
-    const Observer = win.MutationObserver;
-    if (root && typeof Observer === 'function') {
-      const observer = new Observer(() => {
-        if (isAdblockEnabled(win)) disableDetectionExperiments(win);
-      });
-      observer.observe(root, { attributes: true, attributeFilter: ['data-ytst-adblock'] });
+    try {
+      const root = win.document?.documentElement;
+      const Observer = win.MutationObserver;
+      if (root && typeof Observer === 'function') {
+        observer = new Observer(() => {
+          if (!isAdblockEnabled(win)) {
+            stop();
+            return;
+          }
+          patchConfig(win);
+        });
+        observer.observe(root, { attributes: true, attributeFilter: ['data-ytst-adblock'] });
+      }
+    } catch {
+
     }
-  } catch {
 
-  }
+    patchConfig(win);
+    return true;
+  };
 
-  disableDetectionExperiments(win);
-  win.__ytstStealth = true;
-  return true;
+  return {
+    start,
+    stop,
+    get started() {
+      return started;
+    }
+  };
+}
+
+export function installAdblockStealth(win = globalThis) {
+  if (!win) return null;
+  if (win.__ytstStealth) return win.__ytstStealth;
+  const controller = createAdblockStealth(win);
+  win.__ytstStealth = controller;
+  controller.start();
+  return controller;
+}
+
+export function stopAdblockStealth(win = globalThis) {
+  return win?.__ytstStealth?.stop?.() ?? false;
 }
 
 export default installAdblockStealth;

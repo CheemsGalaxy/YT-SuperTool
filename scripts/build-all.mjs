@@ -81,9 +81,10 @@ const buildExtension = async (target) => {
   const outDir = path.join(distDir, target);
   rmSync(outDir, { recursive: true, force: true });
 
+  const backgroundEntry = `src/entries/background.${target}.entry.js`;
   const entries = [
     ['src/entries/content.entry.js', 'content.js'],
-    ['src/entries/background.entry.js', 'background.js'],
+    [backgroundEntry, 'background.js'],
     ['src/entries/main-world.entry.js', 'main-world.js'],
     ['src/entries/popup/popup.js', 'popup.js']
   ];

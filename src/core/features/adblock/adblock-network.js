@@ -1,62 +1,6 @@
-import { FiltersEngine, Request } from '@ghostery/adblocker';
-import { NETWORK_FILTERS } from './adblock-filters.js';
+import { matchRequest } from './adblock-matcher.js';
 import { hasAdPayload, isPlayerEndpoint, isYouTubeAdEndpoint, sanitizeResponseText } from './adblock-player.js';
 import { isAdblockEnabled } from './adblock-state.js';
-
-const ENGINE_CONFIG = {
-  loadNetworkFilters: true,
-  loadCosmeticFilters: false,
-  loadCSPFilters: false,
-  loadExceptionFilters: true,
-  enableCompression: true,
-  enableHtmlFiltering: false,
-  enableInMemoryCache: true,
-  enableOptimizations: true,
-  enablePushInjectionsOnNavigationEvents: false,
-  guessRequestTypeFromUrl: true
-};
-
-let engine = null;
-let engineFailed = false;
-let engineWarm = false;
-
-const getEngine = () => {
-  if (engine || engineFailed) return engine;
-  try {
-    engine = FiltersEngine.parse(NETWORK_FILTERS.join('\n'), ENGINE_CONFIG);
-  } catch (error) {
-    engineFailed = true;
-    console.warn('YT SuperTool could not build the adblock engine:', error);
-  }
-  return engine;
-};
-
-const warmEngine = (win) => {
-  if (engineWarm) return;
-  engineWarm = true;
-  const run = () => getEngine();
-  if (typeof win?.requestIdleCallback === 'function') win.requestIdleCallback(run, { timeout: 1000 });
-  else win?.setTimeout?.(run, 0);
-};
-
-export function matchRequest(win, url, type = 'xmlhttprequest') {
-  if (!url) return null;
-  const matcher = getEngine();
-  if (!matcher) return null;
-  try {
-    const request = Request.fromRawDetails({
-      url,
-      type,
-      sourceUrl: win?.location?.href
-    });
-    if (!request.isSupported) return null;
-    const result = matcher.match(request);
-    if (result.match && !result.exception) return result;
-  } catch {
-
-  }
-  return null;
-}
 
 const jsonResponse = (win, body = '{}') => {
   const ResponseCtor = win?.Response || globalThis.Response;
@@ -339,7 +283,6 @@ export function installNetworkGuard(win) {
     installXhrHook(win);
     installBeaconHook(win);
     win.__ytstNetworkGuard = true;
-    warmEngine(win);
     return true;
   } catch (error) {
     console.warn('YT SuperTool could not install the adblock request guard:', error);

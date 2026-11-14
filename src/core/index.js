@@ -151,8 +151,12 @@ const start = async () => {
     if (active) {
       apply();
       lifecycle.start();
+      features.sponsorblock?.resume?.();
+      features.adblock?.setVisible?.(true);
     } else {
       lifecycle.stop();
+      features.sponsorblock?.pause?.();
+      features.adblock?.setVisible?.(false);
     }
   };
 

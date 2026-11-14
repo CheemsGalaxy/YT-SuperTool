@@ -449,6 +449,13 @@ export function createSponsorBlock({ bridge }) {
       currentVideoId = getVideoId();
       void loadSegments(currentVideoId);
     },
+    pause() {
+      clearInterval(tickTimer);
+      tickTimer = 0;
+    },
+    resume() {
+      if (enabled && !tickTimer) tickTimer = setInterval(tick, TICK_INTERVAL);
+    },
     stop() {
       enabled = false;
       clearInterval(tickTimer);

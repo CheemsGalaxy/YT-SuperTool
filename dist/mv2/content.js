@@ -101,9 +101,16 @@
         const { responseType = "json", timeout = 8e3, allowHttpErrors = false, ...rest } = options;
         if (!api?.runtime?.sendMessage) {
           const response = await fetch(url, rest);
-          const body = responseType === "json" ? await response.json() : await response.text();
+          const text = await response.text();
+          const body = responseType === "json" ? parseBody(text, responseType) : text;
           if (!response.ok && !allowHttpErrors) throw new Error(`Network request failed (${response.status})`);
-          return buildResponse({ ...response, body, responseType });
+          return buildResponse({
+            ok: response.ok,
+            status: response.status,
+            headers: Object.fromEntries(response.headers.entries()),
+            body,
+            responseType
+          });
         }
         const result = await sendMessage(api, {
           type: "YT_SUPERTOOL_FETCH",
@@ -112,7 +119,13 @@
         if (!result?.ok && !allowHttpErrors) {
           throw new Error(result?.error || `Network request failed (${result?.status ?? "unknown"})`);
         }
-        return buildResponse({ ...result, responseType });
+        return buildResponse({
+          ok: result?.ok,
+          status: result?.status,
+          headers: result?.headers,
+          body: result?.body,
+          responseType
+        });
       }
     };
     const injector = {
@@ -142,7 +155,7 @@
     };
     return {
       env: target2,
-      version: api?.runtime?.getManifest?.().version || "2.4.1",
+      version: api?.runtime?.getManifest?.().version || "2.4.3",
       storage,
       network,
       injector,
@@ -171,7 +184,7 @@
   if (typeof window !== "undefined") {
     window.ytsBridge = bridge;
   }
-  const globalCss = '#end .ytst-header-button {\n  display: inline-flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  width: 40px;\n  height: 40px;\n  min-width: 40px;\n  padding: 0;\n  margin: 0 2px;\n  border: 0;\n  border-radius: 50%;\n  background: transparent;\n  color: var(--yt-spec-text-primary, #0f0f0f);\n  cursor: pointer;\n  transition: background-color 120ms ease, transform 120ms ease;\n}\n\n#end .ytst-header-button:hover {\n  background: var(--yt-spec-badge-chip-background, rgba(128, 128, 128, 0.16));\n}\n\n#end .ytst-header-button:active {\n  transform: scale(0.96);\n}\n\n#end .ytst-header-button svg {\n  display: block;\n  width: 20px;\n  height: 20px;\n  fill: none;\n  stroke: currentColor;\n  stroke-width: 1.75;\n  stroke-linecap: round;\n  stroke-linejoin: round;\n  pointer-events: none;\n}\n\n.ytp-right-controls .ytst-player-button {\n  display: inline-flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  flex: 0 0 auto !important;\n  width: 40px !important;\n  height: 40px !important;\n  padding: 8px !important;\n  margin: 0 !important;\n  border: 0 !important;\n  border-radius: 50% !important;\n  background: transparent !important;\n  color: #ffffff !important;\n  cursor: pointer !important;\n  position: relative !important;\n  box-sizing: border-box !important;\n  transition: background-color 120ms ease !important;\n}\n\n.ytp-right-controls .ytst-player-button:hover {\n  background: rgba(255, 255, 255, 0.1) !important;\n}\n\n.ytp-right-controls .ytst-player-button:active {\n  background: rgba(255, 255, 255, 0.16) !important;\n}\n\n.ytp-right-controls .ytst-player-button.is-active {\n  color: #3ea6ff !important;\n}\n\n.ytp-right-controls .ytst-player-button svg {\n  display: block !important;\n  width: 24px !important;\n  height: 24px !important;\n  margin: auto !important;\n  padding: 0 !important;\n  fill: none !important;\n  stroke: currentColor !important;\n  stroke-width: 1.75 !important;\n  stroke-linecap: round !important;\n  stroke-linejoin: round !important;\n  pointer-events: none !important;\n}\n\n@media (max-width: 768px) {\n  .ytp-right-controls .ytst-player-button {\n    width: 36px !important;\n    height: 36px !important;\n    padding: 6px !important;\n  }\n}\n.ytst-speed {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  align-self: center;\n  flex: 0 0 auto;\n  margin: 0 4px 0 8px;\n  padding: 0;\n  color: #ffffff;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n  line-height: 1;\n}\n\n.ytst-speed-slider {\n  width: 96px;\n  height: 24px;\n  margin: 0;\n  padding: 0;\n  appearance: none;\n  -webkit-appearance: none;\n  background: transparent;\n  cursor: pointer;\n  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85));\n}\n\n.ytst-speed-slider::-webkit-slider-runnable-track {\n  height: 3px;\n  border-radius: 2px;\n  background: rgba(0, 0, 0, 0.45);\n  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);\n}\n\n.ytst-speed-slider::-moz-range-track {\n  height: 3px;\n  border-radius: 2px;\n  background: rgba(0, 0, 0, 0.45);\n  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);\n}\n\n.ytst-speed-slider::-webkit-slider-thumb {\n  width: 12px;\n  height: 12px;\n  margin-top: -4.5px;\n  appearance: none;\n  -webkit-appearance: none;\n  border: 0;\n  border-radius: 50%;\n  background: #ffffff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);\n}\n\n.ytst-speed-slider::-moz-range-thumb {\n  width: 12px;\n  height: 12px;\n  border: 0;\n  border-radius: 50%;\n  background: #ffffff;\n}\n\n.ytst-speed-chip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  height: 28px;\n  min-width: 56px;\n  padding: 0 8px;\n  border: 0;\n  border-radius: 14px;\n  background: rgba(0, 0, 0, 0.5);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  color: #ffffff;\n  font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;\n  font-size: 12px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  line-height: 1;\n  white-space: nowrap;\n  cursor: pointer;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);\n  transition: background-color 120ms ease;\n}\n\n.ytst-speed-chip:hover {\n  background: rgba(0, 0, 0, 0.68);\n}\n\n.ytst-speed-chip.is-open {\n  background: rgba(0, 0, 0, 0.78);\n}\n\n.ytst-speed-chevron {\n  width: 14px;\n  height: 14px;\n  fill: none;\n  stroke: currentColor;\n  stroke-width: 1.75;\n  stroke-linecap: round;\n  stroke-linejoin: round;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-speed-chip.is-open .ytst-speed-chevron {\n  transform: rotate(180deg);\n}\n\n.ytst-speed-menu {\n  position: fixed;\n  z-index: 2147483647;\n  display: none;\n  width: 184px;\n  max-height: 296px;\n  padding: 6px;\n  overflow-y: auto;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 12px;\n  background: rgba(20, 20, 20, 0.98);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  color: #f1f1f1;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 12.5px;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);\n  box-sizing: border-box;\n}\n\nhtml:not([dark]) .ytst-speed-menu {\n  border-color: rgba(15, 15, 15, 0.1);\n  background: rgba(255, 255, 255, 0.98);\n  color: #0f0f0f;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);\n}\n\n.ytst-speed-menu::-webkit-scrollbar {\n  width: 6px;\n}\n\n.ytst-speed-menu::-webkit-scrollbar-thumb {\n  border-radius: 3px;\n  background: rgba(128, 128, 128, 0.4);\n}\n\n.ytst-speed-preset {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  width: 100%;\n  height: 30px;\n  padding: 0 8px;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: inherit;\n  font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;\n  font-size: 12px;\n  font-variant-numeric: tabular-nums;\n  cursor: pointer;\n  text-align: left;\n}\n\n.ytst-speed-preset:hover {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml:not([dark]) .ytst-speed-preset:hover {\n  background: rgba(15, 15, 15, 0.06);\n}\n\n.ytst-speed-preset-check {\n  display: inline-flex;\n  opacity: 0;\n  color: #3ea6ff;\n}\n\nhtml:not([dark]) .ytst-speed-preset-check {\n  color: #065fd4;\n}\n\n.ytst-speed-preset.is-active .ytst-speed-preset-check {\n  opacity: 1;\n}\n\n.ytst-speed-divider {\n  height: 1px;\n  margin: 6px 4px;\n  background: rgba(255, 255, 255, 0.1);\n}\n\nhtml:not([dark]) .ytst-speed-divider {\n  background: rgba(15, 15, 15, 0.1);\n}\n\n.ytst-speed-caption {\n  padding: 6px 8px 2px;\n  color: rgba(255, 255, 255, 0.5);\n  font-size: 10px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\nhtml:not([dark]) .ytst-speed-caption {\n  color: rgba(15, 15, 15, 0.5);\n}\n\n.ytst-speed-mini {\n  display: block;\n  width: calc(100% - 16px);\n  height: 20px;\n  margin: 2px 8px 4px;\n  appearance: none;\n  -webkit-appearance: none;\n  background: transparent;\n  cursor: pointer;\n}\n\n.ytst-speed-mini::-webkit-slider-runnable-track {\n  height: 3px;\n  border-radius: 2px;\n  background: rgba(255, 255, 255, 0.3);\n}\n\n.ytst-speed-mini::-webkit-slider-thumb {\n  width: 12px;\n  height: 12px;\n  margin-top: -4.5px;\n  appearance: none;\n  -webkit-appearance: none;\n  border: 0;\n  border-radius: 50%;\n  background: #ffffff;\n}\n\nhtml:not([dark]) .ytst-speed-mini::-webkit-slider-runnable-track {\n  background: rgba(15, 15, 15, 0.2);\n}\n\nhtml:not([dark]) .ytst-speed-mini::-webkit-slider-thumb {\n  background: #0f0f0f;\n}\n\n.ytst-speed-reset {\n  display: block;\n  width: calc(100% - 16px);\n  height: 28px;\n  margin: 4px 8px 2px;\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  border-radius: 8px;\n  background: transparent;\n  color: inherit;\n  font-family: inherit;\n  font-size: 12px;\n  cursor: pointer;\n}\n\n.ytst-speed-reset:hover {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml:not([dark]) .ytst-speed-reset {\n  border-color: rgba(15, 15, 15, 0.1);\n}\n\nhtml:not([dark]) .ytst-speed-reset:hover {\n  background: rgba(15, 15, 15, 0.06);\n}\n\n@media (max-width: 1400px) {\n  .ytst-speed-slider {\n    width: 76px;\n  }\n}\n\n@media (max-width: 1100px) {\n  .ytst-speed-slider {\n    display: none;\n  }\n}\n.ytst-dislike-count {\n  display: inline-flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  align-self: center !important;\n  height: 40px !important;\n  min-height: 40px !important;\n  padding: 0 6px !important;\n  margin: 0 !important;\n  border: 0 !important;\n  color: var(--yt-spec-text-primary, #ffffff) !important;\n  font-family: "Roboto", "Inter", sans-serif !important;\n  font-size: 14px !important;\n  font-weight: 500 !important;\n  font-variant-numeric: tabular-nums !important;\n  line-height: 40px !important;\n  white-space: nowrap !important;\n  cursor: default !important;\n  user-select: none !important;\n}\n.ytst-sb-notice {\n  position: absolute;\n  left: 12px;\n  bottom: 76px;\n  z-index: 60;\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  max-width: min(420px, calc(100% - 24px));\n  padding: 8px 10px 8px 12px;\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  border-radius: 10px;\n  background: rgba(20, 20, 20, 0.94);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  color: #f1f1f1;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 12.5px;\n  font-weight: 500;\n  line-height: 1.25;\n  opacity: 0;\n  transform: translateY(6px);\n  pointer-events: none;\n  transition: opacity 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-sb-notice.is-visible {\n  opacity: 1;\n  transform: none;\n  pointer-events: auto;\n}\n\n.ytst-sb-bar {\n  flex: 0 0 auto;\n  width: 3px;\n  height: 16px;\n  border-radius: 2px;\n  background: var(--ytst-sb-color, #00d400);\n}\n\n.ytst-sb-label {\n  flex: 1 1 auto;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ytst-sb-undo {\n  flex: 0 0 auto;\n  height: 24px;\n  padding: 0 9px;\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 6px;\n  background: transparent;\n  color: #f1f1f1;\n  font-family: inherit;\n  font-size: 11.5px;\n  font-weight: 500;\n  cursor: pointer;\n}\n\n.ytst-sb-undo:hover {\n  background: rgba(255, 255, 255, 0.1);\n}\n.ytst-toast {\n  position: fixed;\n  left: 24px;\n  bottom: 24px;\n  z-index: 2147483647;\n  display: inline-flex;\n  align-items: center;\n  max-width: min(360px, calc(100vw - 48px));\n  padding: 9px 12px;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 8px;\n  background: rgba(15, 15, 15, 0.92);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  color: #f1f1f1;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 12.5px;\n  font-weight: 500;\n  line-height: 1.35;\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);\n  opacity: 0;\n  transform: translateY(6px);\n  pointer-events: none;\n  transition: opacity 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-toast.is-visible {\n  opacity: 1;\n  transform: none;\n}\n\nhtml:not([dark]) .ytst-toast {\n  border-color: rgba(15, 15, 15, 0.1);\n  background: rgba(255, 255, 255, 0.94);\n  color: #0f0f0f;\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);\n}\nhtml[data-ytst-no-shorts="on"] ytd-guide-entry-renderer:has(a[title="Shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-mini-guide-entry-renderer:has(a[title="Shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-guide-entry-renderer:has(a[href^="/shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-mini-guide-entry-renderer:has(a[href^="/shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),\nhtml[data-ytst-no-shorts="on"] ytd-rich-item-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytd-video-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytd-grid-video-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytm-video-with-context-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytm-compact-video-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] [tab-title="Shorts"],\nhtml[data-ytst-no-shorts="on"] ytd-reel-shelf-renderer,\nhtml[data-ytst-no-shorts="on"] ytd-rich-shelf-renderer[is-shorts],\nhtml[data-ytst-no-shorts="on"] ytm-reel-shelf-renderer,\nhtml[data-ytst-no-shorts="on"] ytm-shorts-lockup-view-model,\nhtml[data-ytst-no-shorts="on"] ytm-shorts-lockup-view-model-v2,\nhtml[data-ytst-no-shorts="on"] .pivot-shorts,\nhtml[data-ytst-no-shorts="on"] a[href="/shorts"],\n\nhtml[data-ytst-no-shorts="on"] grid-shelf-view-model,\nhtml[data-ytst-no-shorts="on"] grid-shelf-view-model.ytGridShelfViewModelHost,\nhtml[data-ytst-no-shorts="on"] [class*="ytGridShelfViewModelHost"],\nhtml[data-ytst-no-shorts="on"] .ytGridShelfViewModelGridShelfBottomButtonContainer,\nhtml[data-ytst-no-shorts="on"] [class*="ytGridShelfViewModelGridShelfBottomButtonContainer"] {\n  display: none !important;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-toast,\n  .ytst-sb-notice,\n  .ytst-speed-chevron,\n  .ytst-speed-chip {\n    transition-duration: 0ms;\n  }\n}\n';
+  const globalCss = '#end .ytst-header-button {\n  display: inline-flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  width: 40px;\n  height: 40px;\n  min-width: 40px;\n  padding: 0;\n  margin: 0 2px;\n  border: 0;\n  border-radius: 50%;\n  background: transparent;\n  color: var(--yt-spec-text-primary, #0f0f0f);\n  cursor: pointer;\n  transition: background-color 120ms ease, transform 120ms ease;\n}\n\n#end .ytst-header-button:hover {\n  background: var(--yt-spec-badge-chip-background, rgba(128, 128, 128, 0.16));\n}\n\n#end .ytst-header-button:active {\n  transform: scale(0.96);\n}\n\n#end .ytst-header-button svg {\n  display: block;\n  width: 20px;\n  height: 20px;\n  fill: none;\n  stroke: currentColor;\n  stroke-width: 1.75;\n  stroke-linecap: round;\n  stroke-linejoin: round;\n  pointer-events: none;\n}\n\n.ytp-right-controls .ytst-player-button {\n  display: inline-flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  flex: 0 0 auto !important;\n  width: 40px !important;\n  height: 40px !important;\n  padding: 8px !important;\n  margin: 0 !important;\n  border: 0 !important;\n  border-radius: 50% !important;\n  background: transparent !important;\n  color: #ffffff !important;\n  cursor: pointer !important;\n  position: relative !important;\n  box-sizing: border-box !important;\n  transition: background-color 120ms ease !important;\n}\n\n.ytp-right-controls .ytst-player-button:hover {\n  background: rgba(255, 255, 255, 0.1) !important;\n}\n\n.ytp-right-controls .ytst-player-button:active {\n  background: rgba(255, 255, 255, 0.16) !important;\n}\n\n.ytp-right-controls .ytst-player-button.is-active {\n  color: #3ea6ff !important;\n}\n\n.ytp-right-controls .ytst-player-button svg {\n  display: block !important;\n  width: 24px !important;\n  height: 24px !important;\n  margin: auto !important;\n  padding: 0 !important;\n  fill: none !important;\n  stroke: currentColor !important;\n  stroke-width: 1.75 !important;\n  stroke-linecap: round !important;\n  stroke-linejoin: round !important;\n  pointer-events: none !important;\n}\n\n@media (max-width: 768px) {\n  .ytp-right-controls .ytst-player-button {\n    width: 36px !important;\n    height: 36px !important;\n    padding: 6px !important;\n  }\n}\n.ytst-speed {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  align-self: center;\n  flex: 0 0 auto;\n  margin: 0 4px 0 8px;\n  padding: 0;\n  color: #ffffff;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n  line-height: 1;\n}\n\n.ytst-speed-slider {\n  width: 96px;\n  height: 24px;\n  margin: 0;\n  padding: 0;\n  appearance: none;\n  -webkit-appearance: none;\n  background: transparent;\n  cursor: pointer;\n  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.85));\n}\n\n.ytst-speed-slider::-webkit-slider-runnable-track {\n  height: 3px;\n  border-radius: 2px;\n  background: rgba(0, 0, 0, 0.45);\n  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);\n}\n\n.ytst-speed-slider::-moz-range-track {\n  height: 3px;\n  border-radius: 2px;\n  background: rgba(0, 0, 0, 0.45);\n  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);\n}\n\n.ytst-speed-slider::-webkit-slider-thumb {\n  width: 12px;\n  height: 12px;\n  margin-top: -4.5px;\n  appearance: none;\n  -webkit-appearance: none;\n  border: 0;\n  border-radius: 50%;\n  background: #ffffff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);\n}\n\n.ytst-speed-slider::-moz-range-thumb {\n  width: 12px;\n  height: 12px;\n  border: 0;\n  border-radius: 50%;\n  background: #ffffff;\n}\n\n.ytst-speed-chip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  height: 28px;\n  min-width: 56px;\n  padding: 0 8px;\n  border: 0;\n  border-radius: 14px;\n  background: rgba(0, 0, 0, 0.5);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  color: #ffffff;\n  font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;\n  font-size: 12px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  line-height: 1;\n  white-space: nowrap;\n  cursor: pointer;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);\n  transition: background-color 120ms ease;\n}\n\n.ytst-speed-chip:hover {\n  background: rgba(0, 0, 0, 0.68);\n}\n\n.ytst-speed-chip.is-open {\n  background: rgba(0, 0, 0, 0.78);\n}\n\n.ytst-speed-chevron {\n  width: 14px;\n  height: 14px;\n  fill: none;\n  stroke: currentColor;\n  stroke-width: 1.75;\n  stroke-linecap: round;\n  stroke-linejoin: round;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-speed-chip.is-open .ytst-speed-chevron {\n  transform: rotate(180deg);\n}\n\n.ytst-speed-menu {\n  position: fixed;\n  z-index: 2147483647;\n  display: none;\n  width: 184px;\n  max-height: 296px;\n  padding: 6px;\n  overflow-y: auto;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 12px;\n  background: rgba(20, 20, 20, 0.98);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  color: #f1f1f1;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 12.5px;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);\n  box-sizing: border-box;\n}\n\nhtml:not([dark]) .ytst-speed-menu {\n  border-color: rgba(15, 15, 15, 0.1);\n  background: rgba(255, 255, 255, 0.98);\n  color: #0f0f0f;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);\n}\n\n.ytst-speed-menu::-webkit-scrollbar {\n  width: 6px;\n}\n\n.ytst-speed-menu::-webkit-scrollbar-thumb {\n  border-radius: 3px;\n  background: rgba(128, 128, 128, 0.4);\n}\n\n.ytst-speed-preset {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  width: 100%;\n  height: 30px;\n  padding: 0 8px;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: inherit;\n  font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;\n  font-size: 12px;\n  font-variant-numeric: tabular-nums;\n  cursor: pointer;\n  text-align: left;\n}\n\n.ytst-speed-preset:hover {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml:not([dark]) .ytst-speed-preset:hover {\n  background: rgba(15, 15, 15, 0.06);\n}\n\n.ytst-speed-preset-check {\n  display: inline-flex;\n  opacity: 0;\n  color: #3ea6ff;\n}\n\nhtml:not([dark]) .ytst-speed-preset-check {\n  color: #065fd4;\n}\n\n.ytst-speed-preset.is-active .ytst-speed-preset-check {\n  opacity: 1;\n}\n\n.ytst-speed-divider {\n  height: 1px;\n  margin: 6px 4px;\n  background: rgba(255, 255, 255, 0.1);\n}\n\nhtml:not([dark]) .ytst-speed-divider {\n  background: rgba(15, 15, 15, 0.1);\n}\n\n.ytst-speed-caption {\n  padding: 6px 8px 2px;\n  color: rgba(255, 255, 255, 0.5);\n  font-size: 10px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\nhtml:not([dark]) .ytst-speed-caption {\n  color: rgba(15, 15, 15, 0.5);\n}\n\n.ytst-speed-mini {\n  display: block;\n  width: calc(100% - 16px);\n  height: 20px;\n  margin: 2px 8px 4px;\n  appearance: none;\n  -webkit-appearance: none;\n  background: transparent;\n  cursor: pointer;\n}\n\n.ytst-speed-mini::-webkit-slider-runnable-track {\n  height: 3px;\n  border-radius: 2px;\n  background: rgba(255, 255, 255, 0.3);\n}\n\n.ytst-speed-mini::-webkit-slider-thumb {\n  width: 12px;\n  height: 12px;\n  margin-top: -4.5px;\n  appearance: none;\n  -webkit-appearance: none;\n  border: 0;\n  border-radius: 50%;\n  background: #ffffff;\n}\n\nhtml:not([dark]) .ytst-speed-mini::-webkit-slider-runnable-track {\n  background: rgba(15, 15, 15, 0.2);\n}\n\nhtml:not([dark]) .ytst-speed-mini::-webkit-slider-thumb {\n  background: #0f0f0f;\n}\n\n.ytst-speed-reset {\n  display: block;\n  width: calc(100% - 16px);\n  height: 28px;\n  margin: 4px 8px 2px;\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  border-radius: 8px;\n  background: transparent;\n  color: inherit;\n  font-family: inherit;\n  font-size: 12px;\n  cursor: pointer;\n}\n\n.ytst-speed-reset:hover {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml:not([dark]) .ytst-speed-reset {\n  border-color: rgba(15, 15, 15, 0.1);\n}\n\nhtml:not([dark]) .ytst-speed-reset:hover {\n  background: rgba(15, 15, 15, 0.06);\n}\n\n@media (max-width: 1400px) {\n  .ytst-speed-slider {\n    width: 76px;\n  }\n}\n\n@media (max-width: 1100px) {\n  .ytst-speed-slider {\n    display: none;\n  }\n}\n.ytst-dislike-count {\n  display: inline-flex !important;\n  align-items: center !important;\n  justify-content: center !important;\n  align-self: center !important;\n  height: 40px !important;\n  min-height: 40px !important;\n  padding: 0 6px !important;\n  margin: 0 !important;\n  border: 0 !important;\n  color: var(--yt-spec-text-primary, #ffffff) !important;\n  font-family: "Roboto", "Inter", sans-serif !important;\n  font-size: 14px !important;\n  font-weight: 500 !important;\n  font-variant-numeric: tabular-nums !important;\n  line-height: 40px !important;\n  white-space: nowrap !important;\n  cursor: default !important;\n  user-select: none !important;\n}\n.ytst-sb-notice {\n  position: absolute;\n  left: 12px;\n  bottom: 76px;\n  z-index: 60;\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  max-width: min(420px, calc(100% - 24px));\n  padding: 8px 10px 8px 12px;\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  border-radius: 10px;\n  background: rgba(20, 20, 20, 0.94);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  color: #f1f1f1;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 12.5px;\n  font-weight: 500;\n  line-height: 1.25;\n  opacity: 0;\n  transform: translateY(6px);\n  pointer-events: none;\n  transition: opacity 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-sb-notice.is-visible {\n  opacity: 1;\n  transform: none;\n  pointer-events: auto;\n}\n\n.ytst-sb-bar {\n  flex: 0 0 auto;\n  width: 3px;\n  height: 16px;\n  border-radius: 2px;\n  background: var(--ytst-sb-color, #00d400);\n}\n\n.ytst-sb-label {\n  flex: 1 1 auto;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ytst-sb-undo {\n  flex: 0 0 auto;\n  height: 24px;\n  padding: 0 9px;\n  border: 1px solid rgba(255, 255, 255, 0.12);\n  border-radius: 6px;\n  background: transparent;\n  color: #f1f1f1;\n  font-family: inherit;\n  font-size: 11.5px;\n  font-weight: 500;\n  cursor: pointer;\n}\n\n.ytst-sb-undo:hover {\n  background: rgba(255, 255, 255, 0.1);\n}\n\n.ytst-sb-track {\n  position: absolute;\n  inset: 0;\n  z-index: 42;\n  height: 100%;\n  overflow: hidden;\n  pointer-events: none;\n  transform: scaleY(0.6);\n  transform-origin: center;\n  transition: transform 100ms cubic-bezier(0.4, 0, 1, 1);\n}\n\n.ytp-big-mode .ytst-sb-track {\n  transform: translateY(-0.5px) scaleY(0.625);\n}\n\n.ytp-delhi-modern .ytst-sb-track {\n  transform: scaleY(0.667);\n}\n\n.ytp-progress-bar-container:hover:not([aria-disabled="true"]) .ytst-sb-track,\n.ytp-drag .ytst-sb-track,\n.ytp-touch-mode .ytst-sb-track {\n  transform: none;\n}\n\n.ytst-sb-segment {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  min-width: 1px;\n  pointer-events: none;\n}\n\n.ytst-toast {\n  position: fixed;\n  left: 24px;\n  bottom: 24px;\n  z-index: 2147483647;\n  display: inline-flex;\n  align-items: center;\n  max-width: min(360px, calc(100vw - 48px));\n  padding: 9px 12px;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 8px;\n  background: rgba(15, 15, 15, 0.92);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  color: #f1f1f1;\n  font-family: "Roboto", "Inter", sans-serif;\n  font-size: 12.5px;\n  font-weight: 500;\n  line-height: 1.35;\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);\n  opacity: 0;\n  transform: translateY(6px);\n  pointer-events: none;\n  transition: opacity 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-toast.is-visible {\n  opacity: 1;\n  transform: none;\n}\n\nhtml:not([dark]) .ytst-toast {\n  border-color: rgba(15, 15, 15, 0.1);\n  background: rgba(255, 255, 255, 0.94);\n  color: #0f0f0f;\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);\n}\nhtml[data-ytst-no-shorts="on"] ytd-guide-entry-renderer:has(a[title="Shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-mini-guide-entry-renderer:has(a[title="Shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-guide-entry-renderer:has(a[href^="/shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-mini-guide-entry-renderer:has(a[href^="/shorts"]),\nhtml[data-ytst-no-shorts="on"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),\nhtml[data-ytst-no-shorts="on"] ytd-rich-item-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytd-video-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytd-grid-video-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytm-video-with-context-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] ytm-compact-video-renderer:has(a[href^="/shorts/"]),\nhtml[data-ytst-no-shorts="on"] [tab-title="Shorts"],\nhtml[data-ytst-no-shorts="on"] ytd-reel-shelf-renderer,\nhtml[data-ytst-no-shorts="on"] ytd-rich-shelf-renderer[is-shorts],\nhtml[data-ytst-no-shorts="on"] ytm-reel-shelf-renderer,\nhtml[data-ytst-no-shorts="on"] ytm-shorts-lockup-view-model,\nhtml[data-ytst-no-shorts="on"] ytm-shorts-lockup-view-model-v2,\nhtml[data-ytst-no-shorts="on"] .pivot-shorts,\nhtml[data-ytst-no-shorts="on"] a[href="/shorts"],\n\nhtml[data-ytst-no-shorts="on"] grid-shelf-view-model,\nhtml[data-ytst-no-shorts="on"] grid-shelf-view-model.ytGridShelfViewModelHost,\nhtml[data-ytst-no-shorts="on"] [class*="ytGridShelfViewModelHost"],\nhtml[data-ytst-no-shorts="on"] .ytGridShelfViewModelGridShelfBottomButtonContainer,\nhtml[data-ytst-no-shorts="on"] [class*="ytGridShelfViewModelGridShelfBottomButtonContainer"] {\n  display: none !important;\n}\n\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-brand-video-singleton-renderer),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-statement-banner-renderer),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-inline-survey-renderer),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-live]),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-playables]),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-mini-game-card-view-model),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(mini-game-card-view-model),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href*="/playables"]),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href*="/mini-game"]),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href*="/feed/storefront"]),\nhtml[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href="/gaming"]),\nhtml[data-ytst-clean-home="on"] ytd-statement-banner-renderer,\nhtml[data-ytst-clean-home="on"] ytd-brand-video-singleton-renderer,\nhtml[data-ytst-clean-home="on"] ytd-inline-survey-renderer,\nhtml[data-ytst-clean-home="on"] yt-mealbar-promo-renderer {\n  display: none !important;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-toast,\n  .ytst-sb-notice,\n  .ytst-sb-track,\n  .ytst-speed-chevron,\n  .ytst-speed-chip {\n    transition-duration: 0ms;\n  }\n}\n';
   const FEATURE_GROUPS = [
     { id: "browse", label: "Browse", icon: "home" },
     { id: "player", label: "Player", icon: "play" },
@@ -302,6 +315,7 @@
   const EXTRA_DEFAULTS = {
     sponsorblockCategories: null,
     sponsorblockNotice: true,
+    sponsorblockProgressBar: true,
     playbackSpeed: 1
   };
   const DEFAULTS = Object.fromEntries([
@@ -309,7 +323,7 @@
     ...Object.entries(EXTRA_DEFAULTS)
   ]);
   const STORAGE_KEYS = Object.keys(DEFAULTS);
-  const MUTATION_FEATURES = ["dislike", "noShorts", "cleanHomepage", "nonstop", "downloader"];
+  const MUTATION_FEATURES = ["dislike", "nonstop", "downloader"];
   const PLAYER_FEATURES = ["speed", "pip", "screenshot", "downloader"];
   const CONTENT_FEATURES = FEATURES.filter((feature) => !feature.dependsOn).map((feature) => feature.key);
   const featuresForGroup = (groupId) => FEATURES.filter((feature) => feature.group === groupId);
@@ -445,7 +459,7 @@
       refresh: handleNavigation
     };
   }
-  const themeCss = ':host {\n  all: initial;\n\n  --ytst-font: "Roboto", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\n  --ytst-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;\n  --ytst-space-1: 4px;\n  --ytst-space-2: 8px;\n  --ytst-space-3: 12px;\n  --ytst-space-4: 16px;\n\n  --ytst-surface: rgba(15, 15, 15, 0.88);\n  --ytst-elevated: rgba(255, 255, 255, 0.04);\n  --ytst-elevated-hover: rgba(255, 255, 255, 0.08);\n  --ytst-line: rgba(255, 255, 255, 0.08);\n  --ytst-line-strong: rgba(255, 255, 255, 0.14);\n  --ytst-text: #f1f1f1;\n  --ytst-text-muted: #aaaaaa;\n  --ytst-text-faint: #717171;\n  --ytst-accent: #ff0033;\n  --ytst-accent-control: #3ea6ff;\n  --ytst-track: rgba(255, 255, 255, 0.2);\n  --ytst-focus: #3ea6ff;\n  --ytst-backdrop: rgba(0, 0, 0, 0.6);\n  --ytst-radius-panel: 12px;\n  --ytst-radius-item: 8px;\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);\n\n  display: block;\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  color: var(--ytst-text);\n  color-scheme: dark;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n:host([data-theme="light"]) {\n  --ytst-surface: rgba(255, 255, 255, 0.92);\n  --ytst-elevated: rgba(15, 15, 15, 0.045);\n  --ytst-elevated-hover: rgba(15, 15, 15, 0.08);\n  --ytst-line: rgba(15, 15, 15, 0.1);\n  --ytst-line-strong: rgba(15, 15, 15, 0.18);\n  --ytst-text: #0f0f0f;\n  --ytst-text-muted: #606060;\n  --ytst-text-faint: #909090;\n  --ytst-track: rgba(15, 15, 15, 0.24);\n  --ytst-backdrop: rgba(15, 15, 15, 0.4);\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);\n  color-scheme: light;\n}\n\n* {\n  box-sizing: border-box;\n}\n\n.ytst-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 2147483000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 24px;\n  background: var(--ytst-backdrop);\n  opacity: 0;\n  visibility: hidden;\n  transition: opacity 160ms ease, visibility 0s linear 160ms;\n}\n\n.ytst-overlay[data-open="true"] {\n  opacity: 1;\n  visibility: visible;\n  transition: opacity 160ms ease;\n}\n\n.ytst-panel {\n  display: grid;\n  grid-template-rows: auto minmax(0, 1fr) auto;\n  width: min(640px, 100%);\n  height: min(520px, 100%);\n  overflow: hidden;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-panel);\n  background: var(--ytst-surface);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  box-shadow: var(--ytst-shadow);\n  transform: translateY(8px) scale(0.995);\n  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-overlay[data-open="true"] .ytst-panel {\n  transform: none;\n}\n\n.ytst-panel:focus {\n  outline: none;\n}\n\n.ytst-header {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: var(--ytst-space-3) var(--ytst-space-4);\n  border-bottom: 1px solid var(--ytst-line);\n}\n\n.ytst-brand {\n  display: grid;\n  flex: 0 0 28px;\n  width: 28px;\n  height: 28px;\n  place-items: center;\n  border-radius: 8px;\n  background: var(--ytst-accent);\n  color: #ffffff;\n}\n\n.ytst-brand svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n\n.ytst-header-copy {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-title {\n  margin: 0;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 1.2;\n  letter-spacing: -0.01em;\n}\n\n.ytst-subtitle {\n  color: var(--ytst-text-muted);\n  font-size: 11px;\n  line-height: 1.2;\n}\n\n.ytst-badge {\n  padding: 2px 5px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.02em;\n  line-height: 1.2;\n}\n\n.ytst-header-actions {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-icon-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 30px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-icon-button:hover {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-icon-button:active {\n  background: var(--ytst-elevated);\n}\n\n.ytst-body {\n  display: grid;\n  grid-template-columns: 168px minmax(0, 1fr);\n  min-height: 0;\n}\n\n.ytst-rail {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: var(--ytst-space-2);\n  overflow-y: auto;\n  border-right: 1px solid var(--ytst-line);\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-tab {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  height: 34px;\n  min-height: 34px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  font-weight: 500;\n  text-align: left;\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-tab svg {\n  flex: 0 0 18px;\n  opacity: 0.9;\n}\n\n.ytst-tab:hover {\n  background: var(--ytst-elevated);\n  color: var(--ytst-text);\n}\n\n.ytst-tab[aria-selected="true"] {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-tab-count {\n  margin-left: auto;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-tab[aria-selected="true"] .ytst-tab-count {\n  color: var(--ytst-text-muted);\n}\n\n.ytst-content {\n  min-height: 0;\n  padding: 8px 8px 12px;\n  overflow-y: auto;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-content::-webkit-scrollbar {\n  width: 8px;\n}\n\n.ytst-content::-webkit-scrollbar-track {\n  background: transparent;\n}\n\n.ytst-content::-webkit-scrollbar-thumb {\n  border: 2px solid transparent;\n  border-radius: 8px;\n  background: var(--ytst-line-strong);\n  background-clip: content-box;\n}\n\n.ytst-tabpanel[hidden] {\n  display: none;\n}\n\n.ytst-group {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.ytst-group-head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: var(--ytst-space-2);\n  padding: 4px 8px 8px;\n}\n\n.ytst-group-title {\n  margin: 0;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-group-meta {\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-section {\n  margin: 12px 8px 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  min-height: 52px;\n  padding: 8px 10px;\n  border-radius: var(--ytst-radius-item);\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-row:hover {\n  background: var(--ytst-elevated);\n}\n\n.ytst-row.is-disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.ytst-row-icon {\n  display: inline-flex;\n  flex: 0 0 20px;\n  color: var(--ytst-text-muted);\n}\n\n.ytst-row:hover .ytst-row-icon {\n  color: var(--ytst-text);\n}\n\n.ytst-row-copy {\n  display: flex;\n  flex: 1 1 auto;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-row-label {\n  color: var(--ytst-text);\n  font-size: 13.5px;\n  font-weight: 500;\n  line-height: 1.25;\n}\n\n.ytst-row-desc {\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.35;\n}\n\n.ytst-row-meta {\n  display: flex;\n  flex: 0 0 auto;\n  align-items: center;\n  gap: 8px;\n}\n\n.ytst-badge-layer {\n  padding: 1px 4px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 9.5px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.04em;\n  line-height: 1.4;\n}\n\n.ytst-switch-input {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip: rect(0 0 0 0);\n  white-space: nowrap;\n  border: 0;\n}\n\n.ytst-switch {\n  position: relative;\n  flex: 0 0 36px;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: var(--ytst-track);\n  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-thumb {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #f1f1f1;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-input:checked + .ytst-switch {\n  background: var(--ytst-accent-control);\n}\n\n.ytst-switch-input:checked + .ytst-switch .ytst-switch-thumb {\n  background: #ffffff;\n  transform: translateX(16px);\n}\n\n.ytst-switch-input:focus-visible + .ytst-switch {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n.ytst-switch-input:disabled + .ytst-switch {\n  opacity: 0.55;\n}\n\n.ytst-footer {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: 10px 14px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-status {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.2;\n}\n\n.ytst-status-dot {\n  flex: 0 0 5px;\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ytst-accent-control);\n}\n\n.ytst-footer-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-button {\n  height: 30px;\n  padding: 0 12px;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-button:hover {\n  background: var(--ytst-elevated-hover);\n}\n\n.ytst-button-primary {\n  border-color: transparent;\n  background: var(--ytst-text);\n  color: #0f0f0f;\n}\n\n.ytst-button-primary:hover {\n  background: #d9d9d9;\n  color: #0f0f0f;\n}\n\n:host([data-theme="light"]) .ytst-button-primary {\n  background: #0f0f0f;\n  color: #ffffff;\n}\n\n:host([data-theme="light"]) .ytst-button-primary:hover {\n  background: #272727;\n}\n\n.ytst-button:focus-visible,\n.ytst-tab:focus-visible,\n.ytst-icon-button:focus-visible {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n@media (max-width: 720px) {\n  .ytst-overlay {\n    padding: 12px;\n  }\n\n  .ytst-panel {\n    height: min(560px, 100%);\n  }\n\n  .ytst-body {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto minmax(0, 1fr);\n  }\n\n  .ytst-rail {\n    flex-direction: row;\n    gap: 6px;\n    padding: var(--ytst-space-2);\n    overflow-x: auto;\n    border-right: 0;\n    border-bottom: 1px solid var(--ytst-line);\n  }\n\n  .ytst-tab {\n    flex: 0 0 auto;\n    padding: 0 10px;\n  }\n\n  .ytst-tab-count {\n    display: none;\n  }\n}\n\n.ytst-sb {\n  display: grid;\n  grid-template-rows: 0fr;\n  opacity: 0;\n  transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;\n}\n\n.ytst-sb[data-open="true"] {\n  grid-template-rows: 1fr;\n  opacity: 1;\n}\n\n.ytst-sb-inner {\n  min-height: 0;\n  overflow: hidden;\n}\n\n.ytst-sb-list {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1px 10px;\n  padding: 2px 10px 2px 42px;\n}\n\n.ytst-sb-cat,\n.ytst-sb-notice {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  cursor: pointer;\n}\n\n.ytst-sb-cat {\n  min-height: 26px;\n}\n\n.ytst-sb-cat:hover,\n.ytst-sb-notice:hover {\n  color: var(--ytst-text);\n}\n\n.ytst-sb-cat input,\n.ytst-sb-notice input {\n  width: 14px;\n  height: 14px;\n  margin: 0;\n  accent-color: var(--ytst-accent-control);\n}\n\n.ytst-sb-dot {\n  flex: 0 0 7px;\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n}\n\n.ytst-sb-notice {\n  margin: 4px 10px 8px 42px;\n  padding-top: 8px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-overlay,\n  .ytst-panel,\n  .ytst-tab,\n  .ytst-row,\n  .ytst-switch,\n  .ytst-switch-thumb,\n  .ytst-sb {\n    transition-duration: 0ms;\n  }\n}\n';
+  const themeCss = ':host {\n  all: initial;\n\n  --ytst-font: "Roboto", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\n  --ytst-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;\n  --ytst-space-1: 4px;\n  --ytst-space-2: 8px;\n  --ytst-space-3: 12px;\n  --ytst-space-4: 16px;\n\n  --ytst-surface: rgba(15, 15, 15, 0.88);\n  --ytst-elevated: rgba(255, 255, 255, 0.04);\n  --ytst-elevated-hover: rgba(255, 255, 255, 0.08);\n  --ytst-line: rgba(255, 255, 255, 0.08);\n  --ytst-line-strong: rgba(255, 255, 255, 0.14);\n  --ytst-text: #f1f1f1;\n  --ytst-text-muted: #aaaaaa;\n  --ytst-text-faint: #717171;\n  --ytst-accent: #ff0033;\n  --ytst-accent-control: #3ea6ff;\n  --ytst-track: rgba(255, 255, 255, 0.2);\n  --ytst-focus: #3ea6ff;\n  --ytst-backdrop: rgba(0, 0, 0, 0.6);\n  --ytst-radius-panel: 12px;\n  --ytst-radius-item: 8px;\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);\n\n  display: block;\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  color: var(--ytst-text);\n  color-scheme: dark;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n:host([data-theme="light"]) {\n  --ytst-surface: rgba(255, 255, 255, 0.92);\n  --ytst-elevated: rgba(15, 15, 15, 0.045);\n  --ytst-elevated-hover: rgba(15, 15, 15, 0.08);\n  --ytst-line: rgba(15, 15, 15, 0.1);\n  --ytst-line-strong: rgba(15, 15, 15, 0.18);\n  --ytst-text: #0f0f0f;\n  --ytst-text-muted: #606060;\n  --ytst-text-faint: #909090;\n  --ytst-track: rgba(15, 15, 15, 0.24);\n  --ytst-backdrop: rgba(15, 15, 15, 0.4);\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);\n  color-scheme: light;\n}\n\n* {\n  box-sizing: border-box;\n}\n\n.ytst-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 2147483000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 24px;\n  background: var(--ytst-backdrop);\n  opacity: 0;\n  visibility: hidden;\n  transition: opacity 160ms ease, visibility 0s linear 160ms;\n}\n\n.ytst-overlay[data-open="true"] {\n  opacity: 1;\n  visibility: visible;\n  transition: opacity 160ms ease;\n}\n\n.ytst-panel {\n  display: grid;\n  grid-template-rows: auto minmax(0, 1fr) auto;\n  width: min(640px, 100%);\n  height: min(520px, 100%);\n  overflow: hidden;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-panel);\n  background: var(--ytst-surface);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  box-shadow: var(--ytst-shadow);\n  transform: translateY(8px) scale(0.995);\n  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-overlay[data-open="true"] .ytst-panel {\n  transform: none;\n}\n\n.ytst-panel:focus {\n  outline: none;\n}\n\n.ytst-header {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: var(--ytst-space-3) var(--ytst-space-4);\n  border-bottom: 1px solid var(--ytst-line);\n}\n\n.ytst-brand {\n  display: grid;\n  flex: 0 0 28px;\n  width: 28px;\n  height: 28px;\n  place-items: center;\n  border-radius: 8px;\n  background: var(--ytst-accent);\n  color: #ffffff;\n}\n\n.ytst-brand svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n\n.ytst-header-copy {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-title {\n  margin: 0;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 1.2;\n  letter-spacing: -0.01em;\n}\n\n.ytst-subtitle {\n  color: var(--ytst-text-muted);\n  font-size: 11px;\n  line-height: 1.2;\n}\n\n.ytst-badge {\n  padding: 2px 5px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.02em;\n  line-height: 1.2;\n}\n\n.ytst-header-actions {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-icon-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 30px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-icon-button:hover {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-icon-button:active {\n  background: var(--ytst-elevated);\n}\n\n.ytst-body {\n  display: grid;\n  grid-template-columns: 168px minmax(0, 1fr);\n  min-height: 0;\n}\n\n.ytst-rail {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: var(--ytst-space-2);\n  overflow-y: auto;\n  border-right: 1px solid var(--ytst-line);\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-tab {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  height: 34px;\n  min-height: 34px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  font-weight: 500;\n  text-align: left;\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-tab svg {\n  flex: 0 0 18px;\n  opacity: 0.9;\n}\n\n.ytst-tab:hover {\n  background: var(--ytst-elevated);\n  color: var(--ytst-text);\n}\n\n.ytst-tab[aria-selected="true"] {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-tab-count {\n  margin-left: auto;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-tab[aria-selected="true"] .ytst-tab-count {\n  color: var(--ytst-text-muted);\n}\n\n.ytst-content {\n  min-height: 0;\n  padding: 8px 8px 12px;\n  overflow-y: auto;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-content::-webkit-scrollbar {\n  width: 8px;\n}\n\n.ytst-content::-webkit-scrollbar-track {\n  background: transparent;\n}\n\n.ytst-content::-webkit-scrollbar-thumb {\n  border: 2px solid transparent;\n  border-radius: 8px;\n  background: var(--ytst-line-strong);\n  background-clip: content-box;\n}\n\n.ytst-tabpanel[hidden] {\n  display: none;\n}\n\n.ytst-group {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.ytst-group-head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: var(--ytst-space-2);\n  padding: 4px 8px 8px;\n}\n\n.ytst-group-title {\n  margin: 0;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-group-meta {\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-section {\n  margin: 12px 8px 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  min-height: 52px;\n  padding: 8px 10px;\n  border-radius: var(--ytst-radius-item);\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-row:hover {\n  background: var(--ytst-elevated);\n}\n\n.ytst-row.is-disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.ytst-row-icon {\n  display: inline-flex;\n  flex: 0 0 20px;\n  color: var(--ytst-text-muted);\n}\n\n.ytst-row:hover .ytst-row-icon {\n  color: var(--ytst-text);\n}\n\n.ytst-row-copy {\n  display: flex;\n  flex: 1 1 auto;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-row-label {\n  color: var(--ytst-text);\n  font-size: 13.5px;\n  font-weight: 500;\n  line-height: 1.25;\n}\n\n.ytst-row-desc {\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.35;\n}\n\n.ytst-row-meta {\n  display: flex;\n  flex: 0 0 auto;\n  align-items: center;\n  gap: 8px;\n}\n\n.ytst-badge-layer {\n  padding: 1px 4px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 9.5px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.04em;\n  line-height: 1.4;\n}\n\n.ytst-switch-input {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip: rect(0 0 0 0);\n  white-space: nowrap;\n  border: 0;\n}\n\n.ytst-switch {\n  position: relative;\n  flex: 0 0 36px;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: var(--ytst-track);\n  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-thumb {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #f1f1f1;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-input:checked + .ytst-switch {\n  background: var(--ytst-accent-control);\n}\n\n.ytst-switch-input:checked + .ytst-switch .ytst-switch-thumb {\n  background: #ffffff;\n  transform: translateX(16px);\n}\n\n.ytst-switch-input:focus-visible + .ytst-switch {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n.ytst-switch-input:disabled + .ytst-switch {\n  opacity: 0.55;\n}\n\n.ytst-footer {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: 10px 14px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-status {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.2;\n}\n\n.ytst-status-dot {\n  flex: 0 0 5px;\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ytst-accent-control);\n}\n\n.ytst-footer-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-button {\n  height: 30px;\n  padding: 0 12px;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-button:hover {\n  background: var(--ytst-elevated-hover);\n}\n\n.ytst-button-primary {\n  border-color: transparent;\n  background: var(--ytst-text);\n  color: #0f0f0f;\n}\n\n.ytst-button-primary:hover {\n  background: #d9d9d9;\n  color: #0f0f0f;\n}\n\n:host([data-theme="light"]) .ytst-button-primary {\n  background: #0f0f0f;\n  color: #ffffff;\n}\n\n:host([data-theme="light"]) .ytst-button-primary:hover {\n  background: #272727;\n}\n\n.ytst-button:focus-visible,\n.ytst-tab:focus-visible,\n.ytst-icon-button:focus-visible {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n@media (max-width: 720px) {\n  .ytst-overlay {\n    padding: 12px;\n  }\n\n  .ytst-panel {\n    height: min(560px, 100%);\n  }\n\n  .ytst-body {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto minmax(0, 1fr);\n  }\n\n  .ytst-rail {\n    flex-direction: row;\n    gap: 6px;\n    padding: var(--ytst-space-2);\n    overflow-x: auto;\n    border-right: 0;\n    border-bottom: 1px solid var(--ytst-line);\n  }\n\n  .ytst-tab {\n    flex: 0 0 auto;\n    padding: 0 10px;\n  }\n\n  .ytst-tab-count {\n    display: none;\n  }\n}\n\n.ytst-sb {\n  display: grid;\n  grid-template-rows: 0fr;\n  opacity: 0;\n  transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;\n}\n\n.ytst-sb[data-open="true"] {\n  grid-template-rows: 1fr;\n  opacity: 1;\n}\n\n.ytst-sb-inner {\n  min-height: 0;\n  overflow: hidden;\n}\n\n.ytst-sb-list {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1px 10px;\n  padding: 2px 10px 2px 42px;\n}\n\n.ytst-sb-cat,\n.ytst-sb-notice {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  cursor: pointer;\n}\n\n.ytst-sb-cat {\n  min-height: 26px;\n}\n\n.ytst-sb-cat:hover,\n.ytst-sb-notice:hover {\n  color: var(--ytst-text);\n}\n\n.ytst-sb-cat input,\n.ytst-sb-notice input {\n  width: 14px;\n  height: 14px;\n  margin: 0;\n  accent-color: var(--ytst-accent-control);\n}\n\n.ytst-sb-dot {\n  flex: 0 0 7px;\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n}\n\n.ytst-sb-notice {\n  margin: 4px 10px 8px 42px;\n  padding-top: 8px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-sb-progress {\n  margin-top: 0;\n  padding-top: 0;\n  border-top: 0;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-overlay,\n  .ytst-panel,\n  .ytst-tab,\n  .ytst-row,\n  .ytst-switch,\n  .ytst-switch-thumb,\n  .ytst-sb {\n    transition-duration: 0ms;\n  }\n}\n';
   const SVG_NS = "http://www.w3.org/2000/svg";
   const applyAttributes = (element, attributes) => {
     for (const [key, value] of Object.entries(attributes || {})) {
@@ -624,6 +638,7 @@
     saveError: "Unable to save setting",
     loadError: "Unable to load settings",
     showSkipNotice: "Show a skip notice with undo",
+    showProgressBar: "Show segment colors on the progress bar",
     undo: "Undo",
     custom: "Custom",
     customPlaybackSpeed: "Custom playback speed",
@@ -674,7 +689,7 @@
     upToDate: (version) => `Up to date · v${version}`,
     updateAvailable: (version) => `v${version} available`
   };
-  function createSponsorAccordion({ onChange, onNoticeChange } = {}) {
+  function createSponsorAccordion({ onChange, onNoticeChange, onProgressChange } = {}) {
     const inputs = /* @__PURE__ */ new Map();
     const list = createElement("div", { className: "ytst-sb-list" });
     Object.entries(SPONSOR_CATEGORIES).forEach(([key, category]) => {
@@ -698,7 +713,17 @@
       notice,
       createElement("span", { textContent: UI_STRINGS.showSkipNotice })
     ]);
-    const inner = createElement("div", { className: "ytst-sb-inner" }, [list, noticeLabel]);
+    const progress = createElement("input", { type: "checkbox" });
+    progress.checked = true;
+    progress.id = `ytst-sb-progress-${Math.random().toString(36).slice(2, 8)}`;
+    const progressLabel = createElement("label", {
+      className: "ytst-sb-notice ytst-sb-progress",
+      for: progress.id
+    }, [
+      progress,
+      createElement("span", { textContent: UI_STRINGS.showProgressBar })
+    ]);
+    const inner = createElement("div", { className: "ytst-sb-inner" }, [list, noticeLabel, progressLabel]);
     const element = createElement("div", {
       className: "ytst-sb",
       "aria-hidden": "true",
@@ -710,6 +735,7 @@
     );
     list.addEventListener("change", () => onChange?.(getCategories()));
     notice.addEventListener("change", () => onNoticeChange?.(Boolean(notice.checked)));
+    progress.addEventListener("change", () => onProgressChange?.(Boolean(progress.checked)));
     const setOpen = (open) => {
       const next = Boolean(open);
       if (element.dataset.open === String(next)) return;
@@ -738,7 +764,213 @@
       setNotice: (value) => {
         notice.checked = Boolean(value);
       },
+      setProgress: (value) => {
+        progress.checked = Boolean(value);
+      },
       getCategories
+    };
+  }
+  function createSettingsTree({
+    prefix = "ytst",
+    orientation = "vertical",
+    tabHost = null,
+    panelHost = null,
+    tabHostClass = "",
+    panelHostClass = "",
+    panelClass = "",
+    rowClass = "",
+    switchInputClass = "",
+    badgeClass = "",
+    showTabCount = false,
+    onChange,
+    onCategoriesChange,
+    onNoticeChange,
+    onProgressChange
+  } = {}) {
+    const base = (name) => `${prefix}-${name}`;
+    const rowClassName = rowClass || base("row");
+    const switchClassName = switchInputClass || base("switch-input");
+    const panelClassName = panelClass || base("tabpanel");
+    const badgeClassName = badgeClass || base("badge-layer");
+    const rows = /* @__PURE__ */ new Map();
+    const tabs = /* @__PURE__ */ new Map();
+    const panels = /* @__PURE__ */ new Map();
+    const groupMeta = /* @__PURE__ */ new Map();
+    let activeGroup = FEATURE_GROUPS[0]?.id || "";
+    let sponsorAccordion = null;
+    const rail = tabHost || createElement("div", {
+      className: tabHostClass || base("rail"),
+      role: "tablist",
+      "aria-label": UI_STRINGS.settingGroups,
+      "aria-orientation": orientation
+    });
+    const content = panelHost || createElement("div", {
+      className: panelHostClass || base("content")
+    });
+    const buildRow = (feature) => {
+      const input = createElement("input", {
+        type: "checkbox",
+        className: switchClassName,
+        id: `${prefix}-${feature.key}`,
+        role: "switch",
+        "aria-describedby": `${prefix}-desc-${feature.key}`
+      });
+      input.dataset.key = feature.key;
+      const metaCell = createElement("span", { className: base("row-meta") });
+      if (feature.badge) {
+        metaCell.appendChild(createElement("span", {
+          className: badgeClassName,
+          textContent: feature.badge
+        }));
+      }
+      const row = createElement("label", {
+        className: rowClassName,
+        for: `${prefix}-${feature.key}`
+      }, [
+        createElement("span", { className: base("row-icon") }, [createIcon(feature.icon, 20)]),
+        createElement("span", { className: base("row-copy") }, [
+          createElement("span", { className: base("row-label"), textContent: feature.label }),
+          createElement("span", {
+            className: base("row-desc"),
+            id: `${prefix}-desc-${feature.key}`,
+            textContent: feature.description
+          })
+        ]),
+        metaCell,
+        input,
+        createElement("span", { className: base("switch"), "aria-hidden": "true" }, [
+          createElement("span", { className: base("switch-thumb") })
+        ])
+      ]);
+      rows.set(feature.key, { row, input, feature });
+      return row;
+    };
+    const buildTab = (group) => {
+      const features = featuresForGroup(group.id);
+      const tab = createElement("button", {
+        type: "button",
+        className: base("tab"),
+        role: "tab",
+        id: `${prefix}-tab-${group.id}`,
+        "aria-controls": `${prefix}-panel-${group.id}`,
+        "aria-selected": "false",
+        tabindex: "-1"
+      }, [
+        createIcon(group.icon, 16),
+        createElement("span", { textContent: group.label }),
+        showTabCount ? createElement("span", {
+          className: base("tab-count"),
+          textContent: String(features.length)
+        }) : null
+      ]);
+      tab.addEventListener("click", () => show(group.id));
+      tabs.set(group.id, tab);
+      return tab;
+    };
+    const buildAccordion = () => createSponsorAccordion({
+      onChange: (value) => onCategoriesChange?.(value),
+      onNoticeChange: (value) => onNoticeChange?.(value),
+      onProgressChange: (value) => onProgressChange?.(value)
+    });
+    const buildGroupPanel = (group) => {
+      const metaNode = createElement("span", { className: base("group-meta") });
+      groupMeta.set(group.id, metaNode);
+      const wrapper = createElement("div", {
+        className: panelClassName,
+        id: `${prefix}-panel-${group.id}`,
+        role: "tabpanel",
+        "aria-labelledby": `${prefix}-tab-${group.id}`
+      }, [
+        createElement("div", { className: base("group-head") }, [
+          createElement("h2", { className: base("group-title"), textContent: group.label }),
+          metaNode
+        ])
+      ]);
+      const list = createElement("div", { className: base("group") });
+      let layerHeadingShown = false;
+      for (const feature of featuresForGroup(group.id)) {
+        if (feature.dependsOn && !layerHeadingShown) {
+          layerHeadingShown = true;
+          list.appendChild(createElement("div", {
+            className: base("section"),
+            textContent: UI_STRINGS.defenceLayers
+          }));
+        }
+        list.appendChild(buildRow(feature));
+        if (feature.key === "sponsorblock") {
+          sponsorAccordion = buildAccordion();
+          list.appendChild(sponsorAccordion.element);
+        }
+      }
+      wrapper.appendChild(list);
+      panels.set(group.id, wrapper);
+      return wrapper;
+    };
+    const show = (groupId) => {
+      if (!tabs.has(groupId)) return;
+      activeGroup = groupId;
+      tabs.forEach((tab, id) => {
+        tab.setAttribute("aria-selected", String(id === groupId));
+        tab.tabIndex = id === groupId ? 0 : -1;
+      });
+      panels.forEach((node, id) => {
+        node.hidden = id !== groupId;
+      });
+    };
+    const sync = (values = {}) => {
+      rows.forEach(({ input, row, feature }) => {
+        input.checked = Boolean(values[feature.key]);
+        const blocked = Boolean(feature.dependsOn && !values[feature.dependsOn]);
+        input.disabled = blocked;
+        row.classList.toggle("is-disabled", blocked);
+      });
+      groupMeta.forEach((node, groupId) => {
+        const features = featuresForGroup(groupId).filter((feature) => !feature.dependsOn || values[feature.dependsOn]);
+        const active = features.filter((feature) => values[feature.key]).length;
+        node.textContent = `${active}/${features.length}`;
+      });
+      sponsorAccordion?.setOpen(Boolean(values.sponsorblock));
+      sponsorAccordion?.setCategories(values.sponsorblockCategories);
+      sponsorAccordion?.setNotice(values.sponsorblockNotice);
+      sponsorAccordion?.setProgress(values.sponsorblockProgressBar);
+    };
+    FEATURE_GROUPS.forEach((group) => {
+      rail.appendChild(buildTab(group));
+      content.appendChild(buildGroupPanel(group));
+    });
+    content.addEventListener("change", (event) => {
+      const input = event.target;
+      if (!input?.classList?.contains(switchClassName)) return;
+      const key = input.dataset.key;
+      if (!key) return;
+      onChange?.(key, Boolean(input.checked));
+    });
+    rail.addEventListener("keydown", (event) => {
+      const previousKey = orientation === "horizontal" ? "ArrowLeft" : "ArrowUp";
+      const nextKey = orientation === "horizontal" ? "ArrowRight" : "ArrowDown";
+      if (event.key !== previousKey && event.key !== nextKey) return;
+      event.preventDefault();
+      const ids = [...tabs.keys()];
+      const index = ids.indexOf(activeGroup);
+      const next = event.key === nextKey ? ids[(index + 1) % ids.length] : ids[(index - 1 + ids.length) % ids.length];
+      show(next);
+      tabs.get(next)?.focus();
+    });
+    show(activeGroup);
+    return {
+      rail,
+      content,
+      rows,
+      tabs,
+      panels,
+      show,
+      sync,
+      get activeGroup() {
+        return activeGroup;
+      },
+      get sponsorAccordion() {
+        return sponsorAccordion;
+      }
     };
   }
   const detectDark = () => {
@@ -757,135 +989,18 @@
     return globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
   };
   function createPanel({ settings, storage, toast, update, meta = {} }) {
-    const rows = /* @__PURE__ */ new Map();
-    const tabs = /* @__PURE__ */ new Map();
-    const panels = /* @__PURE__ */ new Map();
-    const groupMeta = /* @__PURE__ */ new Map();
     let host = null;
     let shadow = null;
     let overlay = null;
     let panelEl = null;
-    let content = null;
+    let tree = null;
     let statusText = null;
     let previousFocus = null;
     let statusTimer = 0;
+    let unsubscribeSettings = null;
+    let unsubscribeStorage = null;
     let open = false;
-    let activeGroup = FEATURE_GROUPS[0].id;
-    let sponsorAccordion = null;
     let themeSignature = "";
-    const buildRow = (feature) => {
-      const input = createElement("input", {
-        type: "checkbox",
-        className: "ytst-switch-input",
-        id: `ytst-${feature.key}`,
-        role: "switch",
-        "aria-describedby": `ytst-desc-${feature.key}`
-      });
-      input.dataset.key = feature.key;
-      const metaCell = createElement("span", { className: "ytst-row-meta" });
-      if (feature.badge) {
-        metaCell.appendChild(createElement("span", {
-          className: "ytst-badge-layer",
-          textContent: feature.badge
-        }));
-      }
-      const row = createElement("label", {
-        className: "ytst-row",
-        for: `ytst-${feature.key}`
-      }, [
-        createElement("span", { className: "ytst-row-icon" }, [createIcon(feature.icon, 20)]),
-        createElement("span", { className: "ytst-row-copy" }, [
-          createElement("span", { className: "ytst-row-label", textContent: feature.label }),
-          createElement("span", {
-            className: "ytst-row-desc",
-            id: `ytst-desc-${feature.key}`,
-            textContent: feature.description
-          })
-        ]),
-        metaCell,
-        input,
-        createElement("span", { className: "ytst-switch", "aria-hidden": "true" }, [
-          createElement("span", { className: "ytst-switch-thumb" })
-        ])
-      ]);
-      rows.set(feature.key, { row, input, feature });
-      return row;
-    };
-    const buildSponsorAccordion = () => createSponsorAccordion({
-      onChange: (value) => {
-        void settings.set("sponsorblockCategories", JSON.stringify(value)).then((saved) => {
-          if (saved === false) toast?.show(UI_STRINGS.saveCategoriesFailed);
-          else flashSaved();
-        });
-      },
-      onNoticeChange: (checked) => {
-        void settings.set("sponsorblockNotice", checked).then((saved) => {
-          if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
-          else flashSaved();
-        });
-      }
-    });
-    const buildTab = (group) => {
-      const features = featuresForGroup(group.id);
-      const tab = createElement("button", {
-        type: "button",
-        className: "ytst-tab",
-        role: "tab",
-        id: `ytst-tab-${group.id}`,
-        "aria-controls": `ytst-panel-${group.id}`,
-        "aria-selected": "false",
-        tabindex: "-1"
-      }, [
-        createIcon(group.icon, 16),
-        createElement("span", { textContent: group.label }),
-        createElement("span", { className: "ytst-tab-count", textContent: String(features.length) })
-      ]);
-      tab.addEventListener("click", () => show(group.id));
-      tabs.set(group.id, tab);
-      return tab;
-    };
-    const buildGroupPanel = (group) => {
-      const features = featuresForGroup(group.id);
-      const activeMeta = createElement("span", { className: "ytst-group-meta" });
-      groupMeta.set(group.id, activeMeta);
-      const wrapper = createElement("div", {
-        className: "ytst-tabpanel",
-        id: `ytst-panel-${group.id}`,
-        role: "tabpanel",
-        "aria-labelledby": `ytst-tab-${group.id}`
-      }, [
-        createElement("div", { className: "ytst-group-head" }, [
-          createElement("h2", { className: "ytst-group-title", textContent: group.label }),
-          activeMeta
-        ])
-      ]);
-      const list = createElement("div", { className: "ytst-group" });
-      let layerHeadingShown = false;
-      for (const feature of features) {
-        if (feature.dependsOn && !layerHeadingShown) {
-          layerHeadingShown = true;
-          list.appendChild(createElement("div", { className: "ytst-section", textContent: UI_STRINGS.defenceLayers }));
-        }
-        list.appendChild(buildRow(feature));
-        if (feature.key === "sponsorblock") {
-          sponsorAccordion = buildSponsorAccordion();
-          list.appendChild(sponsorAccordion.element);
-        }
-      }
-      wrapper.appendChild(list);
-      panels.set(group.id, wrapper);
-      return wrapper;
-    };
-    const show = (groupId) => {
-      activeGroup = groupId;
-      tabs.forEach((tab, id) => {
-        tab.setAttribute("aria-selected", String(id === groupId));
-        tab.tabIndex = id === groupId ? 0 : -1;
-      });
-      panels.forEach((node, id) => {
-        node.hidden = id !== groupId;
-      });
-    };
     const flashSaved = () => {
       if (!statusText) return;
       statusText.textContent = UI_STRINGS.saved;
@@ -900,20 +1015,7 @@
       statusText.textContent = message;
     };
     const syncValues = () => {
-      rows.forEach(({ input, row, feature }) => {
-        input.checked = Boolean(settings.get(feature.key));
-        const blocked = Boolean(feature.dependsOn && !settings.get(feature.dependsOn));
-        input.disabled = blocked;
-        row.classList.toggle("is-disabled", blocked);
-      });
-      groupMeta.forEach((node, groupId) => {
-        const features = featuresForGroup(groupId).filter((feature) => !feature.dependsOn || settings.get(feature.dependsOn));
-        const active = features.filter((feature) => settings.get(feature.key)).length;
-        node.textContent = `${active}/${features.length}`;
-      });
-      sponsorAccordion?.setOpen(Boolean(settings.get("sponsorblock")));
-      sponsorAccordion?.setCategories(settings.get("sponsorblockCategories"));
-      sponsorAccordion?.setNotice(settings.get("sponsorblockNotice"));
+      tree?.sync(settings.values);
     };
     const syncTheme = () => {
       if (!host) return;
@@ -938,25 +1040,49 @@
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      const active = shadow?.activeElement;
+      if (event.shiftKey && active === first) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && active === last) {
         event.preventDefault();
         first.focus();
       }
     };
+    const saveCategories = (value) => {
+      void settings.set("sponsorblockCategories", JSON.stringify(value)).then((saved) => {
+        if (saved === false) toast?.show(UI_STRINGS.saveCategoriesFailed);
+        else flashSaved();
+      });
+    };
+    const saveSponsorSetting = (key, value) => {
+      void settings.set(key, value).then((saved) => {
+        if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
+        else flashSaved();
+      });
+    };
+    const buildTree = () => createSettingsTree({
+      prefix: "ytst",
+      orientation: "vertical",
+      rowClass: "ytst-row",
+      switchInputClass: "ytst-switch-input",
+      badgeClass: "ytst-badge-layer",
+      showTabCount: true,
+      onChange: (key, value) => {
+        void settings.set(key, value).then((saved) => {
+          if (saved === false) toast?.show(UI_STRINGS.saveSettingFailed);
+          else flashSaved();
+        });
+      },
+      onCategoriesChange: saveCategories,
+      onNoticeChange: (value) => saveSponsorSetting("sponsorblockNotice", value),
+      onProgressChange: (value) => saveSponsorSetting("sponsorblockProgressBar", value)
+    });
     const ensureMounted = () => {
       if (host?.isConnected) return;
-      const rail = createElement("div", {
-        className: "ytst-rail",
-        role: "tablist",
-        "aria-label": UI_STRINGS.settingGroups,
-        "aria-orientation": "vertical"
-      });
-      FEATURE_GROUPS.forEach((group) => rail.appendChild(buildTab(group)));
-      content = createElement("div", { className: "ytst-content" });
-      FEATURE_GROUPS.forEach((group) => content.appendChild(buildGroupPanel(group)));
+      tree = buildTree();
+      const rail = tree.rail;
+      const content = tree.content;
       statusText = createElement("span", {
         className: "ytst-status-text",
         textContent: UI_STRINGS.savedLocally
@@ -1023,7 +1149,7 @@
           ]),
           createElement("span", {
             className: "ytst-badge",
-            textContent: UI_TEXT.versionTarget(meta.version || "2.4.1", meta.target || "mv3")
+            textContent: UI_TEXT.versionTarget(meta.version || "2.4.3", meta.target || "mv3")
           }),
           createElement("div", { className: "ytst-header-actions" }, [
             (() => {
@@ -1047,30 +1173,6 @@
           createElement("div", { className: "ytst-footer-actions" }, [updateButton, resetButton, doneButton])
         ])
       ]);
-      content.addEventListener("change", (event) => {
-        const input = event.target;
-        if (!input?.classList?.contains("ytst-switch-input")) return;
-        const key = input.dataset.key;
-        if (!key) return;
-        const next = Boolean(input.checked);
-        input.checked = next;
-        void settings.set(key, next).then((saved) => {
-          if (saved === false) {
-            toast?.show(UI_STRINGS.saveSettingFailed);
-            return;
-          }
-          flashSaved();
-        });
-      });
-      rail.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-        event.preventDefault();
-        const ids = [...tabs.keys()];
-        const index = ids.indexOf(activeGroup);
-        const next = event.key === "ArrowDown" ? ids[(index + 1) % ids.length] : ids[(index - 1 + ids.length) % ids.length];
-        show(next);
-        tabs.get(next)?.focus();
-      });
       overlay = createElement("div", { className: "ytst-overlay", "data-open": "false" }, [panelEl]);
       overlay.addEventListener("click", (event) => {
         if (event.target === overlay) closePanel();
@@ -1081,11 +1183,12 @@
       shadow.appendChild(createElement("style", { textContent: themeCss }));
       shadow.appendChild(overlay);
       (document.body || document.documentElement).appendChild(host);
-      settings.subscribe(() => syncValues());
-      storage?.onChanged?.(() => {
+      unsubscribeSettings?.();
+      unsubscribeSettings = settings.subscribe(() => syncValues());
+      unsubscribeStorage?.();
+      unsubscribeStorage = storage?.onChanged?.(() => {
         if (open) syncValues();
-      }, STORAGE_KEYS);
-      show(activeGroup);
+      }, STORAGE_KEYS) || null;
       syncTheme();
       syncValues();
     };
@@ -1467,152 +1570,35 @@
       }
     };
   }
-  const SHORTS_SELECTORS = [
-    "ytd-rich-shelf-renderer[is-shorts]",
-    "ytd-reel-shelf-renderer",
-    "ytm-shorts-lockup-view-model",
-    '[tab-title="Shorts"]',
-    ".pivot-shorts",
-    'a[href="/shorts"]',
-    ".reel-shelf-renderer",
-    "ytm-reel-shelf-renderer",
-    "ytm-shorts-lockup-view-model-v2",
-    "grid-shelf-view-model",
-    "grid-shelf-view-model.ytGridShelfViewModelHost",
-    '[class*="ytGridShelfViewModelHost"]',
-    ".ytGridShelfViewModelGridShelfBottomButtonContainer"
-  ];
-  const SHORTS_HAS_RULES = [
-    { parent: "ytd-guide-entry-renderer", child: 'a[title="Shorts"]' },
-    { parent: "ytd-mini-guide-entry-renderer", child: 'a[title="Shorts"]' },
-    { parent: "ytd-rich-section-renderer", child: "ytd-rich-shelf-renderer[is-shorts]" },
-    { parent: "ytd-rich-item-renderer", child: 'a[href^="/shorts/"]' },
-    { parent: "ytd-video-renderer", child: 'a[href^="/shorts/"]' },
-    { parent: "ytd-grid-video-renderer", child: 'a[href^="/shorts/"]' },
-    { parent: "ytm-video-with-context-renderer", child: 'a[href^="/shorts/"]' },
-    { parent: "ytm-compact-video-renderer", child: 'a[href^="/shorts/"]' }
-  ];
-  const COMBINED = SHORTS_SELECTORS.join(",");
-  const RELEVANT_TAGS = /^(YTD-RICH-ITEM-RENDERER|YTD-VIDEO-RENDERER|YTD-GRID-VIDEO-RENDERER|YTD-RICH-SECTION-RENDERER|YTD-REEL-SHELF-RENDERER|YTD-RICH-SHELF-RENDERER|YTD-GUIDE-ENTRY-RENDERER|YTD-MINI-GUIDE-ENTRY-RENDERER|GRID-SHELF-VIEW-MODEL|YTM-)/;
-  const elementsFor = (root, selector, includeRoot = true) => [
-    ...includeRoot && root.matches?.(selector) ? [root] : [],
-    ...root.querySelectorAll?.(selector) || []
-  ];
-  function syncRoot(enabled) {
+  const syncRoot$1 = (enabled) => {
     const root = document.documentElement;
     if (!root) return;
     if (enabled) root.dataset.ytstNoShorts = "on";
     else delete root.dataset.ytstNoShorts;
-  }
-  const removeShortElement = (element) => {
-    const parentSection = element.matches("ytd-rich-shelf-renderer[is-shorts]") ? element.closest("ytd-rich-section-renderer") : null;
-    (parentSection || element).remove();
   };
-  function hideShorts(root = document) {
-    const includeRoot = root.nodeType !== Node.ELEMENT_NODE || RELEVANT_TAGS.test(root.tagName);
-    const set = /* @__PURE__ */ new Set();
-    elementsFor(root, COMBINED, includeRoot).forEach((element) => {
-      if (element.isConnected) set.add(element);
-    });
-    SHORTS_HAS_RULES.forEach(({ parent, child }) => {
-      elementsFor(root, parent, includeRoot).forEach((element) => {
-        if (element.isConnected && element.querySelector(child)) set.add(element);
-      });
-    });
-    set.forEach(removeShortElement);
-  }
   function createNoShorts() {
     return {
       init() {
-        syncRoot(true);
-        hideShorts();
-      },
-      update(mutations) {
-        mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE && RELEVANT_TAGS.test(node.tagName)) hideShorts(node);
-        }));
+        syncRoot$1(true);
       },
       stop() {
-        syncRoot(false);
+        syncRoot$1(false);
       }
     };
   }
-  const SECTION_SELECTOR = "ytd-rich-section-renderer";
-  const BANNER_SELECTOR = "ytd-statement-banner-renderer";
-  const PROMO_SELECTOR = "yt-mealbar-promo-renderer";
-  const WATCH_SELECTOR = `${SECTION_SELECTOR}, ${BANNER_SELECTOR}, ${PROMO_SELECTOR}`;
-  const SECTION_REMOVED = /* @__PURE__ */ new WeakSet();
-  const isCleanHomepageSection = (section) => {
-    if (section.querySelector("ytd-inline-survey-renderer, ytd-statement-banner-renderer, ytd-rich-shelf-renderer[is-live]")) {
-      return true;
-    }
-    if (section.querySelector("ytd-mini-game-card-view-model, mini-game-card-view-model")) return true;
-    return Boolean(section.querySelector('a[href*="/playables"], a[href*="/mini-game"], a[href*="/feed/storefront"], a[href="/gaming"]'));
-  };
-  const dropPromo = (promo) => {
-    if (!promo.isConnected) return;
-    (promo.closest("tp-yt-paper-dialog, ytd-popup-container") || promo).remove();
-  };
-  const dropBanner = (banner) => {
-    if (!banner.isConnected || banner.closest(SECTION_SELECTOR)) return;
-    banner.remove();
-  };
-  const dropSection = (section) => {
-    if (!section.isConnected || SECTION_REMOVED.has(section)) return;
-    SECTION_REMOVED.add(section);
-    if (isCleanHomepageSection(section)) section.remove();
-  };
-  const collectTargets = (node, targets) => {
-    if (!(node instanceof Element)) return;
-    if (node.matches(WATCH_SELECTOR)) targets.add(node);
-    node.querySelectorAll(WATCH_SELECTOR).forEach((element) => targets.add(element));
-  };
-  const processTargets = (targets) => {
-    targets.forEach((node) => {
-      if (node.matches(PROMO_SELECTOR)) dropPromo(node);
-      else if (node.matches(BANNER_SELECTOR)) dropBanner(node);
-      else dropSection(node);
-    });
-  };
-  const scanDocument = () => {
-    const targets = /* @__PURE__ */ new Set();
-    document.querySelectorAll(WATCH_SELECTOR).forEach((element) => targets.add(element));
-    processTargets(targets);
+  const syncRoot = (enabled) => {
+    const root = document.documentElement;
+    if (!root) return;
+    if (enabled) root.dataset.ytstCleanHome = "on";
+    else delete root.dataset.ytstCleanHome;
   };
   function createCleanHomepage() {
-    let enabled = false;
-    let lastHref = "";
-    let lastScanAt = 0;
-    let sweepTimer = 0;
     return {
       init() {
-        enabled = true;
-        const href = location.href;
-        const now = Date.now();
-        if (href === lastHref && now - lastScanAt < 1e3) return;
-        lastHref = href;
-        lastScanAt = now;
-        scanDocument();
-        clearTimeout(sweepTimer);
-        sweepTimer = setTimeout(() => {
-          if (enabled) scanDocument();
-        }, 900);
-      },
-      update(mutations) {
-        if (!enabled) return;
-        const targets = /* @__PURE__ */ new Set();
-        for (const mutation of mutations) {
-          const target2 = mutation.target;
-          if (target2 instanceof Element && target2.matches(WATCH_SELECTOR)) targets.add(target2);
-          for (const node of mutation.addedNodes) collectTargets(node, targets);
-          if (!targets.size && mutation.removedNodes.length) continue;
-        }
-        if (targets.size) processTargets(targets);
+        syncRoot(true);
       },
       stop() {
-        enabled = false;
-        clearTimeout(sweepTimer);
-        sweepTimer = 0;
+        syncRoot(false);
       }
     };
   }
@@ -1818,47 +1804,102 @@
   ];
   const POPUP_SELECTOR = POPUP_SELECTORS.join(",");
   const CONTAINER_SELECTOR = '#dialog, [role="dialog"], ytd-popup-container, tp-yt-paper-dialog';
+  const CONFIRM_SELECTORS = [
+    "#confirm-button button",
+    "ytd-button-renderer#confirm-button button",
+    "ytd-button-renderer#confirm-button a",
+    "#confirm-button a",
+    "#confirm-button"
+  ];
+  const BUTTON_SELECTOR = [
+    "button",
+    "tp-yt-paper-button",
+    "ytd-button-renderer button",
+    "ytd-button-renderer a",
+    "yt-button-shape button",
+    'a[role="button"]',
+    '[role="button"]'
+  ].join(",");
+  const HANDLE_COOLDOWN = 2e3;
   const hasPauseText = (element) => {
     const text = element.textContent || "";
     return PAUSE_HINT.test(text) || PLAYBACK_ERROR_HINT.test(text);
   };
+  const isVisible = (element) => Boolean(element && element.getClientRects().length);
+  const resumeVideo = () => {
+    const player = document.querySelector("#movie_player, .html5-video-player");
+    try {
+      if (typeof player?.playVideo === "function") player.playVideo();
+    } catch {
+    }
+    const video = player?.querySelector("video") || document.querySelector("video");
+    if (video?.paused) {
+      try {
+        const attempt = video.play();
+        if (attempt && typeof attempt.catch === "function") attempt.catch(() => {
+        });
+      } catch {
+      }
+    }
+  };
+  const buttonLabel = (button) => `${button.getAttribute("aria-label") || ""} ${button.textContent || ""}`.trim();
+  const clickConfirm = (prompt) => {
+    for (const selector of CONFIRM_SELECTORS) {
+      const button = prompt.querySelector(selector);
+      if (button && !button.disabled && button.isConnected && isVisible(button)) {
+        try {
+          button.click();
+          return true;
+        } catch {
+        }
+      }
+    }
+    const buttons = [...prompt.querySelectorAll(BUTTON_SELECTOR)].filter((button) => !button.disabled && button.isConnected && isVisible(button));
+    const hinted = buttons.find((button) => {
+      const label = buttonLabel(button);
+      return PAUSE_HINT.test(label) || PLAYBACK_ERROR_HINT.test(label);
+    });
+    const target2 = hinted || (buttons.length === 1 ? buttons[0] : null);
+    if (!target2) return false;
+    try {
+      target2.click();
+      return true;
+    } catch {
+      return false;
+    }
+  };
   function createNonstop() {
     let enabled = false;
-    let removed = /* @__PURE__ */ new WeakSet();
+    let handled = /* @__PURE__ */ new WeakMap();
+    const handlePrompt = (prompt) => {
+      if (!prompt.isConnected || !hasPauseText(prompt)) return;
+      if (!prompt.matches(POPUP_SELECTOR) && prompt.querySelector(POPUP_SELECTOR)) return;
+      const now = Date.now();
+      const last = handled.get(prompt) || 0;
+      if (now - last < HANDLE_COOLDOWN) return;
+      handled.set(prompt, now);
+      clickConfirm(prompt);
+      resumeVideo();
+    };
     const collect = (node, found) => {
       if (!(node instanceof Element)) return;
       if (node.matches(POPUP_SELECTOR) && hasPauseText(node)) found.add(node);
-      if (node.matches(CONTAINER_SELECTOR) && hasPauseText(node)) found.add(node);
-      node.querySelectorAll(POPUP_SELECTOR).forEach((element) => {
+      else if (node.matches(CONTAINER_SELECTOR) && hasPauseText(node)) found.add(node);
+      node.querySelectorAll(`${POPUP_SELECTOR}, ${CONTAINER_SELECTOR}`).forEach((element) => {
         if (hasPauseText(element)) found.add(element);
       });
-    };
-    const removePopup = (popup) => {
-      if (removed.has(popup)) return;
-      removed.add(popup);
-      const host = popup.closest("#dialog, ytd-popup-container, tp-yt-paper-dialog");
-      if (host && host !== popup && hasPauseText(host)) host.remove();
-      else popup.remove();
-      if (PAUSE_HINT.test(popup.textContent || "")) {
-        const video = document.querySelector("video");
-        if (video?.paused) video.play().catch(() => {
-        });
-      }
     };
     const sweep = (root) => {
       if (!enabled || !root?.querySelectorAll) return;
       const found = /* @__PURE__ */ new Set();
       collect(root, found);
-      root.querySelectorAll(`${POPUP_SELECTOR}, ${CONTAINER_SELECTOR}`).forEach((element) => {
-        if (hasPauseText(element)) found.add(element);
-      });
-      found.forEach(removePopup);
+      found.forEach(handlePrompt);
     };
     return {
       init() {
         if (enabled) return;
         enabled = true;
-        removed = /* @__PURE__ */ new WeakSet();
+        handled = /* @__PURE__ */ new WeakMap();
         sweep(document);
       },
       update(mutations) {
@@ -1871,11 +1912,11 @@
           }
           for (const node of mutation.addedNodes) collect(node, found);
         }
-        found.forEach(removePopup);
+        found.forEach(handlePrompt);
       },
       stop() {
         enabled = false;
-        removed = /* @__PURE__ */ new WeakSet();
+        handled = /* @__PURE__ */ new WeakMap();
       }
     };
   }
@@ -1885,6 +1926,8 @@
   const TICK_INTERVAL$1 = 250;
   const MIN_SEGMENT_LENGTH = 0.5;
   const NOTICE_DURATION = 5e3;
+  const RETRY_BASE = 2e3;
+  const RETRY_MAX = 3e4;
   const getPlayer = () => document.querySelector("#movie_player") || document.querySelector(".html5-video-player");
   const getVideo = () => getPlayer()?.querySelector("video") || document.querySelector("video");
   let cachedHref = "";
@@ -1939,7 +1982,74 @@
     let noticeEl = null;
     let noticeTimer = 0;
     let noticeEnabled = true;
+    let progressEnabled = true;
     let seekingBound = false;
+    let trackEl = null;
+    let trackSignature = "";
+    let segmentRevision = 0;
+    let loadingVideoId = "";
+    let loadedVideoId = "";
+    let loadError = { videoId: "", attempt: 0, retryAt: 0 };
+    const resetLoad = () => {
+      loadingVideoId = "";
+      loadedVideoId = "";
+      loadError = { videoId: "", attempt: 0, retryAt: 0 };
+    };
+    function setSegments(list) {
+      segments = list;
+      segmentRevision += 1;
+    }
+    function getProgressBar(player) {
+      return player?.querySelector(".ytp-progress-bar") || null;
+    }
+    function ensureTrack(player) {
+      const bar = getProgressBar(player);
+      if (!bar) return null;
+      if (trackEl?.isConnected && trackEl.parentElement === bar) return trackEl;
+      trackEl?.remove();
+      trackEl = document.createElement("div");
+      trackEl.className = "ytst-sb-track";
+      trackEl.setAttribute("aria-hidden", "true");
+      bar.prepend(trackEl);
+      trackSignature = "";
+      return trackEl;
+    }
+    function renderSegments(video) {
+      if (!progressEnabled) {
+        removeTrack();
+        return;
+      }
+      const track = ensureTrack(getPlayer());
+      if (!track) return;
+      const duration = Number(video?.duration) || 0;
+      const signature = `${segmentRevision}|${duration}`;
+      const empty = segments.length > 0 && duration > 0 && track.childElementCount === 0;
+      if (signature === trackSignature && !empty) return;
+      trackSignature = signature;
+      track.replaceChildren();
+      if (!duration || !segments.length) return;
+      const fragment = document.createDocumentFragment();
+      for (const segment of segments) {
+        const start2 = Math.min(Math.max(segment.start, 0), duration);
+        const end = Math.min(Math.max(segment.end, start2), duration);
+        const span = end - start2;
+        if (span <= 0) continue;
+        const meta = SPONSOR_CATEGORIES[segment.category] || SPONSOR_CATEGORIES.sponsor;
+        const bar = document.createElement("span");
+        bar.className = "ytst-sb-segment";
+        bar.dataset.category = segment.category;
+        bar.style.left = `${start2 / duration * 100}%`;
+        bar.style.width = `${span / duration * 100}%`;
+        bar.style.backgroundColor = meta.color;
+        fragment.appendChild(bar);
+      }
+      track.appendChild(fragment);
+    }
+    function removeTrack() {
+      trackEl?.remove();
+      trackEl = null;
+      trackSignature = "";
+    }
     async function activeCategories() {
       const categories = normalizeCategories(await storage.get("sponsorblockCategories", null));
       return Object.keys(categories).filter((key) => categories[key]);
@@ -1984,28 +2094,60 @@
       inflight.set(key, promise);
       return promise;
     }
+    const isCurrent = (token, videoId) => enabled && token === fetchToken && videoId === currentVideoId;
+    function scheduleRetry(videoId) {
+      const attempt = loadError.videoId === videoId ? loadError.attempt + 1 : 1;
+      const delay = Math.min(RETRY_MAX, RETRY_BASE * 2 ** (attempt - 1));
+      loadError = { videoId, attempt, retryAt: Date.now() + delay };
+    }
     async function loadSegments(videoId) {
       const token = ++fetchToken;
-      segments = [];
+      loadingVideoId = videoId;
+      loadedVideoId = "";
+      setSegments([]);
       skipped = /* @__PURE__ */ new Set();
       lastSkip = null;
       hideNotice();
-      if (!enabled || !videoId) return;
+      renderSegments(getVideo());
+      if (!enabled || !videoId) {
+        loadingVideoId = "";
+        return;
+      }
       const categories = await activeCategories().catch(() => []);
-      if (!enabled || token !== fetchToken || videoId !== currentVideoId || !categories.length) return;
+      if (!isCurrent(token, videoId)) {
+        if (token === fetchToken) loadingVideoId = "";
+        return;
+      }
+      if (!categories.length) {
+        loadingVideoId = "";
+        loadedVideoId = videoId;
+        return;
+      }
       const cached = getCached(videoId, categories);
       if (cached) {
-        segments = cached;
+        loadingVideoId = "";
+        loadedVideoId = videoId;
+        loadError = { videoId: "", attempt: 0, retryAt: 0 };
+        setSegments(cached);
+        renderSegments(getVideo());
         return;
       }
       const result = await fetchSegments(videoId, categories);
-      if (!enabled || token !== fetchToken || videoId !== currentVideoId) return;
+      if (!isCurrent(token, videoId)) {
+        if (token === fetchToken) loadingVideoId = "";
+        return;
+      }
+      loadingVideoId = "";
       if (!result.ok) {
+        scheduleRetry(videoId);
         console.warn("YT SuperTool could not load SponsorBlock segments:", result.error);
         return;
       }
-      segments = normalizeSegments(result.segments);
+      loadedVideoId = videoId;
+      loadError = { videoId: "", attempt: 0, retryAt: 0 };
+      setSegments(normalizeSegments(result.segments));
       setCache(videoId, categories, segments);
+      renderSegments(getVideo());
     }
     function ensureNotice() {
       if (noticeEl?.isConnected) return noticeEl;
@@ -2079,6 +2221,14 @@
         void loadSegments(videoId);
         return;
       }
+      if (videoId && loadingVideoId !== videoId && loadedVideoId !== videoId) {
+        const retryAt = loadError.videoId === videoId ? loadError.retryAt : 0;
+        if (Date.now() >= retryAt) {
+          void loadSegments(videoId);
+          return;
+        }
+      }
+      renderSegments(video);
       if (!segments.length || video.readyState < 1) return;
       const duration = Number(video.duration);
       if (!Number.isFinite(duration) || duration <= 0) return;
@@ -2100,22 +2250,44 @@
     }
     function onStorageChanged(changes) {
       if (changes.sponsorblockNotice) noticeEnabled = Boolean(changes.sponsorblockNotice.newValue);
+      if (changes.sponsorblockProgressBar) {
+        progressEnabled = changes.sponsorblockProgressBar.newValue !== false;
+        if (progressEnabled) renderSegments(getVideo());
+        else removeTrack();
+      }
       if (changes.sponsorblockCategories) {
         segmentCache.clear();
-        if (enabled) void loadSegments(currentVideoId);
+        const videoId = getVideoId$1();
+        if (enabled && videoId) {
+          currentVideoId = videoId;
+          void loadSegments(videoId);
+        }
       }
     }
-    storage.onChanged(onStorageChanged, ["sponsorblockCategories", "sponsorblockNotice"]);
+    storage.onChanged(onStorageChanged, ["sponsorblockCategories", "sponsorblockNotice", "sponsorblockProgressBar"]);
     storage.get("sponsorblockNotice", true).then((value) => {
       noticeEnabled = Boolean(value);
     }).catch((error) => console.error("YT SuperTool could not load SponsorBlock notice setting:", error));
+    storage.get("sponsorblockProgressBar", true).then((value) => {
+      progressEnabled = value !== false;
+      if (!progressEnabled) removeTrack();
+      else renderSegments(getVideo());
+    }).catch((error) => console.error("YT SuperTool could not load SponsorBlock bar setting:", error));
     document.addEventListener("yt-navigate-finish", () => {
       if (!enabled) return;
-      currentVideoId = "";
-      segments = [];
+      const videoId = getVideoId$1();
+      if (videoId === currentVideoId) {
+        renderSegments(getVideo());
+        return;
+      }
+      currentVideoId = videoId;
+      setSegments([]);
       skipped = /* @__PURE__ */ new Set();
       lastSkip = null;
       hideNotice();
+      removeTrack();
+      resetLoad();
+      if (videoId) void loadSegments(videoId);
     }, { passive: true });
     return {
       init() {
@@ -2125,6 +2297,8 @@
           if (videoId && videoId !== currentVideoId) {
             currentVideoId = videoId;
             void loadSegments(videoId);
+          } else {
+            renderSegments(getVideo());
           }
           return;
         }
@@ -2135,6 +2309,13 @@
         currentVideoId = getVideoId$1();
         void loadSegments(currentVideoId);
       },
+      pause() {
+        clearInterval(tickTimer);
+        tickTimer = 0;
+      },
+      resume() {
+        if (enabled && !tickTimer) tickTimer = setInterval(tick, TICK_INTERVAL$1);
+      },
       stop() {
         enabled = false;
         clearInterval(tickTimer);
@@ -2144,11 +2325,13 @@
           seekingBound = false;
         }
         fetchToken += 1;
-        segments = [];
+        setSegments([]);
         skipped = /* @__PURE__ */ new Set();
         lastSkip = null;
         currentVideoId = "";
+        resetLoad();
         hideNotice();
+        removeTrack();
         noticeEl?.remove();
         noticeEl = null;
       }
@@ -3542,6 +3725,10 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       setFlag(FLAGS.cosmetic, cosmetic);
       syncAdblockCache(window, master, prune);
       bridge2.setNetworkBlocking?.(master);
+      try {
+        document.dispatchEvent(new CustomEvent("ytst-adblock-change", { detail: { enabled: master } }));
+      } catch {
+      }
       if (cosmetic && !cosmeticInjected) {
         bridge2.injector.injectStyle(cosmeticCss, "ytst-adblock-cosmetic");
         cosmeticInjected = true;
@@ -3570,6 +3757,15 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
         bridge2.setNetworkBlocking?.(false);
         skipper?.stop();
         guard?.stop();
+      },
+      setVisible(visible) {
+        if (!started) return;
+        if (!visible) {
+          skipper?.stop();
+          guard?.stop();
+          return;
+        }
+        sync();
       }
     };
   }
@@ -3711,8 +3907,12 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       if (active) {
         apply();
         lifecycle.start();
+        features.sponsorblock?.resume?.();
+        features.adblock?.setVisible?.(true);
       } else {
         lifecycle.stop();
+        features.sponsorblock?.pause?.();
+        features.adblock?.setVisible?.(false);
       }
     };
     document.addEventListener("visibilitychange", handleVisibility, { passive: true });

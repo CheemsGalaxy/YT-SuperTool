@@ -1,6 +1,6 @@
 {
   "name": "yt-supertool",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "private": true,
   "type": "module",
   "description": "Single-core, multi-target YouTube enhancer (userscript + MV2 + MV3).",
@@ -16,9 +16,5 @@
     "archiver": "^6.0.1",
     "postcss": "^8.5.32",
     "vite": "^5.4.10"
-  },
-  "dependencies": {
-    "@ghostery/adblocker": "^2.20.3",
-    "@ghostery/adblocker-webextension": "^2.20.3"
   }
 }

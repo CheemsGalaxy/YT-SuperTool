@@ -1,12 +1,9 @@
-import { createElement } from '../../core/dom-safe.js';
-import { createIcon, createBrandMark } from '../../core/ui/icons.js';
-import { createSponsorAccordion } from '../../core/ui/sponsor-accordion.js';
+import { createBrandMark } from '../../core/ui/icons.js';
+import { createSettingsTree } from '../../core/ui/settings-tree.js';
 import { UI_STRINGS, UI_TEXT } from '../../core/ui/strings.js';
 import {
-  FEATURE_GROUPS,
-  FEATURES,
-  featuresForGroup,
-  DEFAULTS
+  DEFAULTS,
+  STORAGE_KEYS
 } from '../../core/settings-schema.js';
 
 const api = globalThis.browser || globalThis.chrome;
@@ -39,18 +36,9 @@ const storageSet = (patch) => {
 };
 
 const statusNode = document.getElementById('popup-status');
+const state = { ...DEFAULTS };
 let statusTimer = 0;
-
-const renderStatic = () => {
-  document.title = UI_STRINGS.appName;
-  const title = document.getElementById('popup-title');
-  const tabList = document.getElementById('popup-tabs');
-  const dislikeLink = document.getElementById('popup-dislike-link');
-  if (title) title.textContent = UI_STRINGS.appName;
-  if (tabList) tabList.setAttribute('aria-label', UI_STRINGS.settingGroups);
-  if (dislikeLink) dislikeLink.textContent = UI_STRINGS.dislikeData;
-  if (statusNode) statusNode.textContent = UI_STRINGS.savedLocally;
-};
+let tree = null;
 
 const setStatus = (message, revert = true) => {
   if (!statusNode) return;
@@ -63,64 +51,19 @@ const setStatus = (message, revert = true) => {
   }
 };
 
-const rows = new Map();
-const groupMeta = new Map();
-const tabs = new Map();
-const panels = new Map();
-let sponsorAccordion = null;
-let activeGroup = FEATURE_GROUPS[0].id;
-
-const buildRow = (feature) => {
-  const input = createElement('input', {
-    type: 'checkbox',
-    className: 'popup-switch-input',
-    id: `popup-${feature.key}`,
-    role: 'switch'
-  });
-  input.dataset.key = feature.key;
-
-  const metaCell = createElement('span', { className: 'popup-row-meta' });
-  if (feature.badge) {
-    metaCell.appendChild(createElement('span', {
-      className: 'popup-layer',
-      textContent: feature.badge
-    }));
-  }
-
-  const row = createElement('label', {
-    className: 'popup-row',
-    for: `popup-${feature.key}`
-  }, [
-    createElement('span', { className: 'popup-row-icon' }, [createIcon(feature.icon, 20)]),
-    createElement('span', { className: 'popup-row-copy' }, [
-      createElement('span', { className: 'popup-row-label', textContent: feature.label }),
-      createElement('span', { className: 'popup-row-desc', textContent: feature.description })
-    ]),
-    metaCell,
-    input,
-    createElement('span', { className: 'popup-switch', 'aria-hidden': 'true' }, [
-      createElement('span', { className: 'popup-switch-thumb' })
-    ])
-  ]);
-
-  rows.set(feature.key, { row, input, feature });
-  return row;
+const renderStatic = () => {
+  document.title = UI_STRINGS.appName;
+  const title = document.getElementById('popup-title');
+  const tabList = document.getElementById('popup-tabs');
+  const dislikeLink = document.getElementById('popup-dislike-link');
+  if (title) title.textContent = UI_STRINGS.appName;
+  if (tabList) tabList.setAttribute('aria-label', UI_STRINGS.settingGroups);
+  if (dislikeLink) dislikeLink.textContent = UI_STRINGS.dislikeData;
+  if (statusNode) statusNode.textContent = UI_STRINGS.savedLocally;
 };
 
-const buildSponsorAccordion = () => {
-  const accordion = createSponsorAccordion({
-    onChange: (value) => {
-      storageSet({ sponsorblockCategories: JSON.stringify(value) })
-        .then(() => setStatus(UI_STRINGS.saved))
-        .catch(() => setStatus(UI_STRINGS.saveCategoriesError));
-    },
-    onNoticeChange: (checked) => {
-      storageSet({ sponsorblockNotice: checked })
-        .then(() => setStatus(UI_STRINGS.saved))
-        .catch(() => setStatus(UI_STRINGS.saveNoticeError));
-    }
-  });
-  return { element: accordion.element, accordion };
+const syncValues = () => {
+  tree?.sync(state);
 };
 
 const buildShell = () => {
@@ -128,120 +71,55 @@ const buildShell = () => {
   const panelHost = document.getElementById('popup-panels');
   if (!tabList || !panelHost) return;
 
-  FEATURE_GROUPS.forEach((group) => {
-    const tab = createElement('button', {
-      type: 'button',
-      className: 'popup-tab',
-      role: 'tab',
-      id: `popup-tab-${group.id}`,
-      'aria-controls': `popup-panel-${group.id}`,
-      'aria-selected': 'false',
-      tabindex: '-1'
-    }, [
-      createIcon(group.icon, 16),
-      createElement('span', { textContent: group.label })
-    ]);
-    tab.addEventListener('click', () => showGroup(group.id));
-    tabs.set(group.id, tab);
-    tabList.appendChild(tab);
-
-    const metaNode = createElement('span', { className: 'popup-group-meta' });
-    groupMeta.set(group.id, metaNode);
-
-    const panel = createElement('div', {
-      className: 'popup-panel',
-      id: `popup-panel-${group.id}`,
-      role: 'tabpanel',
-      'aria-labelledby': `popup-tab-${group.id}`
-    }, [
-      createElement('div', { className: 'popup-group-head' }, [
-        createElement('h2', { className: 'popup-group-title', textContent: group.label }),
-        metaNode
-      ])
-    ]);
-
-    let headingShown = false;
-    for (const feature of featuresForGroup(group.id)) {
-      if (feature.dependsOn && !headingShown) {
-        headingShown = true;
-        panel.appendChild(createElement('div', { className: 'popup-section', textContent: UI_STRINGS.defenceLayers }));
-      }
-      panel.appendChild(buildRow(feature));
-      if (feature.key === 'sponsorblock') {
-        const built = buildSponsorAccordion();
-        sponsorAccordion = built.accordion;
-        panel.appendChild(built.element);
-      }
+  tree = createSettingsTree({
+    prefix: 'popup',
+    orientation: 'horizontal',
+    tabHost: tabList,
+    panelHost,
+    panelClass: 'popup-panel',
+    rowClass: 'popup-row',
+    switchInputClass: 'popup-switch-input',
+    badgeClass: 'popup-layer',
+    onChange: (key, value) => {
+      const previous = Boolean(state[key]);
+      state[key] = value;
+      syncValues();
+      storageSet({ [key]: value })
+        .then(() => setStatus(UI_STRINGS.saved))
+        .catch(() => {
+          state[key] = previous;
+          syncValues();
+          setStatus(UI_STRINGS.saveError);
+        });
+    },
+    onCategoriesChange: (value) => {
+      const saved = JSON.stringify(value);
+      storageSet({ sponsorblockCategories: saved })
+        .then(() => {
+          state.sponsorblockCategories = saved;
+          setStatus(UI_STRINGS.saved);
+        })
+        .catch(() => setStatus(UI_STRINGS.saveCategoriesError));
+    },
+    onNoticeChange: (value) => {
+      storageSet({ sponsorblockNotice: value })
+        .then(() => {
+          state.sponsorblockNotice = value;
+          setStatus(UI_STRINGS.saved);
+        })
+        .catch(() => setStatus(UI_STRINGS.saveNoticeError));
+    },
+    onProgressChange: (value) => {
+      storageSet({ sponsorblockProgressBar: value })
+        .then(() => {
+          state.sponsorblockProgressBar = value;
+          setStatus(UI_STRINGS.saved);
+        })
+        .catch(() => setStatus(UI_STRINGS.saveSettingFailed));
     }
-
-
-    panels.set(group.id, panel);
-    panelHost.appendChild(panel);
   });
 
-  tabList.addEventListener('keydown', (event) => {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    event.preventDefault();
-    const ids = [...tabs.keys()];
-    const index = ids.indexOf(activeGroup);
-    const next = event.key === 'ArrowRight'
-      ? ids[(index + 1) % ids.length]
-      : ids[(index - 1 + ids.length) % ids.length];
-    showGroup(next);
-    tabs.get(next)?.focus();
-  });
-
-  panelHost.addEventListener('change', (event) => {
-    const input = event.target;
-    if (!input?.classList?.contains('popup-switch-input')) return;
-    const key = input.dataset.key;
-    if (!key) return;
-
-    const previous = Boolean(state[key]);
-    state[key] = Boolean(input.checked);
-    syncValues();
-
-    storageSet({ [key]: state[key] })
-      .then(() => setStatus(UI_STRINGS.saved))
-      .catch(() => {
-        state[key] = previous;
-        syncValues();
-        setStatus(UI_STRINGS.saveError);
-      });
-  });
-
-  showGroup(activeGroup);
-};
-
-const showGroup = (groupId) => {
-  activeGroup = groupId;
-  tabs.forEach((tab, id) => {
-    tab.setAttribute('aria-selected', String(id === groupId));
-    tab.tabIndex = id === groupId ? 0 : -1;
-  });
-  panels.forEach((panel, id) => {
-    panel.hidden = id !== groupId;
-  });
-};
-
-const state = { ...DEFAULTS };
-
-const syncValues = () => {
-  rows.forEach(({ input, row, feature }) => {
-    input.checked = Boolean(state[feature.key]);
-    const blocked = Boolean(feature.dependsOn && !state[feature.dependsOn]);
-    input.disabled = blocked;
-    row.classList.toggle('is-disabled', blocked);
-  });
-
-  groupMeta.forEach((node, groupId) => {
-    const features = featuresForGroup(groupId)
-      .filter((feature) => !feature.dependsOn || state[feature.dependsOn]);
-    const active = features.filter((feature) => state[feature.key]).length;
-    node.textContent = `${active}/${features.length}`;
-  });
-
-  sponsorAccordion?.setOpen(Boolean(state.sponsorblock));
+  syncValues();
 };
 
 const renderBrand = () => {
@@ -250,22 +128,12 @@ const renderBrand = () => {
 };
 
 const renderMeta = () => {
-  const version = api?.runtime?.getManifest?.().version || '2.4.2';
+  const version = api?.runtime?.getManifest?.().version || '2.4.3';
   const manifestVersion = api?.runtime?.getManifest?.().manifest_version || 3;
   const versionNode = document.getElementById('popup-version');
   const targetNode = document.getElementById('popup-target');
   if (versionNode) versionNode.textContent = UI_TEXT.versionSettings(version);
   if (targetNode) targetNode.textContent = UI_TEXT.manifestTarget(manifestVersion);
-};
-
-const applySponsorCategories = (saved) => {
-  sponsorAccordion?.setCategories(saved);
-};
-
-const hydrateSponsor = (values) => {
-  if (!sponsorAccordion) return;
-  sponsorAccordion.setCategories(values.sponsorblockCategories);
-  sponsorAccordion.setNotice(values.sponsorblockNotice);
 };
 
 const subscribeToStorage = () => {
@@ -275,21 +143,13 @@ const subscribeToStorage = () => {
     if (areaName && areaName !== 'local') return;
 
     let touched = false;
-    FEATURES.forEach((feature) => {
-      if (!(feature.key in changes)) return;
-      const next = changes[feature.key]?.newValue;
-      state[feature.key] = next === undefined || next === null ? DEFAULTS[feature.key] : Boolean(next);
+    for (const key of STORAGE_KEYS) {
+      if (!(key in changes)) continue;
+      const next = changes[key]?.newValue;
+      state[key] = next === undefined || next === null ? DEFAULTS[key] : next;
       touched = true;
-    });
+    }
     if (touched) syncValues();
-
-    if (!sponsorAccordion) return;
-    if ('sponsorblockCategories' in changes) {
-      applySponsorCategories(changes.sponsorblockCategories?.newValue);
-    }
-    if ('sponsorblockNotice' in changes) {
-      sponsorAccordion.setNotice(changes.sponsorblockNotice?.newValue);
-    }
   });
 };
 
@@ -303,10 +163,10 @@ const start = async () => {
   const defaults = { ...DEFAULTS };
   try {
     const values = await storageGet(defaults);
-    FEATURES.forEach((feature) => {
-      state[feature.key] = Boolean(values[feature.key]);
-    });
-    hydrateSponsor(values);
+    for (const key of STORAGE_KEYS) {
+      const value = values?.[key];
+      state[key] = value === undefined || value === null ? DEFAULTS[key] : value;
+    }
     syncValues();
     setStatus(UI_STRINGS.savedLocally, false);
   } catch (error) {

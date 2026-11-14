@@ -141,7 +141,7 @@ export const DEFAULTS = Object.fromEntries([
 ]);
 
 export const STORAGE_KEYS = Object.keys(DEFAULTS);
-export const MUTATION_FEATURES = ['dislike', 'noShorts', 'cleanHomepage', 'nonstop', 'downloader'];
+export const MUTATION_FEATURES = ['dislike', 'nonstop', 'downloader'];
 export const PLAYER_FEATURES = ['speed', 'pip', 'screenshot', 'downloader'];
 export const CONTENT_FEATURES = FEATURES.filter((feature) => !feature.dependsOn).map((feature) => feature.key);
 

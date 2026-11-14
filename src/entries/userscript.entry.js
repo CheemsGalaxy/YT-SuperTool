@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YT SuperTool
 // @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
-// @version      2.4.2
+// @version      2.4.3
 // @updateURL    https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @downloadURL  https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots. Ad blocking is off by default and may not work, since YouTube keeps changing its detection. For best results, use uBlock Origin or uBO Lite.
@@ -35,6 +35,12 @@ import { initCore } from '../core/index.js';
 installAdblockStealth(bridge.mainWindow);
 installAdblockPrune(bridge.mainWindow);
 installNetworkGuard(bridge.mainWindow);
+
+document.addEventListener('ytst-adblock-change', (event) => {
+  const stealth = bridge.mainWindow?.__ytstStealth;
+  if (event.detail?.enabled) stealth?.start?.();
+  else stealth?.stop?.();
+});
 
 initCore().catch((error) => {
   console.error('YT SuperTool failed to start:', error);

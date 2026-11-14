@@ -37,6 +37,11 @@ export function createAdblock({ bridge, settings }) {
 
     syncAdblockCache(window, master, prune);
     bridge.setNetworkBlocking?.(master);
+    try {
+      document.dispatchEvent(new CustomEvent('ytst-adblock-change', { detail: { enabled: master } }));
+    } catch {
+
+    }
 
     if (cosmetic && !cosmeticInjected) {
       bridge.injector.injectStyle(cosmeticCss, 'ytst-adblock-cosmetic');
@@ -70,6 +75,15 @@ export function createAdblock({ bridge, settings }) {
       bridge.setNetworkBlocking?.(false);
       skipper?.stop();
       guard?.stop();
+    },
+    setVisible(visible) {
+      if (!started) return;
+      if (!visible) {
+        skipper?.stop();
+        guard?.stop();
+        return;
+      }
+      sync();
     }
   };
 }

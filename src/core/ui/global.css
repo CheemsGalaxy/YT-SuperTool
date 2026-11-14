@@ -551,6 +551,24 @@ html[data-ytst-no-shorts="on"] [class*="ytGridShelfViewModelGridShelfBottomButto
   display: none !important;
 }
 
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-brand-video-singleton-renderer),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-statement-banner-renderer),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-inline-survey-renderer),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-live]),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-playables]),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-mini-game-card-view-model),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(mini-game-card-view-model),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href*="/playables"]),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href*="/mini-game"]),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href*="/feed/storefront"]),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href="/gaming"]),
+html[data-ytst-clean-home="on"] ytd-statement-banner-renderer,
+html[data-ytst-clean-home="on"] ytd-brand-video-singleton-renderer,
+html[data-ytst-clean-home="on"] ytd-inline-survey-renderer,
+html[data-ytst-clean-home="on"] yt-mealbar-promo-renderer {
+  display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ytst-toast,
   .ytst-sb-notice,

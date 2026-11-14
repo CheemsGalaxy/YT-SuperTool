@@ -1,4 +1,4 @@
-const FALLBACK_VERSION = '2.4.2';
+const FALLBACK_VERSION = '2.4.3';
 const STORAGE_PREFIX = 'yt_supertool_';
 
 const gmApi = () => globalThis.GM || null;
@@ -118,7 +118,8 @@ export function createUserscriptBridge() {
       const { responseType = 'json', timeout = 8000, allowHttpErrors = false, ...rest } = options;
       if (!has('xmlHttpRequest')) {
         const response = await fetch(url, rest);
-        const body = responseType === 'json' ? await response.json() : await response.text();
+        const text = await response.text();
+        const body = responseType === 'json' ? parseBody(text, responseType) : text;
         if (!response.ok && !allowHttpErrors) {
           throw new Error(`Network request failed (${response.status})`);
         }

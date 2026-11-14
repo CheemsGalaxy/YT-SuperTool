@@ -1,4 +1,4 @@
-const FALLBACK_VERSION = '2.4.2';
+const FALLBACK_VERSION = '2.4.3';
 const STORAGE_PREFIX = 'yt_supertool_';
 
 const extensionApi = () => globalThis.browser || globalThis.chrome || null;
@@ -109,9 +109,16 @@ export function createExtensionBridge(target = 'mv3') {
       const { responseType = 'json', timeout = 8000, allowHttpErrors = false, ...rest } = options;
       if (!api?.runtime?.sendMessage) {
         const response = await fetch(url, rest);
-        const body = responseType === 'json' ? await response.json() : await response.text();
+        const text = await response.text();
+        const body = responseType === 'json' ? parseBody(text, responseType) : text;
         if (!response.ok && !allowHttpErrors) throw new Error(`Network request failed (${response.status})`);
-        return buildResponse({ ...response, body, responseType });
+        return buildResponse({
+          ok: response.ok,
+          status: response.status,
+          headers: Object.fromEntries(response.headers.entries()),
+          body,
+          responseType
+        });
       }
 
       const result = await sendMessage(api, {
@@ -122,7 +129,13 @@ export function createExtensionBridge(target = 'mv3') {
       if (!result?.ok && !allowHttpErrors) {
         throw new Error(result?.error || `Network request failed (${result?.status ?? 'unknown'})`);
       }
-      return buildResponse({ ...result, responseType });
+      return buildResponse({
+        ok: result?.ok,
+        status: result?.status,
+        headers: result?.headers,
+        body: result?.body,
+        responseType
+      });
     }
   };
 

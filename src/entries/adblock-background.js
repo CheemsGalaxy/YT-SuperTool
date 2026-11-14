@@ -1,89 +1,81 @@
-import browser from 'webextension-polyfill';
-import { WebExtensionBlocker } from '@ghostery/adblocker-webextension';
-import { NETWORK_FILTERS } from '../core/features/adblock/adblock-filters.js';
+import { matchRequest } from '../core/features/adblock/adblock-matcher.js';
 
-const ENGINE_CONFIG = {
-  loadNetworkFilters: true,
-  loadCosmeticFilters: false,
-  loadCSPFilters: false,
-  loadExceptionFilters: true,
-  enableCompression: true,
-  enableHtmlFiltering: false,
-  enableInMemoryCache: true,
-  enableOptimizations: true,
-  enablePushInjectionsOnNavigationEvents: false,
-  guessRequestTypeFromUrl: true
-};
+const ext = globalThis.browser || globalThis.chrome;
+const FILTER = { urls: ['<all_urls>'] };
+const EXTRA_INFO = ['blocking'];
 
-let blocker = null;
-let context = null;
-let starting = false;
 let enabled = false;
+let listener = null;
 
-const getBlocker = () => {
-  if (!blocker) {
-    blocker = WebExtensionBlocker.parse(NETWORK_FILTERS.join('\n'), ENGINE_CONFIG);
+const readSetting = () => new Promise((resolve) => {
+  try {
+    const storage = ext?.storage?.local;
+    if (!storage?.get) {
+      resolve(false);
+      return;
+    }
+    const result = storage.get({ adblock: false }, (value) => {
+      if (ext.runtime?.lastError) {
+        resolve(false);
+        return;
+      }
+      resolve(value?.adblock === true);
+    });
+    if (result && typeof result.then === 'function') {
+      result
+        .then((value) => resolve(value?.adblock === true))
+        .catch(() => resolve(false));
+    }
+  } catch {
+    resolve(false);
   }
-  return blocker;
+});
+
+const onBeforeRequest = (details) => {
+  if (!enabled) return {};
+  try {
+    return matchRequest(null, details.url) ? { cancel: true } : {};
+  } catch {
+    return {};
+  }
 };
 
-const startBlocking = async () => {
-  if (!enabled || context || starting) return;
-  starting = true;
-  let engine = null;
-  try {
-    engine = getBlocker();
-    if (!enabled) return;
-    context = engine.enableBlockingInBrowser(browser);
-  } catch (error) {
-    context = null;
-    try {
-      engine?.disableBlockingInBrowser(browser);
-    } catch {
-
-    }
-    console.warn('YT SuperTool could not start network ad blocking:', error);
-  } finally {
-    starting = false;
-  }
+const startBlocking = () => {
+  if (listener || !ext?.webRequest?.onBeforeRequest) return;
+  ext.webRequest.onBeforeRequest.addListener(onBeforeRequest, FILTER, EXTRA_INFO);
+  listener = onBeforeRequest;
 };
 
 const stopBlocking = () => {
-  if (!blocker || !context) return;
+  if (!listener) return;
   try {
-    blocker.disableBlockingInBrowser(browser);
+    ext.webRequest.onBeforeRequest.removeListener(listener);
   } catch {
 
   }
-  context = null;
+  listener = null;
 };
 
 export async function initAdblockBackground() {
   let manifestVersion = 3;
   try {
-    manifestVersion = browser.runtime.getManifest().manifest_version;
+    manifestVersion = ext.runtime.getManifest().manifest_version;
   } catch {
     return false;
   }
   if (manifestVersion !== 2) return false;
 
-  try {
-    const stored = await browser.storage.local.get('adblock');
-    enabled = stored.adblock === true;
-  } catch {
-    enabled = false;
-  }
+  enabled = await readSetting();
+  if (enabled) startBlocking();
 
-  if (enabled) await startBlocking();
-
-  browser.storage.onChanged.addListener((changes, areaName) => {
+  ext.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== 'local' || !('adblock' in changes)) return;
     enabled = changes.adblock.newValue === true;
-    if (enabled) void startBlocking();
+    if (enabled) startBlocking();
     else stopBlocking();
   });
 
-  return Boolean(context);
+  return Boolean(listener);
 }
 
 export default initAdblockBackground;
