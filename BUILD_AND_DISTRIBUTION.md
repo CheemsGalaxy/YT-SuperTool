@@ -1,8 +1,8 @@
 # Build and distribution
 
-Plan for packaging the companion with yt-dlp and FFmpeg. No companion package
-has been built yet. This document records the decision process and the checks
-required before a platform is advertised.
+The Windows x64 portable zip is built and smoke tested. Linux and macOS are
+still a plan. This document records the decisions, the build steps and the
+checks required before a platform is advertised.
 
 ## Packaging options
 
@@ -32,20 +32,22 @@ satisfies the roadmap. Startup automation is opt-in and shown to the user.
 
 | Platform | Architecture | Build | Tested |
 |---|---|---|---|
-| Windows 10/11 | x64 | Not yet | No |
+| Windows 10/11 | x64 | `yt-supertool-companion-1.0.0-win32-x64.zip` | Yes, 2026-11-15 |
 | Linux | x64 | Not yet | No |
 | Linux | arm64 | Not yet | No |
 | macOS Intel | x64 | Not yet | No |
 | macOS Apple Silicon | arm64 | Not yet | No |
 
-The table must be updated with a date and a test record. A row stays "No" until
-a package exists and the smoke test below has run on that platform.
+The Windows row passed the packaged smoke test listed below. A Linux or macOS
+row stays "No" until a package exists and the same smoke test runs on that
+platform.
 
 ## Repository layout
 
 ```
 companion/
   package.json
+  README.md
   src/
     index.js
     server.js
@@ -58,29 +60,30 @@ companion/
     log.js
     url-policy.js
   test/
-  scripts/
-    fetch-binaries.mjs
-    build-package.mjs
   bin/
     <platform>-<arch>/
       yt-dlp[.exe]
       ffmpeg[.exe]
       manifest.json
-  LICENSE
-  THIRD_PARTY_NOTICES.md
+    .cache/
+  dist/
+scripts/
+  package-companion.mjs
+  package-smoke.mjs
 ```
 
-`bin/` is not committed with large binaries. A fetch script downloads pinned
-releases and verifies published checksums. The generated package contains the
-binaries and a `manifest.json` with SHA-256 values.
+`bin/`, `bin/.cache/` and `dist/` are not committed. The package script
+downloads the pinned releases into the cache, checks the published checksums,
+and writes `manifest.json` with the SHA-256 of every bundled binary. License
+texts and source URLs are recorded in `THIRD_PARTY_NOTICES.md`.
 
 ## Binary sources
 
 | Binary | Source | License to verify | Notes |
 |---|---|---|---|
-| yt-dlp | Official GitHub releases | Check the release license file before shipping | Prefer the standalone executable per platform |
-| FFmpeg | A build with LGPL configuration | LGPL-2.1-or-later for the chosen build | Avoid GPL-only codecs unless the whole package complies with GPL |
-| Node.js | Official Node distribution | MIT plus third-party notices | Use a supported LTS line |
+| yt-dlp | Official GitHub releases | Unlicense for yt-dlp; the PyInstaller exe also contains Python and other components | Standalone executable, version 2026.10.26 at packaging time |
+| FFmpeg | BtbN `master-latest` `win64-lgpl-shared` build | LGPL-3.0-or-later | Shared DLL build, not the GPL build. License text ships in the zip |
+| Node.js | Official Node distribution | MIT | v26.13.1 `win-x64` zip for the Windows package |
 
 Verification steps for every binary:
 
@@ -104,31 +107,79 @@ npm test
 node src/index.js --port 47831
 ```
 
-Package build on the target platform:
+Package build on Windows x64, from the repository root:
 
 ```
-cd companion
-node scripts/fetch-binaries.mjs --platform win32 --arch x64
-node scripts/build-package.mjs --platform win32 --arch x64
+npm run package:companion
+npm run smoke:companion
 ```
 
-The build script:
+`scripts/package-companion.mjs`:
 
-1. Bundles the companion entry with a fixed target and no minification.
-2. Copies the Node runtime for the platform.
-3. Copies `bin/<platform>-<arch>/`.
-4. Writes launcher scripts:
-   - Windows: `YT-SuperTool-Companion.cmd`
-   - Linux and macOS: `yt-super-tool-companion`
-5. Writes `manifest.json` with file sizes and SHA-256 values.
-6. Writes `THIRD_PARTY_NOTICES.md` and the project license.
-7. Produces a zip named
-   `yt-supertool-companion-<version>-<platform>-<arch>.zip`.
-8. Produces a `.sha256` file next to the zip.
+1. Downloads pinned resources into `companion/bin/.cache/`, or reuses the
+   cached copy.
+2. Verifies every download against the checksum list published by its upstream
+   project: Node.js `SHASUMS256.txt`, yt-dlp `SHA2-256SUMS`, BtbN
+   `checksums.sha256`.
+3. Extracts the Node.js runtime and the FFmpeg shared build with `tar`.
+4. Stages `YT SuperTool Companion/` with `app/src`, `node/node.exe`,
+   `app/bin/win32-x64/` and `licenses/`.
+5. Writes `app/bin/win32-x64/manifest.json` with the SHA-256 of every bundled
+   binary, plus `README.txt`, `LICENSES.txt` and the `.cmd` launcher.
+6. Runs `--self-test` with the packaged Node.js runtime.
+7. Probes the bundled yt-dlp and FFmpeg through `detectBinaries`, which checks
+   the manifest hashes.
+8. Writes `companion/dist/yt-supertool-companion-<version>-<platform>-<arch>.zip`
+   and the `.sha256` file next to it.
 
-The release workflow builds each matrix entry on its native runner. Cross
-compilation is not used for the first release because the binaries and the Node
-runtime must match the target.
+`scripts/package-smoke.mjs` unpacks the zip into a temporary folder, checks the
+layout and manifest hashes, runs `--self-test`, starts the packaged companion on
+a free loopback port, checks that a foreign Origin and a missing token are
+rejected, pairs with the printed code, analyzes the test video, downloads 360p
+MP4 into a temporary output folder, checks the saved file and the empty
+temporary folder, revokes the token, and stops the server.
+
+Both scripts currently support `win32-x64` only. Linux and macOS packages need
+their own Node.js runtime, binary sources and a native runner, because the
+binary and runtime must match the target. Cross compilation is not used.
+
+The GitHub Actions matrix below still describes the planned per-platform build.
+No workflow file runs the package scripts yet.
+
+## Packaged build on 2026-11-15
+
+Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64, Node.js v26.13.1,
+yt-dlp 2026.10.26, FFmpeg `N-128909-g604ef3784d-20261114` from the BtbN
+`lgpl-shared` build.
+
+```
+companion/dist/yt-supertool-companion-1.0.0-win32-x64.zip
+size    132,206,574 bytes
+sha256  c4b934d65e0409f3d0402d3d6157420b61f4a25375dc12aa3ce08e83a357ed37
+```
+
+The zip contains `YT SuperTool Companion/` with `node/node.exe`,
+`app/src/*`, `app/bin/win32-x64/*` (yt-dlp, ffmpeg, ffprobe and 7 shared
+FFmpeg DLLs), `licenses/`, `README.txt`, `LICENSES.txt` and the launcher.
+
+`npm run package:companion` printed `SELF-TEST OK` with the packaged runtime,
+and the binary probe reported both binaries available. `npm run smoke:companion`
+then unpacked the zip and reported:
+
+```
+layout ok (7 dlls, 10 checksums)
+self-test ok
+health ok (yt-dlp 2026.10.26, ffmpeg N-128909-g604ef3784d-20261114)
+auth and origin checks ok
+analyze ok (7 video presets)
+download accepted <job id>
+saved Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film [aqz-KE-bpKQ].mp4 (25786983 bytes)
+no leftover temp files
+PACKAGE SMOKE OK
+```
+
+That file size matches the three browser runs from the same day. The zip is a
+release artifact and is not committed. `companion/dist/` is in `.gitignore`.
 
 ## GitHub Actions plan
 
@@ -153,15 +204,16 @@ strategy:
         arch: arm64
 ```
 
-Each job runs `npm ci`, `npm test`, the package build, and a smoke test:
+Each job runs `npm ci`, `npm test`, `npm run package:companion`, then
+`npm run smoke:companion`. The packaging step already runs
+`YT SuperTool Companion/node/node.exe app/src/index.js --self-test` with the
+packaged runtime.
 
-```
-node dist/companion/src/index.js --self-test
-```
-
-`--self-test` checks the server can bind an ephemeral port, the binary paths
-exist, the binary versions can be read, and the pairing store can be created in
-a temporary directory. It does not download media.
+`--self-test` checks the store roundtrip, settings defaults and path rejection,
+the URL policy, a pairing roundtrip, and the server health and auth routes. It
+does not download media. The packaging step then probes the bundled yt-dlp and
+FFmpeg against the manifest hashes; the smoke test performs one real 360p
+download.
 
 Artifacts upload only after the smoke test passes. A failed row does not block
 the extension release, but the missing platform is listed in the release notes.
@@ -171,10 +223,11 @@ the extension release, but the missing platform is listed in the release notes.
 Windows:
 
 1. Download the zip for `win32-x64`.
-2. Extract to a folder the user controls.
-3. Run `YT-SuperTool-Companion.cmd`.
-4. Keep the terminal window open, or use the optional startup shortcut.
-5. Copy the pairing code into the YT SuperTool panel.
+2. Verify the SHA-256 against the `.sha256` file.
+3. Extract to a folder the user controls.
+4. Run `YT SuperTool Companion.cmd`.
+5. Keep the terminal window open, or use the optional startup shortcut.
+6. Copy the pairing code into the YT SuperTool panel.
 
 Linux:
 
@@ -238,8 +291,9 @@ not a pass.
 
 ### Browser runs on 2026-11-15
 
-Windows 11 x64, companion 1.0.0 started from source, yt-dlp 2026.10.26,
-FFmpeg N-128909-g604ef3784d-20261114, output in a temporary folder.
+Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64, companion 1.0.0 started
+from source, yt-dlp 2026.10.26, FFmpeg N-128909-g604ef3784d-20261114, output
+in a temporary folder.
 
 | Browser | Target | Pair | Analyze | Download | Cancel | Saved file |
 |---|---|---|---|---|---|---|
@@ -258,6 +312,21 @@ The userscript run used injected shims for the `GM_*` calls, because no
 userscript manager is installed on the test machine. Request handling ran
 through the shims, not through Tampermonkey or Violentmonkey. Treat a real
 manager as still untested.
+
+### Packaged Windows build on 2026-11-15
+
+The zip was extracted to a temporary folder and started with the bundled
+`node/node.exe`. `YTST_YTDLP_PATH` and `YTST_FFMPEG_PATH` were removed from the
+child environment, so every binary came from `app/bin/win32-x64/` and passed the
+manifest checksum check.
+
+| Platform | Artifact | Health | Pair | Analyze | Download | Cancel | Saved file |
+|---|---|---|---|---|---|---|---|
+| Windows 10 x64 | `yt-supertool-companion-1.0.0-win32-x64.zip` | Pass | Pass | Pass | 360p MP4 | Not run | 25,786,983 bytes |
+
+The package smoke also checked the layout, the `licenses/` files, the SHA-256
+manifest, a rejected foreign Origin, a rejected missing token, token revocation
+and an empty `.ytst-tmp` folder.
 
 ## Release blockers
 

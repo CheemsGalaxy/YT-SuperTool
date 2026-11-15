@@ -4,9 +4,10 @@ Local service that downloads video and audio for YT SuperTool. It runs on the
 user's machine, binds to loopback and exposes HTTP API version 1 on
 `http://127.0.0.1:47831`.
 
-Status: Phase 3. The API, pairing, job manager and yt-dlp/FFmpeg path work on
-this Windows machine. The shared client and the three browser adapters are
-wired. Downloader UI integration and packaged builds are still open.
+Status: Phase 4 and the Windows x64 package are done. The API, pairing, job
+manager, browser adapters, the Download menu integration and the portable zip
+work on this machine. Linux, macOS, a real userscript manager and the Phase 6
+failure matrix are still open.
 
 ## Capabilities
 
@@ -27,8 +28,10 @@ The companion looks for them in this order:
 2. `companion/bin/<platform>-<arch>/`.
 3. `PATH`.
 
-Packaged releases will bundle both binaries. Until a package exists, install
-them yourself or point the environment variables at local copies.
+Packaged releases bundle Node.js, yt-dlp and FFmpeg, so the user installs
+nothing. The Windows x64 zip lives in `companion/dist/` after a package build.
+For a source checkout, install the two media binaries yourself or point the
+environment variables at local copies.
 
 ## Commands
 
@@ -38,6 +41,20 @@ npm test
 npm run self-test
 node src/index.js
 ```
+
+Package build from the repository root:
+
+```
+npm run package:companion
+npm run smoke:companion
+```
+
+`package:companion` downloads and verifies the pinned Node.js runtime, yt-dlp
+and the BtbN LGPL FFmpeg build, stages `YT SuperTool Companion/`, runs
+`--self-test`, probes the bundled binaries against the SHA-256 manifest and
+writes `companion/dist/yt-supertool-companion-1.0.0-win32-x64.zip` plus its
+`.sha256` file. `smoke:companion` unpacks that zip and runs a real 360p
+download through the packaged runtime. Both scripts support `win32-x64` only.
 
 Useful flags:
 
@@ -52,7 +69,7 @@ Useful flags:
 ```
 
 The first start prints a pairing code in the terminal. Enter it in the YT
-SuperTool Download menu after Phase 4 lands. Data lives in
+SuperTool Download menu. Data lives in
 `%USERPROFILE%\.yt-super-tool` on Windows and `$HOME/.yt-super-tool` elsewhere.
 The companion stores `settings.json` and `pairing.json` there.
 
@@ -61,26 +78,34 @@ by the `Origin` allowlist and the `Host` check, not by CORS alone.
 
 ## Test status
 
-Recorded on 2026-11-15, Windows 10.0.19044 x64, Node v26.13.0.
+Recorded on 2026-11-15, Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64,
+Node v26.13.0 for development and v26.13.1 in the package.
 
 | Check | Result |
 |---|---|
 | `npm test` in `companion/` | 55 tests pass, 0 fail |
-| `npm test` in the repository root | 21 client tests pass, 0 fail |
+| `npm test` in the repository root | 23 tests pass, 0 fail |
 | `npm run self-test` | 7 checks pass |
 | Entry smoke test | Health, pairing code, token issue, settings read, code reuse 410, foreign Origin 403 |
 | yt-dlp 2026.10.26 analyze | Big Buck Bunny metadata and seven video presets |
-| Video download, 360p MP4 | 24.59 MB, 634 s, AV1 video and AAC audio |
-| Audio download, MP3 192k | 14.53 MB, 634 s, MP3 audio |
-| Cancel a running job | State changed to cancelled, no temp files left |
+| Source video download, 360p MP4 | 24.59 MiB |
+| Source audio download, MP3 192k | 14.53 MB |
+| Source cancel a running job | State changed to cancelled, no temp files left |
+| Edge 157 MV3 pair, analyze, 360p | Saved 25,786,983 bytes, cancel and reopen checked |
+| Firefox 160 MV2 pair, analyze, 360p | Saved 25,786,983 bytes |
+| Edge 157 userscript build with GM shims | Saved 25,786,983 bytes |
 | `npm run build:verify` in the repository root | All targets and zips verified |
+| `npm run package:companion` | `SELF-TEST OK`, both bundled binaries available |
+| `npm run smoke:companion` | `PACKAGE SMOKE OK`, 25,786,983 byte file, no temp leftovers |
 
-Not tested yet: Linux, macOS, real browser adapters, packaged artifacts and a
-second browser profile. No platform is advertised as supported.
+Not tested yet: Linux, macOS, a real userscript manager, cancel through the
+packaged build, and the Phase 6 failure matrix. No platform outside Windows x64
+is advertised as supported.
 
-The real media test used a Creative Commons Blender Foundation film and deleted
-the downloaded files afterwards. yt-dlp and FFmpeg came from their official
-release pages and were not added to the repository.
+The browser runs used a Creative Commons Blender Foundation film. The
+userscript run used injected shims for the `GM_*` calls, not Tampermonkey or
+Violentmonkey. yt-dlp and FFmpeg are not committed to the repository; the
+package script downloads them and checks the upstream checksums.
 
 ## Safety rules
 
@@ -115,6 +140,6 @@ The threat model and the full control list are in `../SECURITY.md`.
 
 ## Open work
 
-Phase 4 replaces the third-party download handoff in the UI and adds pairing
-controls. Phase 5 builds the per-platform packages. Phase 6 records the full
-browser and OS test matrix.
+Phase 5 remains open for Linux and macOS, which need their own runtime and
+binary sources plus a native runner. Phase 6 records the failure matrix, a real
+Tampermonkey and Violentmonkey run, and the Linux and macOS rows.

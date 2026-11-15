@@ -8,6 +8,7 @@ coverage/
 *.xpi
 *.zip
 !dist/*.zip
+companion/dist/
 *.log
 .env
 .env.*
