@@ -72,17 +72,18 @@ Tab **Browse** dọn feed, tab **Player** gom điều khiển video, tab **Block
 
 #### Tải video và audio
 
-Nút **Download** nằm cạnh hàng nút Like, Share và Save trên trang xem. Menu tách làm hai nhóm: một mục tải trực tiếp và các mục chuyển sang dịch vụ ngoài.
+Nút **Download** nằm cạnh hàng nút Like, Share và Save trên trang xem. Menu có ba nhóm: companion tùy chọn cho chất lượng cao, tải trực tiếp, và dịch vụ ngoài.
 
 <img src="promo/downloader.png" alt="Nút Download cạnh Like và Share, menu mở với MP4 360p và MP4/MP3 chất lượng cao">
 
+- **Companion (tùy chọn).** Khi ứng dụng desktop YT SuperTool Companion đang chạy và đã pair, menu hiện preset video và audio. Companion tải bằng yt-dlp và FFmpeg ngay trên máy, ghép luồng, rồi lưu file vào thư mục bạn chọn. Companion không nhận cookie YouTube. Bản Windows x64 build bằng `npm run package:companion`; chưa có bản phát hành chính thức.
 - **MP4 progressive tải trực tiếp.** Tool lấy luồng progressive cao nhất trong `streamingData.formats` (đã có sẵn cả hình lẫn tiếng), thường là 360p nhưng có thể cao hơn. Menu hiển thị độ phân giải thật. File lưu thẳng về máy, không qua server trung gian, không cần ghép luồng.
-- **MP4/MP3 chất lượng cao.** Một nút duy nhất: sao chép URL video đang xem vào clipboard, hiện thông báo "Link copied", rồi mở tab mới tới [ytmp3pc.com](https://ytmp3pc.com/). Bạn dán link vừa copy vào đó để chọn độ phân giải hoặc MP3.
+- **MP4/MP3 chất lượng cao qua dịch vụ ngoài.** Một nút duy nhất: sao chép URL video đang xem vào clipboard, hiện thông báo "Link copied", rồi mở tab mới tới [ytmp3pc.com](https://ytmp3pc.com/). Bạn dán link vừa copy vào đó để chọn độ phân giải hoặc MP3.
 - **Không giải mã chữ ký.** Tool không chạy player JS, không `eval`/`new Function`, không xử lý n-parameter, nên hợp lệ với CSP của Manifest V3.
 - **Link hết hạn.** Link tải của YouTube có hạn dùng. Nếu báo lỗi 403 hoặc 410, mở lại menu để lấy link mới.
 - **Hủy.** Thẻ tiến trình có nút Cancel. Chuyển video hoặc tắt tính năng cũng hủy tác vụ đang chạy.
 
-Chỉ luồng progressive MP4 đi qua tool; mọi định dạng khác do ytmp3pc.com xử lý trong tab mới.
+Không dùng companion thì chỉ luồng progressive MP4 đi qua tool; mọi định dạng khác do ytmp3pc.com xử lý trong tab mới.
 
 ### Kiến trúc
 
@@ -239,7 +240,7 @@ Current version: 2.4.3
 | Playback speed | Adds a speed slider, presets, and `<` / `>` shortcuts. | On |
 | Picture in picture | Opens the current video in a floating window. | On |
 | Screenshot | Saves the current video frame as PNG. | On |
-| Downloader | Saves the progressive MP4 directly; high-quality MP4 and MP3 open ytmp3pc.com with the link copied. | On |
+| Downloader | Saves the progressive MP4 directly. An optional desktop companion adds higher-quality MP4 and MP3 through local yt-dlp and FFmpeg; ytmp3pc.com stays as a fallback. | On |
 
 #### Ad blocking layers
 
