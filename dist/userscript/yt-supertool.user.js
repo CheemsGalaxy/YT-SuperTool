@@ -21,12 +21,45 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_openInTab
 // @grant        unsafeWindow
+// @connect      127.0.0.1
 // @connect      returnyoutubedislikeapi.com
 // @connect      sponsor.ajay.app
 // @connect      raw.githubusercontent.com
 // ==/UserScript==
 (function() {
   "use strict";
+  const COMPANION_BASE_URL = "http://127.0.0.1:47831";
+  const COMPANION_API_VERSION = 1;
+  const COMPANION_TOKEN_KEY = "companionToken";
+  const companionUrl = (path) => `${COMPANION_BASE_URL}${path}`;
+  const requestCompanionDirect = async ({ path, method = "GET", headers = {}, body, timeoutMs = 8e3 }) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(companionUrl(path), {
+        method,
+        headers: body === void 0 ? headers : { ...headers, "Content-Type": "application/json" },
+        body: body === void 0 ? void 0 : JSON.stringify(body),
+        signal: controller.signal,
+        credentials: "omit",
+        cache: "no-store"
+      });
+      const text = await response.text();
+      let data = null;
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+      }
+      return { status: response.status, data };
+    } catch (error) {
+      return { status: 0, error: error?.name === "AbortError" ? "TIMEOUT" : "NOT_RUNNING" };
+    } finally {
+      clearTimeout(timer);
+    }
+  };
   const STORAGE_PREFIX = "yt_supertool_";
   const gmApi = () => globalThis.GM || null;
   const legacy = (name) => {
@@ -199,12 +232,38 @@
         return false;
       }
     };
+    const companion = {
+      request(options) {
+        if (!has("xmlHttpRequest")) return requestCompanionDirect(options);
+        const { path, method = "GET", headers = {}, body, timeoutMs = 8e3 } = options;
+        const data = body === void 0 ? void 0 : JSON.stringify(body);
+        const requestHeaders = data === void 0 ? { ...headers } : { ...headers, "Content-Type": "application/json" };
+        return new Promise((resolve) => {
+          try {
+            call("xmlHttpRequest", {
+              url: companionUrl(path),
+              method,
+              headers: requestHeaders,
+              data,
+              responseType: "json",
+              timeout: timeoutMs,
+              onload: (result) => resolve({ status: result.status, data: result.response ?? null }),
+              onerror: () => resolve({ status: 0, error: "NOT_RUNNING" }),
+              ontimeout: () => resolve({ status: 0, error: "TIMEOUT" })
+            });
+          } catch {
+            resolve({ status: 0, error: "NOT_RUNNING" });
+          }
+        });
+      }
+    };
     return {
       env: "userscript",
       version: "2.4.3",
       storage,
       network,
       injector,
+      companion,
       mainWindow: typeof unsafeWindow !== "undefined" ? unsafeWindow : globalThis,
       openExternal(url) {
         if (has("openInTab")) {
@@ -1609,6 +1668,7 @@
     download: "Download",
     downloadVideo: "Download video",
     downloadThisVideo: "Download this video",
+    downloadBusy: "A download is already running",
     cancel: "Cancel",
     readingPlayerResponse: "Reading player response...",
     readFailed: "Could not read the player response",
@@ -1620,6 +1680,22 @@
     copiesLink: "Copies the link, opens a new tab",
     linkCopied: "Link copied — paste it on ytmp3pc.com",
     copyFailed: "Could not copy the link",
+    companion: "Companion",
+    companionChecking: "Checking companion...",
+    companionMissing: "Companion not running",
+    companionMissingHint: "Start YT SuperTool Companion on this computer, then retry. Install it first if it is not on this machine.",
+    companionNotPaired: "Companion not paired",
+    companionPairHint: "Enter the pairing code shown in the companion window. Run the companion with --pair to print a new one.",
+    companionIncompatible: "Companion version is not supported",
+    companionIncompatibleHint: "Update YT SuperTool Companion to a version that supports API 1.",
+    companionAnalyzing: "Reading formats from the companion...",
+    companionVideo: "Companion · MP4",
+    companionAudio: "Companion · Audio",
+    companionRetry: "Retry",
+    companionPair: "Pair",
+    companionPairing: "Pairing...",
+    companionStarting: "Starting companion download...",
+    companionCancelPending: "Cancelling...",
     downloadCancelled: "Download cancelled",
     downloadFailedToast: "Download failed",
     unknownError: "Unknown error",
@@ -1642,11 +1718,25 @@
     manifestTarget: (version) => `MV${version}`,
     speedPreset: (speed) => `${speed} speed`,
     skipped: (label, seconds) => `Skipped ${label} · ${seconds}s`,
-    otherFormats: (label) => `Other formats · ${label}`,
-    menuFoot: (label) => `Only the single-stream MP4 downloads in place. High quality MP4 and MP3 continue on ${label} with the link copied for you.`,
+    otherFormats: (label) => `Fallback · ${label}`,
+    menuFoot: (label) => `Companion downloads need the desktop companion running. ${label} stays as a fallback for high quality MP4 and MP3.`,
     downloadFailed: (reason) => `Download failed: ${reason}`,
     downloadProgress: (percent, size) => `Downloading MP4 · ${percent}%${size ? ` · ${size}` : ""}`,
     savedFile: (fileName) => `Saved · ${fileName}`,
+    companionVideoNote: "Video + audio · saved by the companion",
+    companionAudioNote: "Audio only · saved by the companion",
+    companionProgress: (percent, detail) => `Companion download · ${percent}%${detail ? ` · ${detail}` : ""}`,
+    companionSaved: (filePath) => `Saved · ${filePath}`,
+    companionStartFailed: (reason) => `Could not start the companion download: ${reason}`,
+    companionPollFailed: (reason) => `Lost contact with the companion: ${reason}`,
+    pairingInvalid: "Pairing code does not match. Check the code and try again.",
+    pairingExpired: "Pairing code expired. Restart the companion to get a new code.",
+    pairingRateLimited: "Too many pairing attempts. Wait a minute and try again.",
+    companionTokenInvalid: "The pairing token is no longer valid. Pair the companion again.",
+    companionMissingBinaries: "The companion is missing yt-dlp or FFmpeg. Reinstall or restart it.",
+    companionQueueFull: "The companion queue is full. Wait for a running download.",
+    companionJobExists: "This video is already downloading in the companion.",
+    companionOutputInvalid: "Set a writable output folder inside your home directory in the companion.",
     upToDate: (version) => `Up to date · v${version}`,
     updateAvailable: (version) => `v${version} available`
   };
@@ -2344,6 +2434,236 @@
       }
     };
   }
+  const DEFAULT_TIMEOUTS = {
+    health: 2500,
+    pair: 8e3,
+    analyze: 35e3,
+    start: 1e4,
+    job: 5e3,
+    cancel: 1e4,
+    settings: 5e3
+  };
+  class CompanionError extends Error {
+    constructor(code, message, { status = 0, serverCode = null } = {}) {
+      super(message);
+      this.name = "CompanionError";
+      this.code = code;
+      this.status = status;
+      this.serverCode = serverCode;
+    }
+  }
+  const parseData = (value) => {
+    if (typeof value !== "string") return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
+  const withTimeout = (promise, ms) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      const error = new Error("Companion did not answer in time.");
+      error.code = "TIMEOUT";
+      reject(error);
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+  const createCompanionClient = ({
+    transport,
+    storage,
+    clientName,
+    clientVersion,
+    baseUrl = COMPANION_BASE_URL,
+    apiVersion = COMPANION_API_VERSION,
+    timeouts = {},
+    timeoutGrace = 1500
+  }) => {
+    if (typeof transport !== "function") throw new Error("Companion transport is required.");
+    if (!storage?.get || !storage?.set) throw new Error("Companion storage is required.");
+    const limits = { ...DEFAULT_TIMEOUTS, ...timeouts };
+    let cachedToken = null;
+    let tokenLoaded = false;
+    const loadToken = async () => {
+      if (tokenLoaded) return cachedToken;
+      tokenLoaded = true;
+      const stored = await storage.get(COMPANION_TOKEN_KEY, null);
+      cachedToken = typeof stored === "string" && stored.length > 0 ? stored : null;
+      return cachedToken;
+    };
+    const saveToken = async (value) => {
+      cachedToken = value;
+      tokenLoaded = true;
+      await storage.set(COMPANION_TOKEN_KEY, value);
+    };
+    const clearToken = async () => {
+      cachedToken = null;
+      tokenLoaded = true;
+      await storage.set(COMPANION_TOKEN_KEY, null);
+    };
+    const send = async (path, { method = "GET", body, auth = true, timeout = limits.settings } = {}) => {
+      const headers = {
+        "X-YTST-Client": clientName,
+        "X-YTST-Client-Version": String(clientVersion ?? "0")
+      };
+      if (auth) {
+        const token = await loadToken();
+        if (!token) throw new CompanionError("NOT_PAIRED", "Companion is not paired.");
+        headers["X-YTST-Token"] = token;
+      }
+      let result;
+      try {
+        result = await withTimeout(
+          Promise.resolve().then(() => transport({ path, method, headers, body, timeoutMs: timeout })),
+          timeout + timeoutGrace
+        );
+      } catch (error) {
+        const code = error?.code === "TIMEOUT" ? "TIMEOUT" : "NOT_RUNNING";
+        throw new CompanionError(code, error?.message || "Companion is not running.");
+      }
+      if (!result || typeof result.status !== "number") {
+        throw new CompanionError("BAD_RESPONSE", "Companion returned an unexpected response.");
+      }
+      if (result.status === 0) {
+        const code = result.error === "TIMEOUT" ? "TIMEOUT" : "NOT_RUNNING";
+        throw new CompanionError(
+          code,
+          code === "TIMEOUT" ? "Companion did not answer in time." : "Companion is not running."
+        );
+      }
+      const data = parseData(result.data);
+      if (result.status === 401) {
+        await clearToken();
+        throw new CompanionError("UNAUTHORIZED", data?.error?.message || "Pairing token is invalid.", {
+          status: 401,
+          serverCode: data?.error?.code || "BAD_TOKEN"
+        });
+      }
+      if (result.status < 200 || result.status >= 300) {
+        throw new CompanionError("REQUEST_FAILED", data?.error?.message || `Companion returned ${result.status}.`, {
+          status: result.status,
+          serverCode: data?.error?.code || null
+        });
+      }
+      if (!data || data.ok !== true) {
+        throw new CompanionError("BAD_RESPONSE", "Companion returned an unexpected response.");
+      }
+      return data;
+    };
+    const status = async () => {
+      let health;
+      try {
+        health = await send("/api/health", { auth: false, timeout: limits.health });
+      } catch (error) {
+        if (error.code === "NOT_RUNNING" || error.code === "TIMEOUT") {
+          return { state: "not-running", error };
+        }
+        return { state: "error", error };
+      }
+      if (health.service !== "yt-super-tool-companion" || health.apiVersion !== apiVersion) {
+        return { state: "incompatible", health };
+      }
+      if (!health.paired) return { state: "not-paired", health };
+      if (!await loadToken()) return { state: "not-paired", health };
+      return { state: "ready", health };
+    };
+    const pair = async (code) => {
+      let data;
+      try {
+        data = await send("/api/pair", {
+          method: "POST",
+          auth: false,
+          body: { code, clientName },
+          timeout: limits.pair
+        });
+      } catch (error) {
+        if (error?.code !== "TIMEOUT") throw error;
+        const stored = await storage.get(COMPANION_TOKEN_KEY, null);
+        if (typeof stored !== "string" || stored.length === 0) throw error;
+        cachedToken = stored;
+        tokenLoaded = true;
+        return { companionVersion: null, apiVersion, pairedAt: null, recovered: true };
+      }
+      if (data.apiVersion !== apiVersion || typeof data.token !== "string" || data.token.length === 0) {
+        throw new CompanionError("INCOMPATIBLE", "Companion version is not supported.");
+      }
+      await saveToken(data.token);
+      return {
+        companionVersion: data.companionVersion,
+        apiVersion: data.apiVersion,
+        pairedAt: data.pairedAt
+      };
+    };
+    const unpair = async () => {
+      try {
+        await send("/api/unpair", { method: "POST", timeout: limits.settings });
+      } finally {
+        await clearToken();
+      }
+    };
+    const analyze = async (url) => {
+      const data = await send("/api/analyze", {
+        method: "POST",
+        body: { url },
+        timeout: limits.analyze
+      });
+      return { video: data.video, options: data.options };
+    };
+    const start2 = async (options) => {
+      const data = await send("/api/download", {
+        method: "POST",
+        body: options,
+        timeout: limits.start
+      });
+      return data.job;
+    };
+    const get = async (id) => {
+      const data = await send(`/api/download/${encodeURIComponent(id)}`, { timeout: limits.job });
+      return data.job;
+    };
+    const cancel = async (id) => {
+      const data = await send(`/api/download/${encodeURIComponent(id)}/cancel`, {
+        method: "POST",
+        timeout: limits.cancel
+      });
+      return data.job;
+    };
+    const getSettings = async () => {
+      const data = await send("/api/settings", { timeout: limits.settings });
+      return data.settings;
+    };
+    const updateSettings = async (patch) => {
+      const data = await send("/api/settings", {
+        method: "PUT",
+        body: patch,
+        timeout: limits.settings
+      });
+      return data.settings;
+    };
+    return {
+      baseUrl,
+      clientName,
+      status,
+      pair,
+      unpair,
+      analyze,
+      start: start2,
+      get,
+      cancel,
+      getSettings,
+      updateSettings,
+      isPaired: async () => Boolean(await loadToken()),
+      clearToken
+    };
+  };
   const CACHE_TTL$2 = 60 * 1e3;
   const getVideoId$2 = () => new URLSearchParams(location.search).get("v") || location.pathname.match(/\/shorts\/([^/?]+)/)?.[1] || "";
   const format = (value) => new Intl.NumberFormat(void 0, { notation: "compact", maximumFractionDigits: 1 }).format(value);
@@ -3563,8 +3883,8 @@
       }
     };
   }
-  const downloaderCss = '.ytst-dl-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 40px;\n  min-width: 40px;\n  margin-left: 8px;\n  padding: 0 16px;\n  border: 0;\n  border-radius: 20px;\n  background: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.05));\n  color: var(--yt-spec-text-primary, #0f0f0f);\n  font-family: "Roboto", "Segoe UI", sans-serif;\n  font-size: 14px;\n  font-weight: 500;\n  line-height: 1;\n  cursor: pointer;\n  white-space: nowrap;\n}\n\n.ytst-dl-button:hover {\n  background: rgba(0, 0, 0, 0.1);\n}\n\n.ytst-dl-button:focus-visible {\n  outline: 2px solid var(--yt-spec-call-to-action, #065fd4);\n  outline-offset: 2px;\n}\n\n.ytst-dl-button svg {\n  display: block;\n  width: 22px;\n  height: 22px;\n  fill: none;\n  stroke: currentColor;\n  stroke-width: 1.8;\n  stroke-linecap: round;\n  stroke-linejoin: round;\n  pointer-events: none;\n}\n\n.ytst-dl-button .ytst-dl-caret {\n  width: 14px;\n  height: 14px;\n  margin-left: -2px;\n}\n\n.ytst-dl-label {\n  pointer-events: none;\n}\n\n.ytst-dl-copy-area {\n  position: fixed;\n  top: -1000px;\n  left: -1000px;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  border: 0;\n  opacity: 0;\n  pointer-events: none;\n}\n\n.ytst-dl-menu {\n  position: fixed;\n  z-index: 2147483000;\n  width: 288px;\n  max-width: calc(100vw - 16px);\n  padding: 6px 0;\n  border-radius: 12px;\n  background: #ffffff;\n  color: #0f0f0f;\n  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);\n  font-family: "Roboto", "Segoe UI", sans-serif;\n  font-size: 14px;\n}\n\n.ytst-dl-menu-head {\n  padding: 10px 16px 8px;\n  font-size: 16px;\n  font-weight: 500;\n}\n\n.ytst-dl-section {\n  padding: 10px 16px 4px;\n  color: #606060;\n  font-size: 11px;\n  font-weight: 500;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.ytst-dl-item {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: 16px;\n  width: 100%;\n  padding: 9px 16px;\n  border: 0;\n  background: transparent;\n  color: inherit;\n  font: inherit;\n  text-align: left;\n  cursor: pointer;\n}\n\n.ytst-dl-item:hover,\n.ytst-dl-item:focus-visible {\n  background: rgba(0, 0, 0, 0.06);\n  outline: none;\n}\n\n.ytst-dl-item:disabled {\n  color: #909090;\n  cursor: default;\n  background: transparent;\n}\n\n.ytst-dl-item-main {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n\n.ytst-dl-item-title {\n  font-weight: 500;\n}\n\n.ytst-dl-item-note,\n.ytst-dl-item-meta,\n.ytst-dl-status {\n  color: #606060;\n  font-size: 12px;\n}\n\n.ytst-dl-item-meta {\n  flex: none;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-dl-menu-foot {\n  margin-top: 6px;\n  padding: 8px 16px 6px;\n  border-top: 1px solid rgba(0, 0, 0, 0.08);\n  color: #909090;\n  font-size: 11px;\n}\n\n.ytst-dl-progress {\n  position: fixed;\n  z-index: 2147483000;\n  width: 300px;\n  max-width: calc(100vw - 16px);\n  padding: 12px 14px;\n  border-radius: 12px;\n  background: #ffffff;\n  color: #0f0f0f;\n  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);\n  font-family: "Roboto", "Segoe UI", sans-serif;\n  font-size: 13px;\n}\n\n.ytst-dl-progress-head {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n  gap: 12px;\n}\n\n.ytst-dl-progress-label {\n  flex: 1;\n  min-width: 0;\n  line-height: 1.35;\n  word-break: break-word;\n}\n\n.ytst-dl-cancel {\n  flex: none;\n  padding: 2px 6px;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: #065fd4;\n  font: inherit;\n  font-weight: 500;\n  cursor: pointer;\n}\n\n.ytst-dl-cancel:hover {\n  background: rgba(0, 0, 0, 0.06);\n}\n\n.ytst-dl-bar {\n  height: 4px;\n  margin-top: 10px;\n  border-radius: 2px;\n  background: rgba(0, 0, 0, 0.12);\n  overflow: hidden;\n}\n\n.ytst-dl-bar > span {\n  display: block;\n  width: 0;\n  height: 100%;\n  border-radius: inherit;\n  background: #ff0033;\n  transition: width 120ms linear;\n}\n\n.ytst-dl-progress[data-state="done"] .ytst-dl-bar > span {\n  background: #2ba640;\n}\n\n.ytst-dl-progress[data-state="error"] .ytst-dl-bar > span {\n  background: #cc0000;\n}\n\nhtml[dark] .ytst-dl-button,\nhtml[dark-theme] .ytst-dl-button {\n  background: rgba(255, 255, 255, 0.1);\n  color: #f1f1f1;\n}\n\nhtml[dark] .ytst-dl-button:hover,\nhtml[dark-theme] .ytst-dl-button:hover {\n  background: rgba(255, 255, 255, 0.16);\n}\n\nhtml[dark] .ytst-dl-menu,\nhtml[dark-theme] .ytst-dl-menu,\nhtml[dark] .ytst-dl-progress,\nhtml[dark-theme] .ytst-dl-progress {\n  background: #212121;\n  color: #f1f1f1;\n  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);\n}\n\nhtml[dark] .ytst-dl-section,\nhtml[dark-theme] .ytst-dl-section,\nhtml[dark] .ytst-dl-item-note,\nhtml[dark-theme] .ytst-dl-item-note,\nhtml[dark] .ytst-dl-item-meta,\nhtml[dark-theme] .ytst-dl-item-meta,\nhtml[dark] .ytst-dl-status,\nhtml[dark-theme] .ytst-dl-status {\n  color: #aaaaaa;\n}\n\nhtml[dark] .ytst-dl-item:hover,\nhtml[dark-theme] .ytst-dl-item:hover,\nhtml[dark] .ytst-dl-item:focus-visible,\nhtml[dark-theme] .ytst-dl-item:focus-visible {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml[dark] .ytst-dl-menu-foot,\nhtml[dark-theme] .ytst-dl-menu-foot {\n  border-top-color: rgba(255, 255, 255, 0.1);\n  color: #717171;\n}\n\nhtml[dark] .ytst-dl-cancel,\nhtml[dark-theme] .ytst-dl-cancel {\n  color: #3ea6ff;\n}\n\nhtml[dark] .ytst-dl-cancel:hover,\nhtml[dark-theme] .ytst-dl-cancel:hover {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml[dark] .ytst-dl-bar,\nhtml[dark-theme] .ytst-dl-bar {\n  background: rgba(255, 255, 255, 0.2);\n}\n\n@media (max-width: 1000px) {\n  .ytst-dl-button {\n    width: 40px;\n    padding: 0;\n  }\n\n  .ytst-dl-label {\n    display: none;\n  }\n}\n';
-  const PLAYER_ENDPOINT = "/youtubei/v1/player?prettyPrint=false";
+  const downloaderCss = '.ytst-dl-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 40px;\n  min-width: 40px;\n  margin-left: 8px;\n  padding: 0 16px;\n  border: 0;\n  border-radius: 20px;\n  background: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.05));\n  color: var(--yt-spec-text-primary, #0f0f0f);\n  font-family: "Roboto", "Segoe UI", sans-serif;\n  font-size: 14px;\n  font-weight: 500;\n  line-height: 1;\n  cursor: pointer;\n  white-space: nowrap;\n}\n\n.ytst-dl-button:hover {\n  background: rgba(0, 0, 0, 0.1);\n}\n\n.ytst-dl-button:focus-visible {\n  outline: 2px solid var(--yt-spec-call-to-action, #065fd4);\n  outline-offset: 2px;\n}\n\n.ytst-dl-button svg {\n  display: block;\n  width: 22px;\n  height: 22px;\n  fill: none;\n  stroke: currentColor;\n  stroke-width: 1.8;\n  stroke-linecap: round;\n  stroke-linejoin: round;\n  pointer-events: none;\n}\n\n.ytst-dl-button .ytst-dl-caret {\n  width: 14px;\n  height: 14px;\n  margin-left: -2px;\n}\n\n.ytst-dl-label {\n  pointer-events: none;\n}\n\n.ytst-dl-copy-area {\n  position: fixed;\n  top: -1000px;\n  left: -1000px;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  border: 0;\n  opacity: 0;\n  pointer-events: none;\n}\n\n.ytst-dl-menu {\n  position: fixed;\n  z-index: 2147483000;\n  width: 288px;\n  max-width: calc(100vw - 16px);\n  max-height: min(76vh, 620px);\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  padding: 6px 0;\n  border-radius: 12px;\n  background: #ffffff;\n  color: #0f0f0f;\n  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);\n  font-family: "Roboto", "Segoe UI", sans-serif;\n  font-size: 14px;\n}\n\n.ytst-dl-menu-head {\n  padding: 10px 16px 8px;\n  font-size: 16px;\n  font-weight: 500;\n}\n\n.ytst-dl-section {\n  padding: 10px 16px 4px;\n  color: #606060;\n  font-size: 11px;\n  font-weight: 500;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.ytst-dl-item {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: 16px;\n  width: 100%;\n  padding: 9px 16px;\n  border: 0;\n  background: transparent;\n  color: inherit;\n  font: inherit;\n  text-align: left;\n  cursor: pointer;\n}\n\n.ytst-dl-item:hover,\n.ytst-dl-item:focus-visible {\n  background: rgba(0, 0, 0, 0.06);\n  outline: none;\n}\n\n.ytst-dl-item:disabled {\n  color: #909090;\n  cursor: default;\n  background: transparent;\n}\n\n.ytst-dl-item-main {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n\n.ytst-dl-item-title {\n  font-weight: 500;\n}\n\n.ytst-dl-item-note,\n.ytst-dl-item-meta,\n.ytst-dl-status {\n  color: #606060;\n  font-size: 12px;\n}\n\n.ytst-dl-item-meta {\n  flex: none;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-dl-menu-foot {\n  margin-top: 6px;\n  padding: 8px 16px 6px;\n  border-top: 1px solid rgba(0, 0, 0, 0.08);\n  color: #909090;\n  font-size: 11px;\n}\n\n.ytst-dl-state {\n  padding: 4px 16px 10px;\n  color: #606060;\n  font-size: 12px;\n  line-height: 1.45;\n}\n\n.ytst-dl-pair {\n  display: flex;\n  gap: 8px;\n  padding: 8px 16px 10px;\n}\n\n.ytst-dl-pair-input {\n  flex: 1;\n  min-width: 0;\n  height: 32px;\n  padding: 0 10px;\n  border: 1px solid rgba(0, 0, 0, 0.16);\n  border-radius: 8px;\n  background: transparent;\n  color: inherit;\n  font: inherit;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.ytst-dl-pair-input:focus-visible {\n  outline: 2px solid #065fd4;\n  outline-offset: 1px;\n}\n\n.ytst-dl-pair-button {\n  flex: none;\n  height: 32px;\n  padding: 0 12px;\n  border: 0;\n  border-radius: 8px;\n  background: #065fd4;\n  color: #ffffff;\n  font: inherit;\n  font-weight: 500;\n  cursor: pointer;\n}\n\n.ytst-dl-pair-button:disabled {\n  opacity: 0.6;\n  cursor: default;\n}\n\n.ytst-dl-progress {\n  position: fixed;\n  z-index: 2147483000;\n  width: 300px;\n  max-width: calc(100vw - 16px);\n  padding: 12px 14px;\n  border-radius: 12px;\n  background: #ffffff;\n  color: #0f0f0f;\n  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);\n  font-family: "Roboto", "Segoe UI", sans-serif;\n  font-size: 13px;\n}\n\n.ytst-dl-progress-head {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n  gap: 12px;\n}\n\n.ytst-dl-progress-label {\n  flex: 1;\n  min-width: 0;\n  line-height: 1.35;\n  word-break: break-word;\n}\n\n.ytst-dl-cancel {\n  flex: none;\n  padding: 2px 6px;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: #065fd4;\n  font: inherit;\n  font-weight: 500;\n  cursor: pointer;\n}\n\n.ytst-dl-cancel:hover {\n  background: rgba(0, 0, 0, 0.06);\n}\n\n.ytst-dl-bar {\n  height: 4px;\n  margin-top: 10px;\n  border-radius: 2px;\n  background: rgba(0, 0, 0, 0.12);\n  overflow: hidden;\n}\n\n.ytst-dl-bar > span {\n  display: block;\n  width: 0;\n  height: 100%;\n  border-radius: inherit;\n  background: #ff0033;\n  transition: width 120ms linear;\n}\n\n.ytst-dl-progress[data-state="done"] .ytst-dl-bar > span {\n  background: #2ba640;\n}\n\n.ytst-dl-progress[data-state="error"] .ytst-dl-bar > span {\n  background: #cc0000;\n}\n\nhtml[dark] .ytst-dl-button,\nhtml[dark-theme] .ytst-dl-button {\n  background: rgba(255, 255, 255, 0.1);\n  color: #f1f1f1;\n}\n\nhtml[dark] .ytst-dl-button:hover,\nhtml[dark-theme] .ytst-dl-button:hover {\n  background: rgba(255, 255, 255, 0.16);\n}\n\nhtml[dark] .ytst-dl-menu,\nhtml[dark-theme] .ytst-dl-menu,\nhtml[dark] .ytst-dl-progress,\nhtml[dark-theme] .ytst-dl-progress {\n  background: #212121;\n  color: #f1f1f1;\n  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);\n}\n\nhtml[dark] .ytst-dl-section,\nhtml[dark-theme] .ytst-dl-section,\nhtml[dark] .ytst-dl-item-note,\nhtml[dark-theme] .ytst-dl-item-note,\nhtml[dark] .ytst-dl-item-meta,\nhtml[dark-theme] .ytst-dl-item-meta,\nhtml[dark] .ytst-dl-status,\nhtml[dark-theme] .ytst-dl-status,\nhtml[dark] .ytst-dl-state,\nhtml[dark-theme] .ytst-dl-state {\n  color: #aaaaaa;\n}\n\nhtml[dark] .ytst-dl-item:hover,\nhtml[dark-theme] .ytst-dl-item:hover,\nhtml[dark] .ytst-dl-item:focus-visible,\nhtml[dark-theme] .ytst-dl-item:focus-visible {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml[dark] .ytst-dl-menu-foot,\nhtml[dark-theme] .ytst-dl-menu-foot {\n  border-top-color: rgba(255, 255, 255, 0.1);\n  color: #717171;\n}\n\nhtml[dark] .ytst-dl-cancel,\nhtml[dark-theme] .ytst-dl-cancel {\n  color: #3ea6ff;\n}\n\nhtml[dark] .ytst-dl-cancel:hover,\nhtml[dark-theme] .ytst-dl-cancel:hover {\n  background: rgba(255, 255, 255, 0.08);\n}\n\nhtml[dark] .ytst-dl-bar,\nhtml[dark-theme] .ytst-dl-bar {\n  background: rgba(255, 255, 255, 0.2);\n}\n\nhtml[dark] .ytst-dl-pair-input,\nhtml[dark-theme] .ytst-dl-pair-input {\n  border-color: rgba(255, 255, 255, 0.2);\n}\n\nhtml[dark] .ytst-dl-pair-button,\nhtml[dark-theme] .ytst-dl-pair-button {\n  background: #3ea6ff;\n  color: #0f0f0f;\n}\n\n@media (max-width: 1000px) {\n  .ytst-dl-button {\n    width: 40px;\n    padding: 0;\n  }\n\n  .ytst-dl-label {\n    display: none;\n  }\n}\n';
+  const PLAYER_ENDPOINT = `${globalThis.location?.origin || "https://www.youtube.com"}/youtubei/v1/player?prettyPrint=false`;
   const CLIENTS = [
     {
       name: "ANDROID",
@@ -3613,6 +3933,46 @@
     const error = new Error("Cancelled");
     error.name = "AbortError";
     return error;
+  };
+  const watchUrl = (videoId) => `https://www.youtube.com/watch?v=${videoId}`;
+  const companionIssueText = (error) => {
+    switch (error?.serverCode) {
+      case "YTDLP_MISSING":
+      case "FFMPEG_MISSING":
+        return UI_TEXT.companionMissingBinaries;
+      case "QUEUE_FULL":
+        return UI_TEXT.companionQueueFull;
+      case "JOB_EXISTS":
+        return UI_TEXT.companionJobExists;
+      case "OUTPUT_DIR_INVALID":
+        return UI_TEXT.companionOutputInvalid;
+      case "BAD_TOKEN":
+        return UI_TEXT.companionTokenInvalid;
+    }
+    switch (error?.code) {
+      case "NOT_RUNNING":
+      case "NOT_PAIRED":
+        return UI_STRINGS.companionMissingHint;
+      case "TIMEOUT":
+        return "The companion did not answer in time.";
+      case "UNAUTHORIZED":
+        return UI_TEXT.companionTokenInvalid;
+      default:
+        return error?.message || UI_STRINGS.unknownError;
+    }
+  };
+  const pairIssueText = (error) => {
+    switch (error?.serverCode) {
+      case "PAIRING_CODE_INVALID":
+        return UI_TEXT.pairingInvalid;
+      case "PAIRING_CODE_EXPIRED":
+      case "PAIRING_UNAVAILABLE":
+        return UI_TEXT.pairingExpired;
+      case "RATE_LIMITED":
+        return UI_TEXT.pairingRateLimited;
+    }
+    if (error?.code === "NOT_RUNNING" || error?.code === "TIMEOUT") return UI_STRINGS.companionMissingHint;
+    return error?.message || UI_STRINGS.unknownError;
   };
   const readResponse = async (response, { signal, onProgress }) => {
     const total = Number(response.headers.get("content-length")) || 0;
@@ -3683,7 +4043,7 @@
     if (!data.streamingData) throw new Error("No streaming data in the player response");
     return data;
   };
-  function createDownloader({ bridge: bridge2, toast }) {
+  function createDownloader({ bridge: bridge2, toast, companion }) {
     let enabled = false;
     let player = null;
     let button = null;
@@ -3693,6 +4053,10 @@
     let retryTimer = 0;
     let retryCount = 0;
     let menuToken = 0;
+    let menuVideoId = "";
+    let menuScrollFrame = 0;
+    let menuData = null;
+    let companionView = { phase: "checking" };
     let jobId = 0;
     let activeJob = null;
     let cache = { id: "", at: 0, data: null };
@@ -3783,7 +4147,8 @@
       ]);
       const cancel = progress.querySelector(".ytst-dl-cancel");
       cancel.addEventListener("click", () => {
-        if (activeJob) activeJob.controller.abort();
+        if (activeJob?.kind === "direct") activeJob.controller.abort();
+        else if (activeJob?.kind === "companion") void cancelCompanion();
         else removeProgress();
       });
       (document.body || document.documentElement).appendChild(progress);
@@ -3791,8 +4156,26 @@
       window.addEventListener("scroll", handleProgressScroll, { passive: true, capture: true });
       window.addEventListener("resize", handleProgressScroll);
     };
+    const alignMenu = () => {
+      menuScrollFrame = 0;
+      if (!menu) return;
+      const rect = button?.getBoundingClientRect();
+      if (!rect || rect.bottom <= 0 || rect.top >= window.innerHeight) {
+        closeMenu();
+        return;
+      }
+      positionFloating(menu);
+    };
+    const handleMenuScroll = () => {
+      if (menuScrollFrame) return;
+      menuScrollFrame = requestAnimationFrame(alignMenu);
+    };
     const closeMenu = () => {
       menuToken += 1;
+      if (menuScrollFrame) {
+        cancelAnimationFrame(menuScrollFrame);
+        menuScrollFrame = 0;
+      }
       if (menu) {
         menu.remove();
         menu = null;
@@ -3800,8 +4183,8 @@
       button?.setAttribute("aria-expanded", "false");
       document.removeEventListener("pointerdown", handleDocumentPointer, true);
       document.removeEventListener("keydown", handleDocumentKey, true);
-      window.removeEventListener("scroll", closeMenu, true);
-      window.removeEventListener("resize", closeMenu);
+      window.removeEventListener("scroll", handleMenuScroll, true);
+      window.removeEventListener("resize", handleMenuScroll);
     };
     const handleDocumentPointer = (event) => {
       if (!menu) return;
@@ -3815,6 +4198,9 @@
       if (!button || menu) return;
       const videoId = getVideoId();
       if (!videoId) return;
+      menuVideoId = videoId;
+      menuData = null;
+      companionView = { phase: "checking" };
       menu = createElement("div", {
         className: "ytst-dl-menu",
         role: "menu",
@@ -3829,24 +4215,27 @@
       const token = ++menuToken;
       document.addEventListener("pointerdown", handleDocumentPointer, true);
       document.addEventListener("keydown", handleDocumentKey, true);
-      window.addEventListener("scroll", closeMenu, { passive: true, capture: true });
-      window.addEventListener("resize", closeMenu);
-      loadMenu(videoId, token);
+      window.addEventListener("scroll", handleMenuScroll, { passive: true, capture: true });
+      window.addEventListener("resize", handleMenuScroll);
+      refreshMenu();
+      void loadMenu(videoId, token);
+      void inspectCompanion(videoId, token);
     };
     const loadMenu = async (videoId, token) => {
       try {
         const data = await loadPlayer(videoId);
         if (token !== menuToken || !menu) return;
-        renderMenu(data, videoId);
-        positionFloating(menu);
+        const title = data.title || document.title.replace(/\s*-\s*YouTube\s*$/, "");
+        menuData = {
+          title,
+          muxed: data.muxed || null,
+          baseName: `${cleanFileName(title) || "video"} [${videoId}]`
+        };
+        refreshMenu();
       } catch (error) {
         if (token !== menuToken || !menu) return;
-        const message = error?.message || UI_STRINGS.readFailed;
-        menu.replaceChildren(
-          createElement("div", { className: "ytst-dl-menu-head", textContent: UI_STRINGS.download }),
-          createElement("div", { className: "ytst-dl-status", textContent: message })
-        );
-        positionFloating(menu);
+        menuData = { error: error?.message || UI_STRINGS.readFailed };
+        refreshMenu();
       }
     };
     const copyText = async (text) => {
@@ -3879,37 +4268,148 @@
       globalThis.open(THIRD_PARTY_ORIGIN, "_blank", "noopener,noreferrer");
     };
     const openThirdPartyWithLink = async (videoId) => {
-      const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const copied = await copyText(watchUrl);
+      const copied = await copyText(watchUrl(videoId));
       toast?.show(copied ? UI_STRINGS.linkCopied : UI_STRINGS.copyFailed);
       openThirdParty();
     };
-    const renderMenu = (data, videoId) => {
+    const stateLine = (text) => createElement("div", { className: "ytst-dl-state", textContent: text });
+    const retryItem = () => createElement("button", {
+      type: "button",
+      className: "ytst-dl-item",
+      role: "menuitem",
+      dataset: { kind: "companion-retry" },
+      textContent: UI_STRINGS.companionRetry
+    });
+    const companionSection = () => {
+      const children = [
+        createElement("div", { className: "ytst-dl-section", textContent: UI_STRINGS.companion })
+      ];
+      const phase = companionView.phase;
+      if (phase === "checking") {
+        children.push(stateLine(UI_STRINGS.companionChecking));
+        return children;
+      }
+      if (phase === "loading") {
+        children.push(stateLine(UI_STRINGS.companionAnalyzing));
+        return children;
+      }
+      if (phase === "ready") {
+        const options = companionView.analysis?.options || {};
+        const videos = Array.isArray(options.video) ? options.video : [];
+        const audio = Array.isArray(options.audio) ? options.audio : [];
+        children.push(createElement("div", { className: "ytst-dl-section", textContent: UI_STRINGS.companionVideo }));
+        if (videos.length === 0) children.push(stateLine(UI_STRINGS.readFailed));
+        for (const item of videos) {
+          children.push(createElement("button", {
+            type: "button",
+            className: "ytst-dl-item",
+            role: "menuitem",
+            dataset: { kind: "companion-video", quality: item.quality }
+          }, [
+            createElement("span", { className: "ytst-dl-item-main" }, [
+              createElement("span", { className: "ytst-dl-item-title", textContent: `MP4 ${item.label}` }),
+              createElement("span", { className: "ytst-dl-item-note", textContent: UI_TEXT.companionVideoNote })
+            ])
+          ]));
+        }
+        children.push(createElement("div", { className: "ytst-dl-section", textContent: UI_STRINGS.companionAudio }));
+        for (const item of audio) {
+          children.push(createElement("button", {
+            type: "button",
+            className: "ytst-dl-item",
+            role: "menuitem",
+            dataset: { kind: "companion-audio", format: item.format }
+          }, [
+            createElement("span", { className: "ytst-dl-item-main" }, [
+              createElement("span", { className: "ytst-dl-item-title", textContent: item.label }),
+              createElement("span", { className: "ytst-dl-item-note", textContent: UI_TEXT.companionAudioNote })
+            ])
+          ]));
+        }
+        return children;
+      }
+      if (phase === "not-paired") {
+        children.push(stateLine(UI_STRINGS.companionNotPaired));
+        children.push(stateLine(UI_STRINGS.companionPairHint));
+        if (companionView.message) children.push(stateLine(companionView.message));
+        const input = createElement("input", {
+          className: "ytst-dl-pair-input",
+          type: "text",
+          maxlength: 12,
+          placeholder: "ABCD-2345",
+          autocomplete: "off",
+          autocapitalize: "characters",
+          spellcheck: "false",
+          "aria-label": UI_STRINGS.companionNotPaired
+        });
+        input.value = companionView.code || "";
+        const submit = createElement("button", {
+          type: "submit",
+          className: "ytst-dl-pair-button",
+          textContent: UI_STRINGS.companionPair
+        });
+        const form = createElement("form", { className: "ytst-dl-pair" }, [input, submit]);
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          void submitPair(input.value, input, submit);
+        });
+        children.push(form);
+        return children;
+      }
+      if (phase === "incompatible") {
+        children.push(stateLine(UI_STRINGS.companionIncompatible));
+        children.push(stateLine(UI_STRINGS.companionIncompatibleHint));
+        return children;
+      }
+      if (phase === "missing") {
+        children.push(stateLine(UI_STRINGS.companionMissing));
+        children.push(stateLine(companionView.message || UI_STRINGS.companionMissingHint));
+        children.push(retryItem());
+        return children;
+      }
+      children.push(stateLine(companionView.message || UI_STRINGS.companionMissingHint));
+      children.push(retryItem());
+      return children;
+    };
+    const muxedItem = (muxed) => createElement("button", {
+      type: "button",
+      className: "ytst-dl-item",
+      role: "menuitem",
+      dataset: { kind: "direct" }
+    }, [
+      createElement("span", { className: "ytst-dl-item-main" }, [
+        createElement("span", {
+          className: "ytst-dl-item-title",
+          textContent: `MP4 ${muxed.qualityLabel || `${muxed.height || 360}p`}`
+        }),
+        createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.videoAudioSaved })
+      ]),
+      createElement("span", { className: "ytst-dl-item-meta", textContent: formatBytes(muxed.contentLength) })
+    ]);
+    const fallbackItem = () => createElement("button", {
+      type: "button",
+      className: "ytst-dl-item",
+      role: "menuitem",
+      dataset: { kind: "route" }
+    }, [
+      createElement("span", { className: "ytst-dl-item-main" }, [
+        createElement("span", { className: "ytst-dl-item-title", textContent: UI_STRINGS.highQuality }),
+        createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.copiesLink })
+      ]),
+      createElement("span", { className: "ytst-dl-item-meta", textContent: "↗" })
+    ]);
+    const refreshMenu = () => {
       if (!menu) return;
-      const title = data.title || document.title.replace(/\s*-\s*YouTube\s*$/, "");
-      const muxed = data.muxed || null;
-      const baseName = `${cleanFileName(title) || "video"} [${videoId}]`;
       const children = [
         createElement("div", { className: "ytst-dl-menu-head", textContent: UI_STRINGS.download }),
+        ...companionSection(),
         createElement("div", { className: "ytst-dl-section", textContent: UI_STRINGS.directMp4 })
       ];
-      if (muxed) {
-        children.push(createElement("button", {
-          type: "button",
-          className: "ytst-dl-item",
-          role: "menuitem",
-          dataset: { kind: "direct" }
-        }, [
-          createElement("span", { className: "ytst-dl-item-main" }, [
-            createElement("span", {
-              className: "ytst-dl-item-title",
-              textContent: `MP4 ${muxed.qualityLabel || `${muxed.height || 360}p`}`
-            }),
-            createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.videoAudioSaved })
-          ]),
-          createElement("span", { className: "ytst-dl-item-meta", textContent: formatBytes(muxed.contentLength) })
-        ]));
-      } else {
+      if (menuData?.muxed) {
+        children.push(muxedItem(menuData.muxed));
+      } else if (menuData?.error) {
+        children.push(stateLine(menuData.error));
+      } else if (menuData) {
         children.push(createElement("button", {
           type: "button",
           className: "ytst-dl-item",
@@ -3921,49 +4421,156 @@
             createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.noSingleStream })
           ])
         ]));
+      } else {
+        children.push(stateLine(UI_STRINGS.readingPlayerResponse));
       }
       children.push(createElement("div", {
         className: "ytst-dl-section",
         textContent: UI_TEXT.otherFormats(THIRD_PARTY_LABEL)
       }));
-      children.push(createElement("button", {
-        type: "button",
-        className: "ytst-dl-item",
-        role: "menuitem",
-        dataset: { kind: "route" }
-      }, [
-        createElement("span", { className: "ytst-dl-item-main" }, [
-          createElement("span", { className: "ytst-dl-item-title", textContent: UI_STRINGS.highQuality }),
-          createElement("span", { className: "ytst-dl-item-note", textContent: UI_STRINGS.copiesLink })
-        ]),
-        createElement("span", { className: "ytst-dl-item-meta", textContent: "↗" })
-      ]));
+      children.push(fallbackItem());
       children.push(createElement("div", {
         className: "ytst-dl-menu-foot",
         textContent: UI_TEXT.menuFoot(THIRD_PARTY_LABEL)
       }));
       menu.replaceChildren(...children);
       menu.querySelectorAll(".ytst-dl-item[data-kind]").forEach((item) => {
-        item.addEventListener("click", () => {
-          const kind = item.dataset.kind;
-          closeMenu();
-          if (kind === "direct") startDirect(muxed, baseName);
-          else openThirdPartyWithLink(videoId);
-        });
+        item.addEventListener("click", () => handleMenuChoice(item.dataset));
       });
+      positionFloating(menu);
     };
-    const beginJob = () => {
+    const handleMenuChoice = (dataset) => {
+      const kind = dataset.kind;
+      if (kind === "companion-retry") {
+        companionView = { phase: "checking" };
+        refreshMenu();
+        void inspectCompanion(menuVideoId, menuToken);
+        return;
+      }
+      closeMenu();
+      if (kind === "direct") {
+        if (menuData?.muxed) startDirect(menuData.muxed, menuData.baseName);
+        return;
+      }
+      if (kind === "route") {
+        void openThirdPartyWithLink(menuVideoId);
+        return;
+      }
+      if (kind === "companion-video") {
+        void startCompanion({ mode: "video", quality: dataset.quality }, menuData?.title);
+        return;
+      }
+      if (kind === "companion-audio") {
+        void startCompanion({ mode: "audio", audioFormat: dataset.format }, menuData?.title);
+      }
+    };
+    const inspectCompanion = async (videoId, token) => {
+      if (!companion) {
+        if (token !== menuToken || !menu) return;
+        companionView = { phase: "missing", message: UI_STRINGS.companionMissingHint };
+        refreshMenu();
+        return;
+      }
+      let result;
+      try {
+        result = await companion.status();
+      } catch (error) {
+        result = { state: "error", error };
+      }
+      if (token !== menuToken || !menu) return;
+      if (result.state === "not-running") {
+        companionView = { phase: "missing", message: UI_STRINGS.companionMissingHint };
+        refreshMenu();
+        return;
+      }
+      if (result.state === "incompatible") {
+        companionView = { phase: "incompatible" };
+        refreshMenu();
+        return;
+      }
+      if (result.state === "not-paired") {
+        companionView = { phase: "not-paired" };
+        refreshMenu();
+        return;
+      }
+      if (result.state !== "ready") {
+        companionView = { phase: "error", message: companionIssueText(result.error) };
+        refreshMenu();
+        return;
+      }
+      companionView = { phase: "loading" };
+      refreshMenu();
+      try {
+        const analysis = await companion.analyze(watchUrl(videoId));
+        if (token !== menuToken || !menu) return;
+        companionView = { phase: "ready", analysis };
+      } catch (error) {
+        if (token !== menuToken || !menu) return;
+        companionView = error?.code === "UNAUTHORIZED" ? { phase: "not-paired" } : { phase: "error", message: companionIssueText(error) };
+      }
+      refreshMenu();
+    };
+    const submitPair = async (value, input, submit) => {
+      if (!companion || !menu) return;
+      const code = String(value || "").replace(/[^A-Za-z0-9]/g, "");
+      if (code.length !== 8) {
+        companionView = { phase: "not-paired", message: UI_TEXT.pairingInvalid, code: value };
+        refreshMenu();
+        return;
+      }
+      input.disabled = true;
+      submit.disabled = true;
+      submit.textContent = UI_STRINGS.companionPairing;
+      try {
+        await companion.pair(code);
+        if (!menu) return;
+        companionView = { phase: "loading" };
+        refreshMenu();
+        void inspectCompanion(menuVideoId, menuToken);
+      } catch (error) {
+        if (!menu) return;
+        companionView = { phase: "not-paired", message: pairIssueText(error), code: value };
+        refreshMenu();
+      }
+    };
+    const beginJob = (kind) => {
       if (activeJob) return null;
-      const job = { id: ++jobId, controller: new AbortController() };
+      const job = {
+        id: ++jobId,
+        kind,
+        controller: kind === "direct" ? new AbortController() : null,
+        companionId: null,
+        pollTimer: 0,
+        pollErrors: 0,
+        cancelling: false
+      };
       activeJob = job;
       return job;
     };
     const endJob = (job) => {
+      clearTimeout(job.pollTimer);
+      job.pollTimer = 0;
       if (activeJob === job) activeJob = null;
     };
-    const startDirect = async (format2, baseName) => {
-      const job = beginJob();
+    const abortActiveJob = () => {
+      const job = activeJob;
       if (!job) return;
+      activeJob = null;
+      clearTimeout(job.pollTimer);
+      job.pollTimer = 0;
+      if (job.kind === "direct") {
+        job.controller?.abort();
+        return;
+      }
+      if (job.companionId && companion) companion.cancel(job.companionId).catch(() => {
+      });
+    };
+    const startDirect = async (format2, baseName) => {
+      const job = beginJob("direct");
+      if (!job) {
+        toast?.show(UI_STRINGS.downloadBusy);
+        return;
+      }
       showProgress(UI_STRINGS.downloadingMp4);
       let lastPaint = 0;
       try {
@@ -3985,6 +4592,151 @@
       } catch (error) {
         failProgress(error);
       } finally {
+        endJob(job);
+      }
+    };
+    const updateCompanionProgress = (state) => {
+      const fraction = Number(state?.progress);
+      const value = Number.isFinite(fraction) ? fraction : 0;
+      setBar(value);
+      const details = [];
+      if (state?.speed) details.push(state.speed);
+      if (state?.eta) details.push(`ETA ${state.eta}`);
+      if (state?.totalBytes) details.push(formatBytes(state.totalBytes));
+      setStatus(UI_TEXT.companionProgress(Math.round(value * 100), details.join(" · ")));
+    };
+    const scheduleCompanionPoll = (job, delay) => {
+      clearTimeout(job.pollTimer);
+      job.pollTimer = setTimeout(() => {
+        void pollCompanion(job);
+      }, delay);
+    };
+    const pollCompanion = async (job) => {
+      if (activeJob !== job || !job.companionId || !companion) return;
+      let state;
+      try {
+        state = await companion.get(job.companionId);
+      } catch (error) {
+        if (activeJob !== job) return;
+        job.pollErrors += 1;
+        if (job.pollErrors >= 3 || error?.code === "UNAUTHORIZED" || error?.code === "NOT_PAIRED") {
+          if (error?.code === "UNAUTHORIZED") companionView = { phase: "not-paired" };
+          finishProgress(UI_TEXT.companionPollFailed(companionIssueText(error)), "error", 9e3);
+          toast?.show(UI_STRINGS.downloadFailedToast);
+          endJob(job);
+          return;
+        }
+        scheduleCompanionPoll(job, 1500);
+        return;
+      }
+      if (activeJob !== job) return;
+      job.pollErrors = 0;
+      if (state.state === "completed") {
+        setBar(1);
+        finishProgress(UI_TEXT.companionSaved(state.outputPath || ""), "done", 12e3);
+        endJob(job);
+        return;
+      }
+      if (state.state === "failed") {
+        finishProgress(UI_TEXT.downloadFailed(companionIssueText(state.error)), "error", 9e3);
+        toast?.show(UI_STRINGS.downloadFailedToast);
+        endJob(job);
+        return;
+      }
+      if (state.state === "cancelled") {
+        finishProgress(UI_STRINGS.downloadCancelled, "error", 1800);
+        endJob(job);
+        return;
+      }
+      updateCompanionProgress(state);
+      scheduleCompanionPoll(job, 700);
+    };
+    const startCompanion = async (options, title) => {
+      if (!companion) {
+        toast?.show(UI_STRINGS.companionMissing);
+        return;
+      }
+      const job = beginJob("companion");
+      if (!job) {
+        toast?.show(UI_STRINGS.downloadBusy);
+        return;
+      }
+      showProgress(UI_STRINGS.companionStarting);
+      const body = {
+        url: watchUrl(getVideoId()),
+        mode: options.mode,
+        title: cleanFileName(title) || void 0
+      };
+      if (options.mode === "video") {
+        body.quality = options.quality;
+        body.container = "mp4";
+      } else {
+        body.audioFormat = options.audioFormat;
+        body.audioQuality = 192;
+      }
+      try {
+        const created = await companion.start(body);
+        if (job.cancelling) {
+          job.companionId = created.id;
+          companion.cancel(created.id).catch(() => {
+          });
+          finishProgress(UI_STRINGS.downloadCancelled, "error", 1800);
+          endJob(job);
+          return;
+        }
+        if (activeJob !== job) {
+          companion.cancel(created.id).catch(() => {
+          });
+          return;
+        }
+        job.companionId = created.id;
+        updateCompanionProgress(created);
+        scheduleCompanionPoll(job, 700);
+      } catch (error) {
+        if (activeJob !== job) return;
+        if (job.cancelling) {
+          finishProgress(UI_STRINGS.downloadCancelled, "error", 1800);
+          endJob(job);
+          return;
+        }
+        if (error?.code === "UNAUTHORIZED") companionView = { phase: "not-paired" };
+        console.warn("YT SuperTool companion start failed:", error);
+        finishProgress(UI_TEXT.companionStartFailed(companionIssueText(error)), "error", 9e3);
+        toast?.show(UI_STRINGS.downloadFailedToast);
+        endJob(job);
+      }
+    };
+    const cancelCompanion = async () => {
+      const job = activeJob;
+      if (!job || job.kind !== "companion") {
+        removeProgress();
+        return;
+      }
+      if (job.cancelling) return;
+      job.cancelling = true;
+      clearTimeout(job.pollTimer);
+      job.pollTimer = 0;
+      if (progress) {
+        progress.dataset.state = "run";
+        setStatus(UI_STRINGS.companionCancelPending);
+      }
+      if (!job.companionId) return;
+      try {
+        const state = await companion.cancel(job.companionId);
+        if (activeJob !== job) return;
+        if (state.state === "cancelled") {
+          finishProgress(UI_STRINGS.downloadCancelled, "error", 1800);
+          endJob(job);
+          return;
+        }
+        scheduleCompanionPoll(job, 300);
+      } catch (error) {
+        if (activeJob !== job) return;
+        if (error?.status === 409 || error?.serverCode === "JOB_FINISHED") {
+          scheduleCompanionPoll(job, 300);
+          return;
+        }
+        finishProgress(UI_TEXT.companionPollFailed(companionIssueText(error)), "error", 9e3);
         endJob(job);
       }
     };
@@ -4044,7 +4796,8 @@
       const videoId = getVideoId();
       if (button && button.dataset.videoId !== videoId) {
         closeMenu();
-        activeJob?.controller.abort();
+        abortActiveJob();
+        if (progress) finishProgress(UI_STRINGS.downloadCancelled, "error", 1800);
       }
       if (!button) {
         const caret = createIcon("chevron", 14);
@@ -4084,8 +4837,7 @@
         clearTimeout(retryTimer);
         retryTimer = 0;
         retryCount = 0;
-        activeJob?.controller.abort();
-        activeJob = null;
+        abortActiveJob();
         closeMenu();
         removeProgress();
         removeButton();
@@ -4508,7 +5260,13 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
     const settings = createSettings({ storage: bridge.storage });
     await settings.load();
     const toast = createToast();
-    const features = createFeatures({ bridge, settings, toast });
+    const companion = createCompanionClient({
+      transport: bridge.companion.request,
+      storage: bridge.storage,
+      clientName: bridge.env === "mv2" || bridge.env === "mv3" ? bridge.env : "userscript",
+      clientVersion: bridge.version
+    });
+    const features = createFeatures({ bridge, settings, toast, companion });
     const update = createUpdateChecker({ bridge, toast, currentVersion: bridge.version });
     const panel = createPanel({
       settings,

@@ -67,6 +67,9 @@
   z-index: 2147483000;
   width: 288px;
   max-width: calc(100vw - 16px);
+  max-height: min(76vh, 620px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 6px 0;
   border-radius: 12px;
   background: #ffffff;
@@ -146,6 +149,57 @@
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   color: #909090;
   font-size: 11px;
+}
+
+.ytst-dl-state {
+  padding: 4px 16px 10px;
+  color: #606060;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ytst-dl-pair {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px 10px;
+}
+
+.ytst-dl-pair-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ytst-dl-pair-input:focus-visible {
+  outline: 2px solid #065fd4;
+  outline-offset: 1px;
+}
+
+.ytst-dl-pair-button {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #065fd4;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ytst-dl-pair-button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .ytst-dl-progress {
@@ -244,7 +298,9 @@ html[dark-theme] .ytst-dl-item-note,
 html[dark] .ytst-dl-item-meta,
 html[dark-theme] .ytst-dl-item-meta,
 html[dark] .ytst-dl-status,
-html[dark-theme] .ytst-dl-status {
+html[dark-theme] .ytst-dl-status,
+html[dark] .ytst-dl-state,
+html[dark-theme] .ytst-dl-state {
   color: #aaaaaa;
 }
 
@@ -274,6 +330,17 @@ html[dark-theme] .ytst-dl-cancel:hover {
 html[dark] .ytst-dl-bar,
 html[dark-theme] .ytst-dl-bar {
   background: rgba(255, 255, 255, 0.2);
+}
+
+html[dark] .ytst-dl-pair-input,
+html[dark-theme] .ytst-dl-pair-input {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+html[dark] .ytst-dl-pair-button,
+html[dark-theme] .ytst-dl-pair-button {
+  background: #3ea6ff;
+  color: #0f0f0f;
 }
 
 @media (max-width: 1000px) {

@@ -6,6 +6,7 @@
     "webRequest",
     "webRequestBlocking",
     "*://*.youtube.com/*",
+    "http://127.0.0.1/*",
     "https://returnyoutubedislikeapi.com/*",
     "https://sponsor.ajay.app/*",
     "https://raw.githubusercontent.com/*",

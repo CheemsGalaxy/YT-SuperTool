@@ -59,6 +59,18 @@ const checkSourceLayout = () => {
     'src/adapters/index.js',
     'src/adapters/userscript.adapter.js',
     'src/adapters/extension.adapter.js',
+    'src/adapters/local-fetch.js',
+    'src/core/companion/constants.js',
+    'src/core/companion/client.js',
+    'companion/package.json',
+    'companion/src/index.js',
+    'companion/src/server.js',
+    'companion/src/pairing.js',
+    'companion/src/url-policy.js',
+    'companion/src/settings.js',
+    'companion/src/jobs.js',
+    'companion/src/ytdlp.js',
+    'companion/src/binaries.js',
     'src/entries/userscript.entry.js',
     'src/entries/content.entry.js',
     'src/entries/main-world.entry.js',
@@ -154,7 +166,8 @@ const checkUserscript = (baseManifest) => {
     [/@grant\s+GM_setValue/, '@grant GM_setValue'],
     [/@grant\s+GM_addStyle/, '@grant GM_addStyle'],
     [/@grant\s+GM_xmlhttpRequest/, '@grant GM_xmlhttpRequest'],
-    [/@grant\s+unsafeWindow/, '@grant unsafeWindow']
+    [/@grant\s+unsafeWindow/, '@grant unsafeWindow'],
+    [/@connect\s+127\.0\.0\.1/, '@connect 127.0.0.1']
   ];
   for (const [pattern, label] of directives) {
     if (pattern.test(source)) pass(`metadata has ${label}`);
@@ -171,7 +184,9 @@ const checkUserscript = (baseManifest) => {
     ['ytst-switch-input', 'custom toggle switches'],
     ['ytst-header-button', 'header launcher'],
     ['GM_addStyle', 'GM_addStyle integration'],
-    ['unsafeWindow', 'unsafeWindow access']
+    ['unsafeWindow', 'unsafeWindow access'],
+    ['http://127.0.0.1:47831', 'loopback companion base url'],
+    ['X-YTST-Token', 'companion token header']
   ];
   for (const [marker, label] of markers) {
     if (source.includes(marker)) pass(`bundle includes ${label}`);
@@ -245,7 +260,7 @@ const checkBundles = (target) => {
   const contentPath = path.join(distDir, target, 'content.js');
   if (isFile(contentPath)) {
     const content = readText(contentPath);
-    for (const marker of ['ytst-header-button', 'ytp-ad-skip-button', 'ytd-ad-slot-renderer', 'ytst-switch-input']) {
+    for (const marker of ['ytst-header-button', 'ytp-ad-skip-button', 'ytd-ad-slot-renderer', 'ytst-switch-input', 'http://127.0.0.1:47831', 'X-YTST-Token']) {
       if (!content.includes(marker)) fail(`${target} content bundle is missing ${marker}`);
     }
   }
@@ -269,6 +284,14 @@ const checkBundles = (target) => {
   const popupCss = path.join(distDir, target, 'popup.css');
   if (isFile(popupCss) && !readText(popupCss).includes('popup-switch')) {
     fail(`${target} popup.css is not the redesigned stylesheet`);
+  }
+
+  const backgroundPath = path.join(distDir, target, 'background.js');
+  if (isFile(backgroundPath)) {
+    const background = readText(backgroundPath);
+    for (const marker of ['YT_SUPERTOOL_COMPANION', 'http://127.0.0.1:47831', 'x-ytst-token']) {
+      if (!background.includes(marker)) fail(`${target} background bundle is missing ${marker}`);
+    }
   }
 };
 
@@ -299,6 +322,17 @@ const checkExtension = (target, expectedVersion, baseManifest) => {
   const networkPermissions = target === 'mv2' ? manifest.permissions : manifest.host_permissions;
   for (const host of ['https://returnyoutubedislikeapi.com/*', 'https://sponsor.ajay.app/*']) {
     if (!networkPermissions?.includes(host)) fail(`${target} manifest is missing ${host}`);
+  }
+
+  if (!networkPermissions?.includes('http://127.0.0.1/*')) {
+    fail(`${target} manifest is missing the loopback companion permission`);
+  } else if (networkPermissions.some((entry) => {
+    const host = entry.match(/^[a-z*]+:\/\/([^/]+)\//)?.[1];
+    return host === '*' || host === '*.*';
+  })) {
+    fail(`${target} manifest must not request a wildcard host`);
+  } else {
+    pass('companion permission is pinned to 127.0.0.1');
   }
 
   if (target === 'mv2') {
@@ -373,6 +407,41 @@ const checkArchives = () => {
   }
 };
 
+const checkCompanion = () => {
+  console.log('\nCompanion');
+  const baseUrl = 'http://127.0.0.1:47831';
+  const constants = readText(path.join(srcDir, 'core', 'companion', 'constants.js'));
+  if (constants.includes(`'${baseUrl}'`)) pass(`client targets ${baseUrl}`);
+  else fail(`companion constants must pin ${baseUrl}`);
+
+  const client = readText(path.join(srcDir, 'core', 'companion', 'client.js'));
+  if (/\bfetch\s*\(/.test(client)) fail('companion core client must use the adapter transport, not fetch');
+  else pass('companion core client stays transport-only');
+
+  if (/https?:\/\/(?!127\.0\.0\.1)/.test(constants)) fail('companion constants must not name a remote host');
+  else pass('companion constants name no remote host');
+
+  const companionPackage = readJson(path.join(rootDir, 'companion', 'package.json'), 'companion package');
+  if (companionPackage) {
+    if (companionPackage.private !== true) fail('companion package must stay private');
+    if (companionPackage.type !== 'module') fail('companion package must use ESM');
+    const dependencies = Object.keys(companionPackage.dependencies || {});
+    if (dependencies.length) fail(`companion must not declare runtime dependencies: ${dependencies.join(', ')}`);
+    else pass('companion has no runtime dependencies');
+  }
+
+  const entry = readText(path.join(rootDir, 'companion', 'src', 'index.js'));
+  if (entry.includes("server.listen(port, '127.0.0.1')")) pass('companion listens on 127.0.0.1 only');
+  else fail('companion entry must bind 127.0.0.1 explicitly');
+  if (entry.includes('0.0.0.0')) fail('companion entry must not bind a wildcard address');
+
+  const server = readText(path.join(rootDir, 'companion', 'src', 'server.js'));
+  for (const [marker, label] of [['x-ytst-token', 'token header'], ['HOST_REJECTED', 'Host check'], ['ORIGIN_REJECTED', 'Origin check']]) {
+    if (server.includes(marker)) pass(`companion enforces the ${label}`);
+    else fail(`companion server is missing the ${label}`);
+  }
+};
+
 const main = () => {
   if (!existsSync(distDir)) {
     console.error('BUILD VERIFICATION FAILED\n- dist/ does not exist, run npm run build first');
@@ -388,6 +457,7 @@ const main = () => {
   }
 
   checkSourceLayout();
+  checkCompanion();
   checkUserscript(baseManifest);
   checkExtension('mv2', 2, baseManifest);
   checkExtension('mv3', 3, baseManifest);

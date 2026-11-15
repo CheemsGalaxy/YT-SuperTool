@@ -1,3 +1,5 @@
+import { companionUrl, requestCompanionDirect } from './local-fetch.js';
+
 const FALLBACK_VERSION = '2.4.3';
 const STORAGE_PREFIX = 'yt_supertool_';
 
@@ -177,12 +179,41 @@ export function createUserscriptBridge() {
     }
   };
 
+  const companion = {
+    request(options) {
+      if (!has('xmlHttpRequest')) return requestCompanionDirect(options);
+
+      const { path, method = 'GET', headers = {}, body, timeoutMs = 8000 } = options;
+      const data = body === undefined ? undefined : JSON.stringify(body);
+      const requestHeaders = data === undefined ? { ...headers } : { ...headers, 'Content-Type': 'application/json' };
+
+      return new Promise((resolve) => {
+        try {
+          call('xmlHttpRequest', {
+            url: companionUrl(path),
+            method,
+            headers: requestHeaders,
+            data,
+            responseType: 'json',
+            timeout: timeoutMs,
+            onload: (result) => resolve({ status: result.status, data: result.response ?? null }),
+            onerror: () => resolve({ status: 0, error: 'NOT_RUNNING' }),
+            ontimeout: () => resolve({ status: 0, error: 'TIMEOUT' })
+          });
+        } catch {
+          resolve({ status: 0, error: 'NOT_RUNNING' });
+        }
+      });
+    }
+  };
+
   return {
     env: 'userscript',
     version: typeof __VERSION__ !== 'undefined' ? __VERSION__ : FALLBACK_VERSION,
     storage,
     network,
     injector,
+    companion,
     mainWindow: typeof unsafeWindow !== 'undefined' ? unsafeWindow : globalThis,
     openExternal(url) {
       if (has('openInTab')) {

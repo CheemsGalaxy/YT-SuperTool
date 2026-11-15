@@ -1,4 +1,5 @@
 node_modules/
+companion/bin/
 .freebuff/
 .promo/
 coverage/
