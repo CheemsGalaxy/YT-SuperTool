@@ -6,9 +6,26 @@ import path from 'node:path';
 import { AppError } from './errors.js';
 import { assertOutputDirSafe } from './settings.js';
 import { parseYouTubeUrl } from './url-policy.js';
+import { describeYtdlpError } from './ytdlp.js';
 
 const FINISHED = new Set(['completed', 'failed', 'cancelled']);
 const PARTIAL = /\.(part|ytdl|temp|tmp)$/i;
+
+const fileError = (error) => {
+  switch (error?.code) {
+    case 'EACCES':
+    case 'EPERM':
+    case 'EROFS':
+      return new AppError('OUTPUT_DIR_INVALID', 'The output folder is not writable.');
+    case 'ENOSPC':
+      return new AppError('OUTPUT_DIR_INVALID', 'The output folder is out of free space.');
+    case 'ENOTDIR':
+    case 'ENAMETOOLONG':
+      return new AppError('OUTPUT_DIR_INVALID', 'The output folder is not usable.');
+    default:
+      return null;
+  }
+};
 
 const inside = (parent, child) => {
   const relative = path.relative(path.resolve(parent), path.resolve(child));
@@ -157,11 +174,14 @@ export const createJobManager = ({
   };
 
   const fail = (job, error) => {
+    let safe = error;
+    if (!(safe instanceof AppError)) {
+      safe = error?.code === 'ENOENT'
+        ? new AppError('YTDLP_MISSING')
+        : (fileError(error) ?? new AppError('DOWNLOAD_FAILED'));
+    }
     job.state = 'failed';
-    job.error = {
-      code: error?.code ?? 'DOWNLOAD_FAILED',
-      message: error?.message ?? 'Download failed.'
-    };
+    job.error = { code: safe.code, message: safe.message };
     touch(job);
   };
 
@@ -217,11 +237,8 @@ export const createJobManager = ({
         await cleanup(job);
       }
     } else {
-      const detail = job.stderr[job.stderr.length - 1];
-      fail(job, new AppError(
-        'DOWNLOAD_FAILED',
-        detail ? `yt-dlp: ${detail}` : `yt-dlp exited with code ${outcome.code ?? 'unknown'}.`
-      ));
+      const detail = job.stderr.slice(-6).join('\n');
+      fail(job, detail ? describeYtdlpError(detail) : new AppError('DOWNLOAD_FAILED'));
       await cleanup(job);
     }
 
@@ -268,14 +285,14 @@ export const createJobManager = ({
       });
 
       child.on('error', (error) => {
-        void finish(job, { error: new AppError('DOWNLOAD_FAILED', error.message) });
+        void finish(job, { error });
       });
 
       child.on('close', (code, signal) => {
         void finish(job, { code, signal });
       });
     } catch (error) {
-      fail(job, error instanceof AppError ? error : new AppError('DOWNLOAD_FAILED', error.message));
+      fail(job, error);
       await cleanup(job);
       prune();
       void pump();
@@ -331,7 +348,11 @@ export const createJobManager = ({
     const outputDir = await assertOutputDirSafe(settings.outputDir, homeDir);
     const id = randomUUID();
     const dir = path.join(outputDir, '.ytst-tmp', id);
-    await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+    try {
+      await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+    } catch (error) {
+      throw fileError(error) ?? new AppError('OUTPUT_DIR_INVALID', 'The output folder could not be created.');
+    }
 
     const timestamp = new Date(now()).toISOString();
     const job = {

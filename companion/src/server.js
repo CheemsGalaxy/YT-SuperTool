@@ -165,7 +165,7 @@ export const createServer = ({
           service: 'yt-super-tool-companion',
           companionVersion: version,
           apiVersion,
-          minimumClientVersion: '2.5.0'
+          minimumClientVersion: '2.4.3'
         }, headers);
         return;
       }
@@ -208,7 +208,7 @@ export const createServer = ({
         try {
           result = await ytdlp.analyzeVideo({ ytdlpPath: binaries.ytdlp.path, url: parsed.url });
         } catch (error) {
-          throw error instanceof AppError ? error : new AppError('ANALYZE_FAILED', error.message);
+          throw error instanceof AppError ? error : new AppError('ANALYZE_FAILED');
         }
         writeJson(res, 200, { ok: true, video: result.video, options: result.options }, headers);
         return;

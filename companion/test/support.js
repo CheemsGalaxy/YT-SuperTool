@@ -29,11 +29,11 @@ const fakeChild = () => {
   return child;
 };
 
-export const completingLauncher = ({ fileName = 'Sample [dQw4w9WgXcQ].mp4', content = 'video-data', fail = false } = {}) => (job) => {
+export const completingLauncher = ({ fileName = 'Sample [dQw4w9WgXcQ].mp4', content = 'video-data', fail = false, errorText = 'ERROR: broken pipe' } = {}) => (job) => {
   const child = fakeChild();
   setImmediate(async () => {
     child.stdout.write('[download]  50.0% of 10.00MiB at 2.00MiB/s ETA 00:05\n');
-    if (fail) child.stderr.write('ERROR: broken pipe\n');
+    if (fail) child.stderr.write(`${errorText}\n`);
     else await writeFile(path.join(job.dir, fileName), content);
     child.stdout.end();
     child.stderr.end();

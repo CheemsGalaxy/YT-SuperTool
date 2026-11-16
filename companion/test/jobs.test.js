@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import * as nodeFs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { createJobManager } from '../src/jobs.js';
@@ -13,11 +13,13 @@ import {
   waitFor
 } from './support.js';
 
+const { access, mkdir, readFile, rm, writeFile } = nodeFs;
+
 const VIDEO = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 const OTHER = 'https://www.youtube.com/watch?v=abcdefghijk';
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const setup = async (t, { launcher = completingLauncher(), binaries = availableBinaries(), settingsPatch = null, maxQueue = 20 } = {}) => {
+const setup = async (t, { launcher = completingLauncher(), binaries = availableBinaries(), settingsPatch = null, maxQueue = 20, fs = nodeFs } = {}) => {
   const home = await makeHome();
   const { settings } = await makeSettings(home);
   if (settingsPatch) await settings.update(settingsPatch);
@@ -28,7 +30,8 @@ const setup = async (t, { launcher = completingLauncher(), binaries = availableB
     ytdlp: { buildDownloadArgs, parseProgressLine },
     launcher,
     homeDir: home,
-    maxQueue
+    maxQueue,
+    fs
   });
 
   t.after(async () => {
@@ -117,8 +120,51 @@ test('records a failed download and removes the temporary directory', async (t) 
   const job = manager.get(created.id);
 
   assert.equal(job.error.code, 'DOWNLOAD_FAILED');
-  assert.match(job.error.message, /broken pipe/);
+  assert.equal(job.error.message, 'The connection to YouTube was interrupted. Try again.');
   assert.equal(job.outputPath, null);
+});
+
+test('reports a network failure without leaking signed urls', async (t) => {
+  const stderr = 'ERROR: Unable to download webpage: <urlopen error [Errno -2] Name or service not known> https://rr3.googlevideo.com/videoplayback?expire=1&sig=SECRET';
+  const { manager } = await setup(t, { launcher: completingLauncher({ fail: true, errorText: stderr }) });
+  const created = await manager.create({ url: VIDEO });
+
+  await waitFor(() => manager.get(created.id)?.state === 'failed');
+  const job = manager.get(created.id);
+
+  assert.equal(job.error.code, 'DOWNLOAD_FAILED');
+  assert.equal(job.error.message, 'The companion could not reach YouTube. Check the network connection.');
+  assert.doesNotMatch(job.error.message, /googlevideo|SECRET/);
+});
+
+test('reports a full disk as an unusable output folder', async (t) => {
+  const stderr = "ERROR: unable to write data: [Errno 28] No space left on device: 'C:\\\\Users\\\\Cheems\\\\Downloads\\\\YT SuperTool\\\\.ytst-tmp\\\\job\\\\file.part'";
+  const { manager } = await setup(t, { launcher: completingLauncher({ fail: true, errorText: stderr }) });
+  const created = await manager.create({ url: VIDEO });
+
+  await waitFor(() => manager.get(created.id)?.state === 'failed');
+  const job = manager.get(created.id);
+
+  assert.equal(job.error.code, 'OUTPUT_DIR_INVALID');
+  assert.equal(job.error.message, 'The output folder is out of free space.');
+  assert.doesNotMatch(job.error.message, /Cheems|ytst-tmp/);
+});
+
+test('reports a temporary folder that cannot be created', async (t) => {
+  const failure = new Error("EACCES: permission denied, mkdir 'C:\\Users\\Cheems\\Downloads\\YT SuperTool\\.ytst-tmp'");
+  failure.code = 'EACCES';
+  const fs = {
+    ...nodeFs,
+    mkdir: async () => {
+      throw failure;
+    }
+  };
+  const { manager } = await setup(t, { fs });
+
+  await assert.rejects(
+    () => manager.create({ url: VIDEO }),
+    (error) => error.code === 'OUTPUT_DIR_INVALID' && error.status === 503 && error.message === 'The output folder is not writable.'
+  );
 });
 
 test('does not overwrite an existing file', async (t) => {

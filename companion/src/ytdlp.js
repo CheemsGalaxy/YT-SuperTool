@@ -4,6 +4,34 @@ import { AppError } from './errors.js';
 const MAX_STDOUT = 10 * 1024 * 1024;
 const PRESET_HEIGHTS = [2160, 1440, 1080, 720, 480, 360];
 
+const ERROR_RULES = [
+  { code: 'OUTPUT_DIR_INVALID', message: 'The output folder is out of free space.', pattern: /no space left on device|enospc|disk quota exceeded|not enough space|winerror 112/i },
+  { code: 'OUTPUT_DIR_INVALID', message: 'The output folder is not writable.', pattern: /permission denied|eacces|eperm|winerror 5\b|access is denied/i },
+  { code: 'YTDLP_MISSING', message: 'The companion cannot start its download tool.', pattern: /spawn .*enoent|is not recognized as an internal|no such file or directory/i },
+  { message: 'The connection to YouTube was interrupted. Try again.', pattern: /broken pipe|connection closed|incomplete read/i },
+  { message: 'YouTube refused this download (HTTP 403).', pattern: /http error 403|403: forbidden/i },
+  { message: 'YouTube is limiting requests right now. Try again later.', pattern: /http error 429|too many requests|rate limit/i },
+  { message: 'YouTube asked for a bot check, and the companion does not use YouTube cookies.', pattern: /not a bot|captcha|confirm your identity/i },
+  { message: 'This video is age restricted, and the companion does not use YouTube cookies.', pattern: /confirm your age|age.?restrict/i },
+  { message: 'This video is private.', pattern: /private video|this video is private/i },
+  { message: 'This video is for channel members only.', pattern: /members.?only|join this channel/i },
+  { message: 'This video is not available in your country.', pattern: /not available in your country|geo.?restrict/i },
+  { message: 'This video has not started yet.', pattern: /will begin in|premieres in|this live event/i },
+  { message: 'This video is not available.', pattern: /video unavailable|no longer available|has been removed|removed by the uploader|account .*terminated/i },
+  { message: 'This video is DRM protected and cannot be downloaded.', pattern: /\bdrm\b/i },
+  { message: 'No downloadable format matches the selected quality.', pattern: /requested format is not available|no video formats found/i },
+  { message: 'FFmpeg could not process this download.', pattern: /ffmpeg|ffprobe|postprocess|conversion failed/i },
+  { message: 'The companion could not reach YouTube. Check the network connection.', pattern: /unable to download|getaddrinfo|enotfound|econnreset|econnrefused|connection reset|connection aborted|network is unreachable|name resolution|timed out|timeout/i }
+];
+
+export const describeYtdlpError = (text, { code = 'DOWNLOAD_FAILED' } = {}) => {
+  const source = String(text ?? '');
+  for (const rule of ERROR_RULES) {
+    if (rule.pattern.test(source)) return new AppError(rule.code ?? code, rule.message);
+  }
+  return new AppError(code);
+};
+
 export const buildBaseArgs = () => [
   '--ignore-config',
   '--no-exec',
@@ -160,7 +188,11 @@ export const analyzeVideo = ({ ytdlpPath, url, timeoutMs = 30000, spawnImpl = sp
   const timer = setTimeout(() => finish(new AppError('ANALYZE_TIMEOUT')), timeoutMs);
   timer.unref?.();
 
-  child.on('error', (error) => finish(new AppError('ANALYZE_FAILED', `yt-dlp could not start: ${error.message}`)));
+  child.on('error', (error) => finish(
+    error?.code === 'ENOENT'
+      ? new AppError('YTDLP_MISSING')
+      : new AppError('ANALYZE_FAILED', 'yt-dlp could not start.')
+  ));
 
   child.stdout?.setEncoding('utf8');
   child.stdout?.on('data', (chunk) => {
@@ -181,8 +213,8 @@ export const analyzeVideo = ({ ytdlpPath, url, timeoutMs = 30000, spawnImpl = sp
   child.on('close', (code) => {
     if (settled) return;
     if (code !== 0) {
-      const last = stderr.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).pop();
-      finish(new AppError('ANALYZE_FAILED', last ? `yt-dlp: ${last}` : 'yt-dlp could not read this video.'));
+      const detail = stderr.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(-6).join('\n');
+      finish(detail ? describeYtdlpError(detail, { code: 'ANALYZE_FAILED' }) : new AppError('ANALYZE_FAILED'));
       return;
     }
 

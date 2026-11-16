@@ -108,6 +108,15 @@ test('health is public and reports version data', async (t) => {
   assert.equal(result.headers.get('cache-control'), 'no-store');
 });
 
+test('version payload names a client version the extension meets', async (t) => {
+  const { base } = await startApp(t);
+  const result = await request(base, '/api/version');
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.companionVersion, '1.0.0');
+  assert.equal(result.body.minimumClientVersion, '2.4.3');
+});
+
 test('pair flow rejects a wrong code and accepts a valid one once', async (t) => {
   const { base, pairing } = await startApp(t);
   const { code } = pairing.startPairing();

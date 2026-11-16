@@ -1,14 +1,35 @@
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
 import test from 'node:test';
 import {
+  analyzeVideo,
   buildAnalyzeArgs,
   buildDownloadArgs,
   buildOptions,
+  describeYtdlpError,
   parseProgressLine,
   summarizeInfo
 } from '../src/ytdlp.js';
 
 const VIDEO = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+
+const fakeSpawn = ({ code = 1, stdout = '', stderr = '' } = {}) => () => {
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  child.kill = () => {};
+  let pending = 2;
+  const done = () => {
+    pending -= 1;
+    if (pending === 0) child.emit('close', code, null);
+  };
+  child.stdout.on('end', done);
+  child.stderr.on('end', done);
+  child.stdout.end(stdout);
+  child.stderr.end(stderr);
+  return child;
+};
 
 test('analyze arguments pin safe flags and the url', () => {
   const args = buildAnalyzeArgs(VIDEO);
@@ -115,4 +136,42 @@ test('summarizes analyze metadata and builds presets', () => {
 test('offers only the best preset when heights are unknown', () => {
   const options = buildOptions({ heights: [] });
   assert.deepEqual(options.video.map((item) => item.quality), ['best']);
+});
+
+test('classifies yt-dlp failures without echoing raw output', () => {
+  const disk = describeYtdlpError("ERROR: [Errno 28] No space left on device: '/home/user/file.part'");
+  assert.equal(disk.code, 'OUTPUT_DIR_INVALID');
+  assert.equal(disk.message, 'The output folder is out of free space.');
+
+  const permission = describeYtdlpError('ERROR: unable to open for writing: [Errno 13] Permission denied');
+  assert.equal(permission.code, 'OUTPUT_DIR_INVALID');
+  assert.equal(permission.message, 'The output folder is not writable.');
+
+  const forbidden = describeYtdlpError('ERROR: unable to download video data: HTTP Error 403: Forbidden');
+  assert.equal(forbidden.code, 'DOWNLOAD_FAILED');
+  assert.equal(forbidden.message, 'YouTube refused this download (HTTP 403).');
+
+  const unknown = describeYtdlpError('ERROR: something new happened');
+  assert.equal(unknown.code, 'DOWNLOAD_FAILED');
+  assert.equal(unknown.message, 'Download failed.');
+});
+
+test('analyze reports a safe message when yt-dlp fails', async () => {
+  const stderr = 'ERROR: unable to download video data: HTTP Error 403: Forbidden https://rr3.googlevideo.com/videoplayback?sig=SECRET';
+  const promise = analyzeVideo({ ytdlpPath: 'yt-dlp', url: VIDEO, spawnImpl: fakeSpawn({ stderr }) });
+  await assert.rejects(promise, (error) => {
+    assert.equal(error.code, 'ANALYZE_FAILED');
+    assert.equal(error.message, 'YouTube refused this download (HTTP 403).');
+    assert.doesNotMatch(error.message, /googlevideo|SECRET/);
+    return true;
+  });
+});
+
+test('analyze keeps its default message for unknown failures', async () => {
+  const promise = analyzeVideo({ ytdlpPath: 'yt-dlp', url: VIDEO, spawnImpl: fakeSpawn({ stderr: 'ERROR: something new happened' }) });
+  await assert.rejects(promise, (error) => {
+    assert.equal(error.code, 'ANALYZE_FAILED');
+    assert.equal(error.message, 'yt-dlp could not read this video.');
+    return true;
+  });
 });
