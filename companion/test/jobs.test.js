@@ -57,6 +57,20 @@ test('moves a finished download into the output directory', async (t) => {
   assert.equal(job.totalBytes, 10);
 });
 
+test('download uses the configured cookie source', async (t) => {
+  const calls = [];
+  const launcher = (job, binaryPath, args) => {
+    calls.push({ binaryPath, args });
+    return completingLauncher()(job);
+  };
+  const { manager } = await setup(t, { launcher, settingsPatch: { cookiesFromBrowser: 'firefox' } });
+  const created = await manager.create({ url: VIDEO, mode: 'video', quality: '360', container: 'mp4' });
+
+  await waitFor(() => manager.get(created.id)?.state === 'completed');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].args[calls[0].args.indexOf('--cookies-from-browser') + 1], 'firefox');
+});
+
 test('rejects a duplicate job for the same video', async (t) => {
   const { manager } = await setup(t, { launcher: stuckLauncher() });
   const first = await manager.create({ url: VIDEO });

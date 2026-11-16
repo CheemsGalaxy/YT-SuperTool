@@ -206,7 +206,11 @@ export const createServer = ({
         if (!binaries?.ytdlp?.available) throw new AppError('YTDLP_MISSING');
         let result;
         try {
-          result = await ytdlp.analyzeVideo({ ytdlpPath: binaries.ytdlp.path, url: parsed.url });
+          result = await ytdlp.analyzeVideo({
+            ytdlpPath: binaries.ytdlp.path,
+            url: parsed.url,
+            cookiesFromBrowser: settings.get().cookiesFromBrowser ?? null
+          });
         } catch (error) {
           throw error instanceof AppError ? error : new AppError('ANALYZE_FAILED');
         }

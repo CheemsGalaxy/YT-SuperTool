@@ -11,8 +11,9 @@ implementation must keep.
 - The one-time pairing code.
 - The output directory and downloaded files.
 - The yt-dlp and FFmpeg binaries.
-- The user's browser session and YouTube cookies, which the companion never
-  receives.
+- The user's browser cookie store, which yt-dlp reads only when the user turns
+  on the optional browser cookie source. The companion does not store a cookie
+  value.
 
 ## Trust boundaries
 
@@ -25,8 +26,18 @@ implementation must keep.
 | yt-dlp and FFmpeg child processes | Trusted binaries, untrusted media input |
 | Output directory | User controlled path, validated per job |
 
-The companion never reads browser cookies, YouTube credentials or page storage.
-It receives only a normalized YouTube URL and download presets.
+By default the companion receives no cookies. The user can opt in from the
+installed **Browser cookies** shortcut and choose one browser. The companion
+stores only that browser name and passes
+`--cookies-from-browser <name>` to yt-dlp. The companion process does not open
+the cookie store itself. yt-dlp reads the store of the chosen browser and uses
+the cookies for YouTube requests. Cookie values never enter the companion
+settings file, API responses or logs. A local process running as the same user
+can still read the same browser store; the opt-in does not change that.
+
+The cookie source is a convenience for the user's own signed-in session. It is
+not an authentication bypass and does not unlock content the user cannot play
+in that browser.
 
 ## Threats and controls
 
@@ -52,6 +63,8 @@ It receives only a normalized YouTube URL and download presets.
 | Unsigned update | No automatic binary update in the MVP. A future updater must verify a signed manifest. |
 | Error message leak | Responses carry a stable code and a short message. Stack traces stay in local debug logs only. |
 | Log growth | In-memory ring buffer, 200 entries, no file log by default. |
+| Browser cookie exposure | Cookie source is off by default and limited to an allowlist of browser names. The companion stores no cookie value, returns none through the API and keeps cookies out of logs. yt-dlp reads the store directly. |
+| Cookie database locked or encrypted | yt-dlp reports a read failure; the companion returns a short message that asks the user to close the browser or choose another one. It does not fall back to a different browser. |
 | Unnecessary permissions | Add only `http://127.0.0.1/*` to extensions and `@connect 127.0.0.1` to the userscript. |
 | Service exposed to LAN | Bind to `127.0.0.1` only. No `0.0.0.0`, no IPv6 wildcard, no UPnP. |
 
@@ -99,8 +112,8 @@ origin.
 ## Process execution
 
 yt-dlp arguments are fixed by mode and presets. The only values interpolated
-into arguments are validated enums and a normalized URL. FFmpeg is called by
-yt-dlp, not by a user supplied command line.
+into arguments are validated enums, a normalized URL and the optional cookie
+source name. FFmpeg is called by yt-dlp, not by a user supplied command line.
 
 Required flags include:
 
@@ -110,7 +123,12 @@ Required flags include:
 --no-playlist
 --no-warnings
 --newline
+--js-runtimes node:<path>
 ```
+
+When the user turns on browser cookies, the companion adds
+`--cookies-from-browser <name>`. The name must be one of the allowlisted
+browsers. The flag does not accept a path or extra yt-dlp arguments.
 
 The process runs with `windowsHide: true`, a minimal environment and a working
 directory inside the job temporary folder. Standard output and standard error
@@ -155,6 +173,10 @@ query string removed. Error stacks are available only with `--debug`.
 - A local process running as the same user can read browser storage and the
   companion data directory. The design does not defend against a compromised
   local account.
+- When browser cookies are enabled, the browser cookie store holds bearer
+  credentials. Another process running as the same user can read the same
+  store. The companion limits the source to one allowlisted browser name and
+  does not copy or persist cookie values.
 - A local process can probe the loopback port and attempt pairing. The code
   TTL, attempt limit and single use reduce the window but do not remove it.
 - yt-dlp and FFmpeg parse untrusted media. Keep them updated and verify
@@ -169,9 +191,11 @@ query string removed. Error stacks are available only with `--debug`.
 
 ## Out of scope
 
-- DRM, paywall, authentication or access-control bypass.
+- DRM, paywall, authentication or access-control bypass. A cookie source only
+  proves the user's own signed-in session to YouTube.
 - Downloading private, age restricted or region blocked content the user cannot
   play in the browser.
+- Sharing or exporting a browser session, or using cookies from another user.
 - Arbitrary shell execution, arbitrary URL fetching or arbitrary file access.
 - Multi-user or LAN operation.
 - A remote pairing service.
@@ -186,5 +210,7 @@ query string removed. Error stacks are available only with `--debug`.
 - A crafted `outputDir` with `..` or a root path is rejected.
 - A finished path outside the job directory is rejected.
 - A binary hash mismatch stops startup.
-- Logs contain no token, code or query string.
+- The cookie source defaults to off and rejects names outside the allowlist.
+- A cookie-enabled start passes only `--cookies-from-browser <allowlisted>`.
+- Logs contain no token, code, cookie value or query string.
 - `npm run build:verify` passes for all targets.

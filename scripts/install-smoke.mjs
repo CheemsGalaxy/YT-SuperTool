@@ -204,7 +204,7 @@ const main = async () => {
     console.log('package extracted');
 
     scripts = await writeScripts(work);
-    for (const relative of ['install/install.ps1', 'install/pair.ps1', 'install/status.ps1', 'install/uninstall.ps1', 'install/launch-hidden.vbs', 'package-manifest.json', 'Install YT SuperTool Companion.cmd']) {
+    for (const relative of ['install/install.ps1', 'install/pair.ps1', 'install/status.ps1', 'install/cookies.ps1', 'install/uninstall.ps1', 'install/launch-hidden.vbs', 'package-manifest.json', 'Install YT SuperTool Companion.cmd']) {
       const info = await stat(path.join(stage, relative)).catch(() => null);
       expect(info?.isFile(), `package is missing ${relative}`);
     }
@@ -246,6 +246,7 @@ const main = async () => {
     const desktopNames = [
       'YT SuperTool - Pair browser.lnk',
       'YT SuperTool - Status.lnk',
+      'YT SuperTool - Browser cookies.lnk',
       'YT SuperTool - Open downloads.lnk',
       'YT SuperTool - Uninstall.lnk'
     ];
@@ -255,6 +256,8 @@ const main = async () => {
     }
     const pairShortcut = await inspectShortcut(scripts.inspect, path.join(desktopDir, desktopNames[0]));
     expect(pairShortcut.target.toLowerCase().includes('pair.cmd'), `pair shortcut target ${pairShortcut.target}`);
+    const cookieShortcut = await inspectShortcut(scripts.inspect, path.join(desktopDir, desktopNames[2]));
+    expect(cookieShortcut.target.toLowerCase().includes('cookies.cmd'), `cookie shortcut target ${cookieShortcut.target}`);
     console.log('desktop shortcuts ok');
 
     const pair = await runPowerShell(path.join(installDir, 'install', 'pair.ps1'), [], { cwd: installDir });
@@ -298,6 +301,18 @@ const main = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1200));
     expect(await processCount(scripts.processes, config.appEntry) === 1, 'a second hidden launch started a duplicate companion');
     console.log('duplicate launch guard ok');
+
+    const cookiesOn = await runPowerShell(path.join(installDir, 'install', 'cookies.ps1'), ['-Source', 'edge'], { cwd: installDir });
+    expect(cookiesOn.code === 0, `cookie script failed with ${cookiesOn.code}: ${cookiesOn.stderr.trim()}`);
+    const cookieSettings = await readJsonText(path.join(dataDir, 'settings.json'));
+    expect(cookieSettings.cookiesFromBrowser === 'edge', `cookie setting is ${cookieSettings.cookiesFromBrowser}`);
+    const afterCookies = await waitForHealth(base);
+    expect(afterCookies.paired === true, 'cookie change lost the pairing token');
+    const cookiesOff = await runPowerShell(path.join(installDir, 'install', 'cookies.ps1'), ['-Source', 'off'], { cwd: installDir });
+    expect(cookiesOff.code === 0, `cookie reset failed with ${cookiesOff.code}: ${cookiesOff.stderr.trim()}`);
+    const resetSettings = await readJsonText(path.join(dataDir, 'settings.json'));
+    expect(resetSettings.cookiesFromBrowser === null, `cookie reset left ${resetSettings.cookiesFromBrowser}`);
+    console.log('browser cookie setting ok');
 
     const uninstall = await runPowerShell(path.join(installDir, 'install', 'uninstall.ps1'), ['-Force'], { cwd: installDir });
     expect(uninstall.code === 0, `uninstall failed with ${uninstall.code}: ${uninstall.stderr.trim()}`);

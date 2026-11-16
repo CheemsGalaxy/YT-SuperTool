@@ -8,6 +8,7 @@ export const VIDEO_CONTAINERS = ['mp4', 'mkv'];
 export const AUDIO_FORMATS = ['mp3', 'm4a'];
 export const AUDIO_QUALITIES = [128, 192, 256, 320];
 export const CONCURRENT_LIMITS = [1, 2];
+export const COOKIE_BROWSERS = ['chrome', 'chromium', 'edge', 'brave', 'firefox', 'opera', 'vivaldi'];
 
 export const defaultOutputDir = (homeDir = os.homedir()) => path.join(homeDir, 'Downloads', 'YT SuperTool');
 
@@ -62,7 +63,8 @@ export const createSettings = ({ store, homeDir = os.homedir() }) => {
     videoContainer: 'mp4',
     audioFormat: 'mp3',
     audioQuality: 192,
-    concurrentDownloads: 1
+    concurrentDownloads: 1,
+    cookiesFromBrowser: null
   });
 
   let current = defaults();
@@ -79,6 +81,8 @@ export const createSettings = ({ store, homeDir = os.homedir() }) => {
     if (AUDIO_FORMATS.includes(candidate.audioFormat)) result.audioFormat = candidate.audioFormat;
     if (AUDIO_QUALITIES.includes(Number(candidate.audioQuality))) result.audioQuality = Number(candidate.audioQuality);
     if (CONCURRENT_LIMITS.includes(Number(candidate.concurrentDownloads))) result.concurrentDownloads = Number(candidate.concurrentDownloads);
+    if (candidate.cookiesFromBrowser === null) result.cookiesFromBrowser = null;
+    if (COOKIE_BROWSERS.includes(candidate.cookiesFromBrowser)) result.cookiesFromBrowser = candidate.cookiesFromBrowser;
 
     return result;
   };
@@ -122,6 +126,12 @@ export const createSettings = ({ store, homeDir = os.homedir() }) => {
           next.concurrentDownloads = numeric;
           break;
         }
+        case 'cookiesFromBrowser':
+          if (value !== null && !COOKIE_BROWSERS.includes(value)) {
+            throw new AppError('BAD_REQUEST', 'Unknown cookie source.');
+          }
+          next.cookiesFromBrowser = value;
+          break;
         default:
           throw new AppError('BAD_REQUEST', `Unknown setting: ${key}`);
       }

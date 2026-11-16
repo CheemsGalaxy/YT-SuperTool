@@ -12,8 +12,8 @@ are inside the package, so nothing else needs to be installed.
 
 ```
 companion/dist/yt-supertool-companion-1.0.0-win32-x64.zip
-size    132,222,710 bytes
-sha256  849c6b6906730bf1decaf6c095748c4f5e4b59e455631ed1190db64dcaecca7d
+size    132,225,619 bytes
+sha256  423daa51709aef59cb91c662814f6b956553a83e459ebcb62bd34cb5a8d8a816
 ```
 
 The zip is a build artifact and is not committed. `npm run package:companion`
@@ -27,22 +27,26 @@ recreates it, and `npm run smoke:companion` checks the unpacked copy.
 - Video presets from 360p to 2160p and "best available", MP4 output.
 - MP3 at 192 kbps and M4A at best quality.
 - Two concurrent jobs, progress, speed, ETA, cancel, no overwrite.
+- Optional browser cookie source for YouTube bot checks and age checks, off by
+  default. Only the allowlisted browser name is stored.
 - Per-job temporary folder and cleanup after completion, failure or cancel.
 - Bounded logs with token, pairing code and query string redaction.
 - Packaged Node.js v26.13.1, yt-dlp 2026.10.26 and BtbN LGPL FFmpeg
   `N-128909-g604ef3784d-20261114`.
 - Third-party licenses and an SHA-256 manifest for every bundled binary.
-- PowerShell installer with a startup shortcut, hidden launch at sign-in, four
+- PowerShell installer with a startup shortcut, hidden launch at sign-in, five
   desktop shortcuts and an uninstaller. No administrator rights, no service,
   no registry value.
-- Package manifest with the SHA-256 of all 43 files, checked before install.
+- Package manifest with the SHA-256 of all 45 files, checked before install.
 
 ### Install
 
 See `INSTALL_WINDOWS.md`. Extract the zip, run
 `Install YT SuperTool Companion.cmd`, then enter the printed code in the
 Download menu. The installer prints the code once and starts the companion in
-the background. Later sign-ins start it from the Startup shortcut.
+the background. Later sign-ins start it from the Startup shortcut. If YouTube
+asks for a bot check, run the Browser cookies shortcut and choose a browser
+where you are signed in.
 
 ### Verified targets
 
@@ -52,11 +56,13 @@ the background. Later sign-ins start it from the Startup shortcut.
 | Edge 157 MV3 without companion | Missing-companion message, direct MP4 saved |
 | Firefox 160 MV2 | Pair, analyze, 360p download, direct MP4 fallback |
 | Edge 157 userscript build with GM shims | Pair, analyze, 360p download |
-| Windows x64 installer | Install, pair, 360p download, stop, startup relaunch, duplicate launch guard, update over an existing install, uninstall |
+| Source companion with Firefox cookies | Pair, settings update, analyze, 360p download, 46,283,922 bytes |
+| Windows x64 installer | Install, pair, 360p download, stop, startup relaunch, duplicate launch guard, browser cookie setting, update over an existing install, uninstall |
 
-The packaged smoke test also covers a real 360p download, a cancelled job, a
-read-only output folder, a wrong pairing code, token revocation and the empty
-temporary folder check. Details and exact counts are in `TEST_MATRIX.md`.
+The packaged smoke test also covers a real 360p download of 46,283,922 bytes,
+a cancelled job, a read-only output folder, a wrong pairing code, token
+revocation and the empty temporary folder check. Details and exact counts are
+in `TEST_MATRIX.md`.
 
 ### Known limitations
 
@@ -64,8 +70,10 @@ temporary folder check. Details and exact counts are in `TEST_MATRIX.md`.
 - The launcher and the installer are not code signed.
 - The startup shortcut was tested by starting it manually. A real logoff and
   logon on a fresh session was not recorded.
-- The companion does not use YouTube cookies, so private, age-restricted,
-  members-only and region-locked videos fail with a message.
+- Browser cookies are off by default. Edge, Chrome and Brave can lock the
+  cookie database or protect it with app-bound encryption, so yt-dlp may fail
+  to read it. Firefox is the fallback. The bot-check path was not reproduced on
+  demand; the cookie argument path was tested with a real Firefox store.
 - No proxy setting.
 - The extension always connects to port 47831. The `--port` flag changes the
   server port for manual use, but the Download menu cannot follow it.

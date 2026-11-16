@@ -252,6 +252,7 @@ export const createJobManager = ({
 
     try {
       const outputTemplate = path.join(job.dir, '%(title).120B [%(id)s].%(ext)s');
+      const settings = getSettings();
       const args = ytdlp.buildDownloadArgs({
         url: job.url,
         mode: job.mode,
@@ -260,7 +261,8 @@ export const createJobManager = ({
         audioFormat: job.audioFormat,
         audioQuality: job.audioQuality,
         outputTemplate,
-        ffmpegDir: binaries.ffmpeg?.path ? path.dirname(binaries.ffmpeg.path) : null
+        ffmpegDir: binaries.ffmpeg?.path ? path.dirname(binaries.ffmpeg.path) : null,
+        cookiesFromBrowser: settings?.cookiesFromBrowser ?? null
       });
 
       const child = launcher(job, binaries.ytdlp.path, args);

@@ -10,12 +10,23 @@ if (-not (Test-Path -LiteralPath $pathsPath -PathType Leaf)) {
 $config = Read-CompanionPaths -Path $pathsPath
 $health = Wait-CompanionHealth -Port ([int]$config.port) -TimeoutSeconds 3
 $outputDir = Get-CompanionOutputDir -DataDir $config.dataDir
+$cookies = 'off'
+$settingsPath = Join-Path $config.dataDir 'settings.json'
+if (Test-Path -LiteralPath $settingsPath -PathType Leaf) {
+  try {
+    $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+    if ($settings.cookiesFromBrowser) {
+      $cookies = [string]$settings.cookiesFromBrowser
+    }
+  } catch {}
+}
 
 Write-Host "YT SuperTool Companion $($config.version)"
 Write-Host "Program: $($config.installDir)"
 Write-Host "Data:    $($config.dataDir)"
 Write-Host "Port:    $($config.port)"
 Write-Host "Output:  $outputDir"
+Write-Host "Cookies: $cookies"
 
 if ($config.startupShortcut) {
   if (Test-Path -LiteralPath $config.startupShortcut -PathType Leaf) {

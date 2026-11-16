@@ -31,7 +31,28 @@ function Move-DirectoryWithRetry {
     }
   }
 
-  throw "Could not move $From to $To"
+  throw "Could not move $From to $To. Close any Explorer window that shows the folder, then run the installer again."
+}
+
+function Close-CompanionExplorerWindows {
+  param([string]$Path)
+
+  $root = [System.IO.Path]::GetFullPath($Path).TrimEnd('\')
+  try {
+    $shell = New-Object -ComObject Shell.Application
+    foreach ($window in @($shell.Windows())) {
+      try {
+        $url = [string]$window.LocationURL
+        if (-not $url) {
+          continue
+        }
+        $local = [System.IO.Path]::GetFullPath(([uri]$url).LocalPath).TrimEnd('\')
+        if ($local -eq $root -or $local.StartsWith($root + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+          $window.Quit()
+        }
+      } catch {}
+    }
+  } catch {}
 }
 
 $tempRoot = $null
@@ -163,6 +184,7 @@ try {
   $shortcutNames = @(
     'YT SuperTool - Pair browser.lnk',
     'YT SuperTool - Status.lnk',
+    'YT SuperTool - Browser cookies.lnk',
     'YT SuperTool - Open downloads.lnk',
     'YT SuperTool - Uninstall.lnk'
   )
@@ -187,6 +209,9 @@ try {
   }
 
   Stop-Companion -AppEntry $targetAppEntry
+  if (Test-Path -LiteralPath $target) {
+    Close-CompanionExplorerWindows -Path $target
+  }
 
   $movedOld = $false
   try {
@@ -244,6 +269,7 @@ try {
     New-Item -ItemType Directory -Force -Path $DesktopDir | Out-Null
     New-CompanionShortcut -Path (Join-Path $DesktopDir 'YT SuperTool - Pair browser.lnk') -TargetPath (Join-Path $target 'install\pair.cmd') -WorkingDirectory $target -IconLocation $icon -Description 'Pair the YT SuperTool extension with the companion'
     New-CompanionShortcut -Path (Join-Path $DesktopDir 'YT SuperTool - Status.lnk') -TargetPath (Join-Path $target 'install\status.cmd') -WorkingDirectory $target -IconLocation $icon -Description 'Show the companion status'
+    New-CompanionShortcut -Path (Join-Path $DesktopDir 'YT SuperTool - Browser cookies.lnk') -TargetPath (Join-Path $target 'install\cookies.cmd') -WorkingDirectory $target -IconLocation $icon -Description 'Choose the browser whose YouTube cookies the companion may use'
     New-CompanionShortcut -Path (Join-Path $DesktopDir 'YT SuperTool - Open downloads.lnk') -TargetPath (Join-Path $target 'install\open-downloads.cmd') -WorkingDirectory $target -IconLocation $icon -Description 'Open the YT SuperTool download folder'
     New-CompanionShortcut -Path (Join-Path $DesktopDir 'YT SuperTool - Uninstall.lnk') -TargetPath (Join-Path $target 'install\uninstall.cmd') -WorkingDirectory $target -IconLocation $icon -Description 'Remove YT SuperTool Companion'
   }

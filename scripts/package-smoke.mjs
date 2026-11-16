@@ -128,6 +128,8 @@ const checkLayout = async (stage) => {
     'install/pair.cmd',
     'install/status.ps1',
     'install/status.cmd',
+    'install/cookies.ps1',
+    'install/cookies.cmd',
     'install/open-downloads.ps1',
     'install/open-downloads.cmd',
     'install/companion-common.ps1',

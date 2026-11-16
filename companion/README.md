@@ -18,6 +18,7 @@ record in `TEST_MATRIX.md`.
 - YouTube URL policy for watch, Shorts, live, embed and youtu.be links.
 - Job queue with preset quality, progress polling and cancel.
 - yt-dlp for metadata and download, FFmpeg for merge and MP3 extraction.
+- Optional browser cookie source for YouTube bot checks, off by default.
 - Per-job temporary folder, final move into the output folder, no overwrite.
 - Bounded logs with token, pairing code and query string redaction.
 
@@ -68,6 +69,7 @@ Useful flags:
 --port <number>       Loopback port, default 47831
 --data-dir <path>     Settings and token storage, default ~/.yt-super-tool
 --output-dir <path>   Download folder inside the user home
+--set-cookies <name>  Save a cookie source and exit; use off to disable
 --pair                Print a new pairing code when already paired
 --pair-code-file <p>  Also write the current pairing code to a file
 --self-test           Local checks without downloading media
@@ -86,20 +88,21 @@ by the `Origin` allowlist and the `Host` check, not by CORS alone.
 
 ## Test status
 
-Recorded on 2026-11-15, Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64,
+Recorded on 2026-11-16, Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64,
 Node v26.13.0 for development and v26.13.1 in the package.
 
 | Check | Result |
 |---|---|
-| `npm test` in `companion/` | 62 tests pass, 0 fail |
+| `npm test` in `companion/` | 66 tests pass, 0 fail |
 | `npm test` in the repository root | 23 tests pass, 0 fail |
 | `npm run self-test` | 7 checks pass |
 | Entry smoke test | Health, pairing code, token issue, settings read, code reuse 410, foreign Origin 403 |
 | yt-dlp 2026.10.26 analyze | Big Buck Bunny metadata and seven video presets |
-| Source video download, 360p MP4 | 24.59 MiB |
+| Source video download, 360p MP4 | 46,283,922 bytes |
 | Source audio download, MP3 192k | 14.53 MB |
 | Source cancel a running job | State changed to cancelled, no temp files left |
 | Error classification | Disk full, permission, network, HTTP 403 and unknown stderr mapped to safe messages |
+| Browser cookies, end to end | Source companion with a Firefox store: pairing, settings update, analyze and 360p job completed; 46,283,922 bytes |
 | Read-only output folder | HTTP 503 `OUTPUT_DIR_INVALID` from the packaged build |
 | Edge 157 MV3 pair, analyze, 360p, cancel | Saved 25,786,983 bytes, progress and reopen checked |
 | Edge 157 MV3 without companion | Missing-companion message, direct MP4 saved |
@@ -108,12 +111,17 @@ Node v26.13.0 for development and v26.13.1 in the package.
 | Edge 157 userscript build with GM shims | Saved 25,786,983 bytes |
 | `npm run build:verify` in the repository root | All targets and zips verified |
 | `npm run package:companion` | `SELF-TEST OK`, both bundled binaries available |
-| `npm run smoke:companion` | `PACKAGE SMOKE OK`, 25,786,983 byte file, cancel and read-only checks |
+| `npm run smoke:companion` | `PACKAGE SMOKE OK`, 46,283,922 byte file, cancel and read-only checks |
+| `npm run smoke:install` | `INSTALL SMOKE OK`, five shortcuts, cookie setting set and cleared |
 
 Not tested yet: Linux, macOS, a real userscript manager, a real disk-full
 volume, proxy support, and Chrome stable. No platform outside Windows x64 is
 advertised as supported. `TEST_MATRIX.md` lists every failure case and each
 item that did not run.
+
+Browser rows that saved 25,786,983 bytes ran before the companion passed a
+Node runtime to yt-dlp. Current builds select a higher-quality 360p stream and
+save 46,283,922 bytes for the same preset.
 
 The browser runs used a Creative Commons Blender Foundation film. The
 userscript run used injected shims for the `GM_*` calls, not Tampermonkey or
@@ -128,6 +136,9 @@ package script downloads them and checks the upstream checksums.
   normalized URL. The client sends enum presets, never raw arguments.
 - Accept only YouTube video URLs. Playlists, channels, search pages and other
   hosts are rejected before any process starts.
+- Keep browser cookies off by default. When the user opts in, store only the
+  allowlisted browser name and pass it to yt-dlp. Never store, log or return a
+  cookie value.
 - Keep the output directory inside the user home, write each job to
   `<output>/.ytst-tmp/<jobId>/`, then resolve and move the final file. Never
   overwrite an existing file.
@@ -149,7 +160,7 @@ The threat model and the full control list are in `../SECURITY.md`.
 | `src/binaries.js` | Path resolution, version probe, checksum manifest |
 | `src/store.js` | Atomic JSON read and write |
 | `src/log.js` | Bounded memory log and redaction |
-| `install/` | Windows installer, hidden launcher, pairing, status and uninstall scripts |
+| `install/` | Windows installer, hidden launcher, pairing, cookies, status and uninstall scripts |
 | `test/` | Unit and HTTP integration tests |
 
 ## Open work

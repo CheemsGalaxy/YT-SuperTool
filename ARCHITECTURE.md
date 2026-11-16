@@ -201,9 +201,13 @@ downloads by default, configurable from 1 to 2.
 | `audioFormat` | `mp3`, `m4a` | `mp3` |
 | `audioQuality` | `128`, `192`, `256`, `320` | `192` |
 | `concurrentDownloads` | `1`, `2` | `1` |
+| `cookiesFromBrowser` | `null`, `chrome`, `chromium`, `edge`, `brave`, `firefox`, `opera`, `vivaldi` | `null` |
 
 Values outside these sets are rejected with `BAD_REQUEST`. The client never
-sends raw yt-dlp or FFmpeg arguments.
+sends raw yt-dlp or FFmpeg arguments. `cookiesFromBrowser` is a browser name,
+not a cookie value or a path. When it is set, the companion adds
+`--cookies-from-browser <name>` to yt-dlp; yt-dlp reads the browser store
+itself.
 
 ## Error handling
 

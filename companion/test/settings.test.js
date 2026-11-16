@@ -19,6 +19,7 @@ test('provides defaults inside the home directory', async (t) => {
   assert.equal(value.audioFormat, 'mp3');
   assert.equal(value.audioQuality, 192);
   assert.equal(value.concurrentDownloads, 1);
+  assert.equal(value.cookiesFromBrowser, null);
 });
 
 test('accepts valid updates and persists them', async (t) => {
@@ -33,11 +34,13 @@ test('accepts valid updates and persists them', async (t) => {
     videoContainer: 'mkv',
     audioFormat: 'm4a',
     audioQuality: 320,
-    concurrentDownloads: 2
+    concurrentDownloads: 2,
+    cookiesFromBrowser: 'edge'
   });
 
   assert.equal(updated.outputDir, outputDir);
   assert.equal(updated.videoQuality, '720');
+  assert.equal(updated.cookiesFromBrowser, 'edge');
 
   const reloaded = createSettings({ store, homeDir: home });
   await reloaded.load();
@@ -57,6 +60,7 @@ test('rejects unknown keys and invalid values', async (t) => {
   await assert.rejects(() => settings.update({ audioFormat: 'wav' }), (error) => error.code === 'BAD_REQUEST');
   await assert.rejects(() => settings.update({ audioQuality: 999 }), (error) => error.code === 'BAD_REQUEST');
   await assert.rejects(() => settings.update({ concurrentDownloads: 5 }), (error) => error.code === 'BAD_REQUEST');
+  await assert.rejects(() => settings.update({ cookiesFromBrowser: 'netscape' }), (error) => error.code === 'BAD_REQUEST');
 });
 
 test('rejects unsafe output directories', async (t) => {
@@ -80,7 +84,7 @@ test('ignores invalid stored values on load', async (t) => {
   t.after(() => rm(home, { recursive: true, force: true }));
 
   const { store, settings } = await makeSettings(home);
-  await store.save('settings.json', { outputDir: 'relative', videoQuality: '999', audioQuality: 7, concurrentDownloads: 9 });
+  await store.save('settings.json', { outputDir: 'relative', videoQuality: '999', audioQuality: 7, concurrentDownloads: 9, cookiesFromBrowser: 'netscape' });
 
   const reloaded = createSettings({ store, homeDir: home });
   await reloaded.load();
@@ -90,6 +94,7 @@ test('ignores invalid stored values on load', async (t) => {
   assert.equal(value.videoQuality, '1080');
   assert.equal(value.audioQuality, 192);
   assert.equal(value.concurrentDownloads, 1);
+  assert.equal(value.cookiesFromBrowser, null);
 });
 
 test('accepts an output directory that does not exist yet', async (t) => {

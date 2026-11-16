@@ -36,8 +36,26 @@ test('analyze arguments pin safe flags and the url', () => {
   for (const flag of ['--ignore-config', '--no-exec', '--no-playlist', '--no-warnings', '--skip-download', '--dump-single-json']) {
     assert.ok(args.includes(flag), `missing ${flag}`);
   }
+  assert.equal(args[args.indexOf('--js-runtimes') + 1], `node:${process.execPath}`);
   assert.equal(args.at(-2), '--');
   assert.equal(args.at(-1), VIDEO);
+});
+
+test('cookie source and node runtime are passed to yt-dlp', () => {
+  const analyze = buildAnalyzeArgs(VIDEO, { cookiesFromBrowser: 'edge', jsRuntimePath: 'C:\\node\\node.exe' });
+  assert.equal(analyze[analyze.indexOf('--cookies-from-browser') + 1], 'edge');
+  assert.equal(analyze[analyze.indexOf('--js-runtimes') + 1], 'node:C:\\node\\node.exe');
+
+  const download = buildDownloadArgs({
+    url: VIDEO,
+    mode: 'video',
+    quality: '720',
+    container: 'mp4',
+    outputTemplate: 'C:\\out\\%(title)s.%(ext)s',
+    cookiesFromBrowser: 'firefox'
+  });
+  assert.equal(download[download.indexOf('--cookies-from-browser') + 1], 'firefox');
+  assert.equal(download[download.indexOf('--js-runtimes') + 1], `node:${process.execPath}`);
 });
 
 test('video download arguments map presets without raw format strings', () => {
@@ -154,6 +172,15 @@ test('classifies yt-dlp failures without echoing raw output', () => {
   const unknown = describeYtdlpError('ERROR: something new happened');
   assert.equal(unknown.code, 'DOWNLOAD_FAILED');
   assert.equal(unknown.message, 'Download failed.');
+
+  const bot = describeYtdlpError("ERROR: Sign in to confirm you're not a bot");
+  assert.equal(bot.message, 'YouTube asked for a bot check. Retry, or turn on browser cookies in the companion settings.');
+
+  const age = describeYtdlpError('ERROR: Sign in to confirm your age');
+  assert.equal(age.message, 'This video is age restricted. Turn on browser cookies in the companion settings to download it.');
+
+  const cookies = describeYtdlpError('ERROR: Could not copy Chrome cookie database.');
+  assert.equal(cookies.message, 'The companion could not read cookies from the selected browser. Close the browser, or choose another browser in the companion settings.');
 });
 
 test('analyze reports a safe message when yt-dlp fails', async () => {
@@ -174,4 +201,18 @@ test('analyze keeps its default message for unknown failures', async () => {
     assert.equal(error.message, 'yt-dlp could not read this video.');
     return true;
   });
+});
+
+test('analyze passes the cookie source to yt-dlp', async () => {
+  let spawnedArgs = null;
+  const spawnImpl = (command, args) => {
+    spawnedArgs = args;
+    return fakeSpawn({
+      code: 0,
+      stdout: JSON.stringify({ id: 'dQw4w9WgXcQ', title: 'Sample', duration: 1, formats: [{ height: 360 }] })
+    })();
+  };
+  const result = await analyzeVideo({ ytdlpPath: 'yt-dlp', url: VIDEO, cookiesFromBrowser: 'edge', spawnImpl });
+  assert.equal(result.video.id, 'dQw4w9WgXcQ');
+  assert.equal(spawnedArgs[spawnedArgs.indexOf('--cookies-from-browser') + 1], 'edge');
 });

@@ -22,7 +22,7 @@ an untested packager works.
 
 Phase 7 adds a PowerShell installer inside the same zip. It verifies the package
 manifest, copies the program to `%LOCALAPPDATA%\YT SuperTool Companion`, creates
-one startup shortcut and four desktop shortcuts, and starts the companion in
+one startup shortcut and five desktop shortcuts, and starts the companion in
 the background. The installer needs no administrator rights and writes no
 registry value or service. MSI, NSIS and Squirrel stay out because they add
 build infrastructure and signing work without improving this install path.
@@ -160,12 +160,14 @@ folder, switches the output folder to an ACL read-only directory and expects
 file and the empty temporary folder, revokes the token, and stops the server.
 
 `scripts/install-smoke.mjs` installs the same zip into temporary folders. It
-checks `paths.json`, the startup `.lnk` target, the four desktop shortcuts and
+checks `paths.json`, the startup `.lnk` target, the five desktop shortcuts and
 the installed file layout. It then runs `install\pair.ps1`, pairs through the
 HTTP API, checks `status.ps1`, stops the process, starts it again with
 `launch-hidden.vbs`, confirms that the token survives and that a second launch
-does not duplicate the process. The last step runs `uninstall.ps1` and checks
-that the program folder, data folder, shortcuts and process are gone.
+does not duplicate the process. It sets and clears the browser cookie source
+with `cookies.ps1` and checks the saved setting. The last step runs
+`uninstall.ps1` and checks that the program folder, data folder, shortcuts and
+process are gone.
 
 All three scripts currently support `win32-x64` only. Linux and macOS packages
 need their own Node.js runtime, binary sources and a native runner, because the
@@ -182,8 +184,8 @@ yt-dlp 2026.10.26, FFmpeg `N-128909-g604ef3784d-20261114` from the BtbN
 
 ```
 companion/dist/yt-supertool-companion-1.0.0-win32-x64.zip
-size    132,222,710 bytes
-sha256  849c6b6906730bf1decaf6c095748c4f5e4b59e455631ed1190db64dcaecca7d
+size    132,225,619 bytes
+sha256  423daa51709aef59cb91c662814f6b956553a83e459ebcb62bd34cb5a8d8a816
 ```
 
 The zip contains `YT SuperTool Companion/` with `node/node.exe`,
@@ -197,6 +199,7 @@ then unpacked the zip and reported:
 
 ```
 layout ok (7 dlls, 10 checksums)
+package manifest ok (45 files)
 self-test ok
 health ok (yt-dlp 2026.10.26, ffmpeg N-128909-g604ef3784d-20261114)
 auth and origin checks ok
@@ -205,7 +208,7 @@ analyze ok (Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film, pr
 cancel ok (temp folder cleaned)
 read-only output rejected with a clear error
 download accepted <job id>
-saved Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film [aqz-KE-bpKQ].mp4 (25786983 bytes)
+saved Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film [aqz-KE-bpKQ].mp4 (46283922 bytes)
 no leftover temp files
 unpair ok
 PACKAGE SMOKE OK
@@ -295,9 +298,10 @@ Windows:
 
 The installer copies the program to
 `%LOCALAPPDATA%\YT SuperTool Companion`. It creates one startup shortcut and
-four desktop shortcuts: Pair browser, Status, Open downloads and Uninstall. It
-starts the companion in the background, so there is no window to keep open.
-The program folder must stay in place because the shortcuts point at it.
+five desktop shortcuts: Pair browser, Status, Browser cookies, Open downloads
+and Uninstall. It starts the companion in the background, so there is no window
+to keep open. The program folder must stay in place because the shortcuts point
+at it.
 
 Linux:
 
@@ -313,8 +317,8 @@ macOS:
 3. Run the launcher.
 4. Allow incoming loopback connections if the firewall prompts.
 
-The README must state that the companion is optional, local only and does not
-receive YouTube cookies.
+The README must state that the companion is optional, local only and uses
+YouTube cookies only when the user opts in.
 
 ## Uninstall
 
@@ -394,6 +398,10 @@ The default Edge result also checked the cancel button, the reopen after
 cancelling, and that no temporary file stayed in the output folder. Firefox and
 the userscript run checked the saved file and the empty temporary folder.
 
+The 25,786,983 byte rows predate the `--js-runtimes node:<path>` argument.
+Current builds select a higher-quality 360p stream and save 46,283,922 bytes
+for the same preset.
+
 Chromium 138 and later refuses to load MV2 extensions, so `dist/mv2` was tested
 in Firefox. Firefox loaded it as a temporary add-on through WebDriver BiDi.
 
@@ -412,6 +420,9 @@ manifest checksum check.
 | Platform | Artifact | Health | Pair | Analyze | Download | Cancel | Saved file |
 |---|---|---|---|---|---|---|---|
 | Windows 10 x64 | `yt-supertool-companion-1.0.0-win32-x64.zip` | Pass | Pass | Pass | 360p MP4 | Pass | 25,786,983 bytes |
+
+This run predates the `--js-runtimes node:<path>` argument. The final package
+smoke used that argument and saved 46,283,922 bytes for the same 360p preset.
 
 The package smoke also checked the layout, the `licenses/` files, the SHA-256
 manifest, a rejected foreign Origin, a rejected missing token, a wrong pairing

@@ -48,6 +48,7 @@ $desktopDirs = $desktopDirs | Select-Object -Unique
 $shortcutNames = @(
   'YT SuperTool - Pair browser.lnk',
   'YT SuperTool - Status.lnk',
+  'YT SuperTool - Browser cookies.lnk',
   'YT SuperTool - Open downloads.lnk',
   'YT SuperTool - Uninstall.lnk'
 )

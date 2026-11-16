@@ -26,20 +26,24 @@ const startApp = async (t, { launcher = completingLauncher(), binaries = availab
     homeDir: home
   });
 
+  const analyzeCalls = [];
   const ytdlp = {
-    analyzeVideo: async () => ({
-      video: {
-        id: 'dQw4w9WgXcQ',
-        title: 'Sample title',
-        duration: 213,
-        thumbnail: null,
-        uploader: 'Test channel'
-      },
-      options: {
-        video: [{ quality: 'best', label: 'Best available', height: 1080 }],
-        audio: [{ format: 'mp3', label: 'MP3 192 kbps' }]
-      }
-    })
+    analyzeVideo: async (input) => {
+      analyzeCalls.push(input);
+      return {
+        video: {
+          id: 'dQw4w9WgXcQ',
+          title: 'Sample title',
+          duration: 213,
+          thumbnail: null,
+          uploader: 'Test channel'
+        },
+        options: {
+          video: [{ quality: 'best', label: 'Best available', height: 1080 }],
+          audio: [{ format: 'mp3', label: 'MP3 192 kbps' }]
+        }
+      };
+    }
   };
 
   const server = createServer({ pairing, jobs, settings, binaries, ytdlp, version: '1.0.0' });
@@ -53,7 +57,7 @@ const startApp = async (t, { launcher = completingLauncher(), binaries = availab
     await rm(home, { recursive: true, force: true });
   });
 
-  return { base, home, pairing, jobs, settings, server };
+  return { base, home, pairing, jobs, settings, server, analyzeCalls };
 };
 
 const request = async (base, pathname, { method = 'GET', token, origin, body, rawBody } = {}) => {
@@ -229,6 +233,16 @@ test('analyze validates the url and returns presets', async (t) => {
 
   const anonymous = await request(base, '/api/analyze', { method: 'POST', body: { url: VIDEO } });
   assert.equal(anonymous.status, 401);
+});
+
+test('analyze uses the configured cookie source', async (t) => {
+  const { base, pairing, analyzeCalls } = await startApp(t);
+  const token = await pairOverHttp(base, pairing);
+
+  await request(base, '/api/settings', { method: 'PUT', token, body: { cookiesFromBrowser: 'edge' } });
+  const ok = await request(base, '/api/analyze', { method: 'POST', token, body: { url: VIDEO } });
+  assert.equal(ok.status, 200);
+  assert.equal(analyzeCalls.at(-1).cookiesFromBrowser, 'edge');
 });
 
 test('download lifecycle reaches completion and blocks cancel', async (t) => {

@@ -23,7 +23,7 @@ administrator rights and creates no service or registry entry.
 4. Open the folder and run `Install YT SuperTool Companion.cmd`.
 
 The installer checks the package checksums, copies the program to
-`%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and four
+`%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and five
 desktop shortcuts, then starts the companion in the background.
 
 On the first install it prints a pairing code:
@@ -75,12 +75,13 @@ The desktop shortcuts do these jobs:
 |---|---|
 | YT SuperTool - Pair browser | Print a fresh pairing code |
 | YT SuperTool - Status | Show the process, pairing state and output folder |
+| YT SuperTool - Browser cookies | Choose an optional YouTube cookie source |
 | YT SuperTool - Open downloads | Open the download folder |
 | YT SuperTool - Uninstall | Remove the program and its shortcuts |
 
-The companion does not use YouTube cookies. Private videos, age-restricted
-videos, members-only videos and region-locked videos fail with a message that
-names the restriction.
+Browser cookies are off by default. Without them, age-restricted, members-only
+and some private videos fail with a message that names the restriction. Region
+locks are not bypassed.
 
 ## Download folder
 
@@ -100,6 +101,35 @@ The companion accepts only folders inside the user home. It creates a hidden
 `.ytst-tmp` folder there for partial files, then moves the finished file into
 the output folder. An existing file is never overwritten. A name clash adds
 ` (1)`, ` (2)` and so on.
+
+## Browser cookies (optional)
+
+YouTube sometimes asks for a bot check or refuses an age-restricted video. The
+companion can use the YouTube session from a browser on this machine to answer
+that check.
+
+1. Sign in to YouTube in the browser you want to use.
+2. Run the **YT SuperTool - Browser cookies** desktop shortcut, or
+   `install\cookies.cmd` in the installed folder.
+3. Choose the browser and confirm.
+
+The companion saves only the browser name in
+`%USERPROFILE%\.yt-super-tool\settings.json` and restarts. It passes
+`--cookies-from-browser <name>` to yt-dlp. yt-dlp reads the cookie store
+directly. The companion does not store, log or send cookie values, and the
+extension never receives them. yt-dlp uses them for its YouTube requests.
+
+Supported names: `chrome`, `chromium`, `edge`, `brave`, `firefox`, `opera` and
+`vivaldi`. Choose `off` to turn the setting off.
+
+Edge, Chrome and Brave may lock the cookie database or protect it with
+app-bound encryption. If the companion reports that it cannot read cookies,
+close the browser and retry. Firefox usually allows reading while it is open.
+If the browser still fails, choose another browser.
+
+Cookies help with content your account can already play, such as age-restricted
+videos. They do not unlock private, members-only or region-locked content that
+your account cannot access.
 
 ## Update
 
@@ -122,7 +152,7 @@ companion must support the same API version.
 2. Confirm the removal.
 3. Choose whether to delete `%USERPROFILE%\.yt-super-tool`.
 
-The uninstaller stops the companion, removes the startup shortcut and the four
+The uninstaller stops the companion, removes the startup shortcut and the five
 desktop shortcuts, then deletes the program folder. If you keep the data
 folder, a later install can reuse the pairing token. Files already saved in the
 output folder stay where they are.
@@ -175,12 +205,15 @@ For extra detail in a visible session:
 | Companion does not start after sign-in | Run the Status shortcut. Check that `YT SuperTool Companion.lnk` exists in `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. Run the installer again if the shortcut is missing. |
 | Menu says "Companion not paired" after a restart | The token was revoked or the data folder changed. Run the Pair browser shortcut and enter the new code. |
 | "Pairing code expired or was already used" | Run the Pair browser shortcut for a fresh code. |
+| "Could not move ... Close any Explorer window that shows the folder" | An Explorer window or another program keeps a handle in the install folder. The installer closes Explorer windows it can find; close any remaining window, then run it again. |
 | "Too many pairing attempts" | Wait one minute, then pair again. |
 | "The output folder is not writable" | Pick a folder inside your home folder and grant your account write access. |
 | "The output folder is out of free space" | Free disk space, then retry. |
 | "The companion is missing yt-dlp or FFmpeg" | Antivirus may have quarantined a file from `app\bin\win32-x64`. Restore it, or run the installer again. |
 | "YouTube refused this download (HTTP 403)" | The video may need a sign-in the companion does not support. The direct MP4 option can still work. |
-| "This video is age restricted" | The companion does not send cookies, so age-restricted videos are not supported. |
+| "YouTube asked for a bot check" | Sign in to YouTube in your browser, then run the Browser cookies shortcut and choose that browser. Retry the download. |
+| "This video is age restricted" | Run the Browser cookies shortcut and choose a browser where you can play the video. |
+| "The companion could not read cookies from the selected browser" | Close the browser and retry. If it still fails, choose another browser; Firefox usually works while open. |
 | "This video is for channel members only" | Membership content is not supported. |
 | "The companion could not reach YouTube" | Check the network connection. The companion has no proxy setting. |
 | FFmpeg uses a lot of CPU | Merging a high-resolution video takes CPU time. The job finishes when the merge ends. |
@@ -199,11 +232,13 @@ For extra detail in a visible session:
 - It runs yt-dlp with an argument array, `--ignore-config`, `--no-exec` and
   `--no-playlist`.
 - It does not bypass DRM, paywalls, authentication or region locks.
+- Browser cookies are opt-in and limited to one allowlisted browser name. The
+  companion stores no cookie value. yt-dlp reads the cookie store directly.
 - The output folder must stay inside the user home, and jobs write to a
   per-job temporary folder first.
 - The installer verifies every packaged file against
   `package-manifest.json`. It needs no administrator rights, installs no
-  service and writes no registry value. It adds one startup shortcut and four
+  service and writes no registry value. It adds one startup shortcut and five
   desktop shortcuts.
 
 The full control list is in `../SECURITY.md`. The failure matrix is in

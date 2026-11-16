@@ -76,7 +76,7 @@ Nút **Download** nằm cạnh hàng nút Like, Share và Save trên trang xem. 
 
 <img src="promo/downloader.png" alt="Nút Download cạnh Like và Share, menu mở với MP4 360p và MP4/MP3 chất lượng cao">
 
-- **Companion (tùy chọn).** Khi ứng dụng desktop YT SuperTool Companion đang chạy và đã pair, menu hiện preset video và audio. Companion tải bằng yt-dlp và FFmpeg ngay trên máy, ghép luồng, rồi lưu file vào thư mục bạn chọn. Companion không nhận cookie YouTube. Bản Windows x64 đóng gói sẵn Node.js, yt-dlp và FFmpeg. Chạy `Install YT SuperTool Companion.cmd` một lần: chương trình tự chạy ẩn mỗi lần đăng nhập Windows, chỉ cần pair một lần. Hướng dẫn trong [companion/INSTALL_WINDOWS.md](companion/INSTALL_WINDOWS.md).
+- **Companion (tùy chọn).** Khi ứng dụng desktop YT SuperTool Companion đang chạy và đã pair, menu hiện preset video và audio. Companion tải bằng yt-dlp và FFmpeg ngay trên máy, ghép luồng, rồi lưu file vào thư mục bạn chọn. Cookie YouTube mặc định tắt. Nếu YouTube đòi bot check hoặc video cần phiên đăng nhập, chạy shortcut **YT SuperTool - Browser cookies** để chọn trình duyệt. Companion chỉ lưu tên trình duyệt; yt-dlp đọc cookie trên máy và extension không nhận cookie. Bản Windows x64 đóng gói sẵn Node.js, yt-dlp và FFmpeg. Chạy `Install YT SuperTool Companion.cmd` một lần: chương trình tự chạy ẩn mỗi lần đăng nhập Windows, chỉ cần pair một lần. Hướng dẫn trong [companion/INSTALL_WINDOWS.md](companion/INSTALL_WINDOWS.md).
 - **MP4 progressive tải trực tiếp.** Tool lấy luồng progressive cao nhất trong `streamingData.formats` (đã có sẵn cả hình lẫn tiếng), thường là 360p nhưng có thể cao hơn. Menu hiển thị độ phân giải thật. File lưu thẳng về máy, không qua server trung gian, không cần ghép luồng.
 - **MP4/MP3 chất lượng cao qua dịch vụ ngoài.** Một nút duy nhất: sao chép URL video đang xem vào clipboard, hiện thông báo "Link copied", rồi mở tab mới tới [ytmp3pc.com](https://ytmp3pc.com/). Bạn dán link vừa copy vào đó để chọn độ phân giải hoặc MP3.
 - **Không giải mã chữ ký.** Tool không chạy player JS, không `eval`/`new Function`, không xử lý n-parameter, nên hợp lệ với CSP của Manifest V3.
@@ -358,10 +358,10 @@ The three in-page ad-blocking layers stay off after installation. Open the YT Su
 #### Optional: desktop companion on Windows
 
 1. Get `yt-supertool-companion-1.0.0-win32-x64.zip` from the release or build it with `npm run package:companion`, check its SHA-256, and extract it.
-2. Run `Install YT SuperTool Companion.cmd`. The installer copies the program to `%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and four desktop shortcuts, starts the companion in the background, and prints a pairing code.
+2. Run `Install YT SuperTool Companion.cmd`. The installer copies the program to `%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and five desktop shortcuts, starts the companion in the background, and prints a pairing code.
 3. Open YouTube, click Download, and enter the code. You pair once.
 
-Windows starts the companion hidden at each sign-in. The desktop shortcuts print a new pairing code, show the status, open the download folder, or uninstall the program. Full details are in [`companion/INSTALL_WINDOWS.md`](companion/INSTALL_WINDOWS.md).
+Windows starts the companion hidden at each sign-in. The desktop shortcuts print a new pairing code, show the status, choose an optional browser cookie source, open the download folder, or uninstall the program. Full details are in [`companion/INSTALL_WINDOWS.md`](companion/INSTALL_WINDOWS.md).
 
 ### Build from source
 

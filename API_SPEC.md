@@ -322,7 +322,8 @@ Requires a token.
     "videoContainer": "mp4",
     "audioFormat": "mp3",
     "audioQuality": 192,
-    "concurrentDownloads": 1
+    "concurrentDownloads": 1,
+    "cookiesFromBrowser": null
   }
 }
 ```
@@ -337,6 +338,10 @@ Requires a token. Accepts a partial object. Unknown keys are rejected.
 
 Success returns the full settings object. `outputDir` must be absolute, must not
 be a filesystem root and must resolve inside the user's home directory.
+`cookiesFromBrowser` accepts `null` or one of `chrome`, `chromium`, `edge`,
+`brave`, `firefox`, `opera`, `vivaldi`. The setting stores only the browser
+name. yt-dlp reads the cookie store directly, and the API never returns a
+cookie value.
 
 ## Error envelope
 

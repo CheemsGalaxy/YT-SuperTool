@@ -12,7 +12,7 @@ not claimed as supported.
 
 | Suite | Command | Result |
 |---|---|---|
-| Companion unit and HTTP tests | `cd companion && npm test` | 62 pass, 0 fail |
+| Companion unit and HTTP tests | `cd companion && npm test` | 66 pass, 0 fail |
 | Extension tests | `npm test` | 23 pass, 0 fail |
 | Self-test | `node src/index.js --self-test` | 7 checks pass |
 | Build and manifest verification | `npm run build:verify` | All targets and zips verified |
@@ -33,13 +33,14 @@ download UI helpers.
 | Disk full during download | Fake yt-dlp writes `[Errno 28] No space left on device` and exits 1 | `OUTPUT_DIR_INVALID`, "The output folder is out of free space." No path in the message. |
 | Network failure | Fake yt-dlp writes an `urlopen` error with a signed `googlevideo.com` URL | `DOWNLOAD_FAILED`, network message only; the signed URL is absent |
 | Analyze failure | Fake yt-dlp exits 1 with HTTP 403 and a signed URL | `ANALYZE_FAILED`, "YouTube refused this download (HTTP 403)." No URL echoed |
+| Cookie store unreadable | Fake stderr contains `Could not copy Chrome cookie database` | Message asks the user to close the browser or choose another one; no path echoed |
 | Version handshake | `GET /api/version` | `minimumClientVersion` is `2.4.3`, the current extension version |
 | Wrong pairing code | Packaged companion, `POST /api/pair` with `ZZZZ-ZZZZ` | HTTP 401 `PAIRING_CODE_INVALID` |
 | Pairing code expiry and reuse | Pairing unit tests | Expired code returns `PAIRING_CODE_EXPIRED`; a second use fails |
 | Pairing rate limit | Pairing unit tests | Sixth attempt in a minute returns `RATE_LIMITED` |
 | Read-only output folder | Packaged companion with an ACL that grants read and execute only | HTTP 503 `OUTPUT_DIR_INVALID`, "The output folder is not writable." |
 | Cancel a packaged download | Packaged companion, 1440p job cancelled after it started | State `cancelled`, `.ytst-tmp` empty afterwards |
-| Full packaged download | Packaged companion, 360p MP4 | Saved 25,786,983 bytes, no temp files left |
+| Full packaged download | Packaged companion, 360p MP4 | Saved 46,283,922 bytes, no temp files left |
 | Companion not running | Edge 157 MV3, no companion process, Download menu | Menu shows "Companion not running"; no companion items appear |
 | Direct MP4 without companion | Same Edge session, click the direct item | Progress reached `Saved · ... [aqz-KE-bpKQ].mp4` |
 | SPA navigation | Edge 157 MV3, `history.pushState` plus `yt-navigate-finish` | One Download button before and after; `data-video-id` updated both ways |
@@ -49,18 +50,29 @@ download UI helpers.
 | Foreign Origin and missing token | `npm run smoke:companion` | HTTP 403 and HTTP 401 |
 | No leftover temp files | Every packaged and browser run | `.ytst-tmp` empty after completion and cancel |
 
+## Browser cookie checks
+
+| Case | How it ran | Result |
+|---|---|---|
+| Firefox cookie source | Packaged yt-dlp 2026.10.26 with `--js-runtimes node:<packaged>` and `--cookies-from-browser firefox` | Analyze passed; 360p MP4 saved 46,283,922 bytes |
+| Companion with Firefox cookies | Source companion, temporary data folder, `PUT /api/settings` then analyze and 360p download | Pair, setting, analyze and job completed; 46,283,922 bytes saved, `.ytst-tmp` empty |
+| Edge cookie source | Same command with `--cookies-from-browser edge` | yt-dlp printed `Could not copy Chrome cookie database`; the text matches the companion cookie-read error rule and its unit test |
+| Unknown cookie source | Unit test with `cookiesFromBrowser: netscape` | `BAD_REQUEST`, "Unknown cookie source." |
+
 ## Installer and autostart
 
 All rows used the final package zip from 2026-11-16.
 
 | Case | How it ran | Result |
 |---|---|---|
-| Install to default folders | Extracted package, `install.ps1` with default `%LOCALAPPDATA%` path | Program folder, `paths.json`, startup `.lnk` and four desktop shortcuts created |
+| Install to default folders | Extracted package, `install.ps1` with default `%LOCALAPPDATA%` path | Program folder, `paths.json`, startup `.lnk` and five desktop shortcuts created |
 | Pair from installed script | `install\pair.ps1` on a fresh data folder | Hidden start, code printed, HTTP pair succeeds, code file removed |
 | Token survives restart | Stop the process, start from the startup shortcut | Health reports `paired: true`, one process |
 | Duplicate hidden launch | Second `launch-hidden.vbs start` | No second process, same port |
-| 360p download from installed copy | Default install, paired, 360p MP4 | Saved 25,786,983 bytes |
+| Browser cookie setting | `install\cookies.ps1 -Source edge`, then `-Source off` | Setting saved as `edge`, then `null`; pairing token survived both restarts |
+| 360p download from installed copy | Installed companion before the `--js-runtimes` change, 360p MP4 | Saved 25,786,983 bytes; package smoke on the final zip saved 46,283,922 bytes |
 | Update over existing install | Final package installed over a running paired install | Old process replaced, pairing and settings unchanged, shortcuts recreated |
+| Update with Explorer window open | Explorer window open in the install folder, then `install.ps1` | Installer closed that window, replaced the folder, kept the pairing and left no `.old-*` or `.new-*` folder |
 | Uninstall | `install\uninstall.ps1 -Force` | Process stopped; program folder, data folder, startup and desktop shortcuts removed |
 | Sign-in autostart | Startup shortcut started manually | Companion started hidden and stayed paired; a real logoff and logon was not run |
 
@@ -85,6 +97,7 @@ All rows used the final package zip from 2026-11-16.
 | Chrome stable | Edge uses the same Chromium engine, but Chrome itself was not launched |
 | Multi-hour downloads and resume | Test video finishes in under a minute |
 | Real logoff and logon | The startup shortcut was started manually; the sign-in path itself was not observed |
+| A live YouTube bot check | The check is tied to IP and session and did not appear on demand; the cookie path itself was tested with a real Firefox store |
 | Windows 11 | Only Windows 10 build 10.0.19044 was available |
 
 ## Reproduction

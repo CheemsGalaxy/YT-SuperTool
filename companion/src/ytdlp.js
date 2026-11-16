@@ -5,14 +5,15 @@ const MAX_STDOUT = 10 * 1024 * 1024;
 const PRESET_HEIGHTS = [2160, 1440, 1080, 720, 480, 360];
 
 const ERROR_RULES = [
+  { message: 'The companion could not read cookies from the selected browser. Close the browser, or choose another browser in the companion settings.', pattern: /could not copy .*cookie|could not read cookies|failed to decrypt|failed to extract cookies|cookie database.*(locked|permission|denied)/i },
   { code: 'OUTPUT_DIR_INVALID', message: 'The output folder is out of free space.', pattern: /no space left on device|enospc|disk quota exceeded|not enough space|winerror 112/i },
   { code: 'OUTPUT_DIR_INVALID', message: 'The output folder is not writable.', pattern: /permission denied|eacces|eperm|winerror 5\b|access is denied/i },
   { code: 'YTDLP_MISSING', message: 'The companion cannot start its download tool.', pattern: /spawn .*enoent|is not recognized as an internal|no such file or directory/i },
   { message: 'The connection to YouTube was interrupted. Try again.', pattern: /broken pipe|connection closed|incomplete read/i },
   { message: 'YouTube refused this download (HTTP 403).', pattern: /http error 403|403: forbidden/i },
   { message: 'YouTube is limiting requests right now. Try again later.', pattern: /http error 429|too many requests|rate limit/i },
-  { message: 'YouTube asked for a bot check, and the companion does not use YouTube cookies.', pattern: /not a bot|captcha|confirm your identity/i },
-  { message: 'This video is age restricted, and the companion does not use YouTube cookies.', pattern: /confirm your age|age.?restrict/i },
+  { message: 'YouTube asked for a bot check. Retry, or turn on browser cookies in the companion settings.', pattern: /not a bot|captcha|confirm your identity/i },
+  { message: 'This video is age restricted. Turn on browser cookies in the companion settings to download it.', pattern: /confirm your age|age.?restrict/i },
   { message: 'This video is private.', pattern: /private video|this video is private/i },
   { message: 'This video is for channel members only.', pattern: /members.?only|join this channel/i },
   { message: 'This video is not available in your country.', pattern: /not available in your country|geo.?restrict/i },
@@ -32,16 +33,21 @@ export const describeYtdlpError = (text, { code = 'DOWNLOAD_FAILED' } = {}) => {
   return new AppError(code);
 };
 
-export const buildBaseArgs = () => [
-  '--ignore-config',
-  '--no-exec',
-  '--no-playlist',
-  '--no-warnings',
-  '--newline'
-];
+export const buildBaseArgs = ({ cookiesFromBrowser = null, jsRuntimePath = process.execPath } = {}) => {
+  const args = [
+    '--ignore-config',
+    '--no-exec',
+    '--no-playlist',
+    '--no-warnings',
+    '--newline'
+  ];
+  if (jsRuntimePath) args.push('--js-runtimes', `node:${jsRuntimePath}`);
+  if (cookiesFromBrowser) args.push('--cookies-from-browser', cookiesFromBrowser);
+  return args;
+};
 
-export const buildAnalyzeArgs = (url) => [
-  ...buildBaseArgs(),
+export const buildAnalyzeArgs = (url, options = {}) => [
+  ...buildBaseArgs(options),
   '--skip-download',
   '--dump-single-json',
   '--no-progress',
@@ -67,10 +73,11 @@ export const buildDownloadArgs = ({
   audioFormat,
   audioQuality,
   outputTemplate,
-  ffmpegDir
+  ffmpegDir,
+  cookiesFromBrowser = null
 }) => {
   const args = [
-    ...buildBaseArgs(),
+    ...buildBaseArgs({ cookiesFromBrowser }),
     '--socket-timeout',
     '30',
     '--retries',
@@ -163,13 +170,13 @@ export const buildOptions = ({ heights = [] } = {}) => {
   return { video, audio };
 };
 
-export const analyzeVideo = ({ ytdlpPath, url, timeoutMs = 30000, spawnImpl = spawn }) => new Promise((resolve, reject) => {
+export const analyzeVideo = ({ ytdlpPath, url, cookiesFromBrowser = null, timeoutMs = 30000, spawnImpl = spawn }) => new Promise((resolve, reject) => {
   let settled = false;
   let stdout = '';
   let stderr = '';
   let stdoutBytes = 0;
 
-  const child = spawnImpl(ytdlpPath, buildAnalyzeArgs(url), { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawnImpl(ytdlpPath, buildAnalyzeArgs(url, { cookiesFromBrowser }), { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
 
   const finish = (error, value) => {
     if (settled) return;

@@ -19,7 +19,7 @@ const API_VERSION = 1;
 const DEFAULT_PORT = 47831;
 const BIN_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', `${process.platform}-${process.arch}`);
 
-const ENV_KEYS = ['PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'HOME', 'USERPROFILE', 'LANG', 'LC_ALL', 'LC_CTYPE'];
+const ENV_KEYS = ['PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'LANG', 'LC_ALL', 'LC_CTYPE'];
 
 const minimalEnv = () => {
   const env = {};
@@ -45,6 +45,9 @@ const printHelp = () => {
   console.log('  --port <number>       Loopback port. Default 47831.');
   console.log('  --data-dir <path>     Settings and token storage. Default ~/.yt-super-tool.');
   console.log('  --output-dir <path>   Download folder. Must be inside the user home.');
+  console.log('  --set-cookies <name>  Save a browser cookie source and exit. Accepts');
+  console.log('                        chrome, chromium, edge, brave, firefox, opera,');
+  console.log('                        vivaldi or off.');
   console.log('  --pair                Print a fresh pairing code even when already paired.');
   console.log('  --pair-code-file <p>  Also write the current pairing code to a file.');
   console.log('  --self-test           Run local checks without downloading media.');
@@ -64,6 +67,7 @@ const parseArgs = (argv) => {
     port: DEFAULT_PORT,
     dataDir: null,
     outputDir: null,
+    setCookies: undefined,
     pairCodeFile: null,
     debug: false,
     selfTest: false,
@@ -93,6 +97,12 @@ const parseArgs = (argv) => {
       case '--output-dir': {
         const taken = takeValue(argv, index, inline, flag);
         options.outputDir = taken.value;
+        index = taken.next;
+        break;
+      }
+      case '--set-cookies': {
+        const taken = takeValue(argv, index, inline, flag);
+        options.setCookies = taken.value;
         index = taken.next;
         break;
       }
@@ -277,6 +287,14 @@ const main = async () => {
 
   if (options.outputDir) {
     await settings.update({ outputDir: path.resolve(options.outputDir) });
+  }
+
+  if (options.setCookies !== undefined) {
+    const source = /^(off|none)$/i.test(options.setCookies) ? null : options.setCookies.toLowerCase();
+    await settings.update({ cookiesFromBrowser: source });
+    console.log(source ? `Browser cookies: ${source}` : 'Browser cookies: off');
+    console.log(`Saved: ${path.join(dataDir, 'settings.json')}`);
+    return;
   }
 
   const logger = createLog({ debug: options.debug });
