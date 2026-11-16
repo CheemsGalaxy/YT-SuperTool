@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,6 +46,7 @@ const printHelp = () => {
   console.log('  --data-dir <path>     Settings and token storage. Default ~/.yt-super-tool.');
   console.log('  --output-dir <path>   Download folder. Must be inside the user home.');
   console.log('  --pair                Print a fresh pairing code even when already paired.');
+  console.log('  --pair-code-file <p>  Also write the current pairing code to a file.');
   console.log('  --self-test           Run local checks without downloading media.');
   console.log('  --debug               Include stack traces in local logs.');
   console.log('  --help                Show this text.');
@@ -63,6 +64,7 @@ const parseArgs = (argv) => {
     port: DEFAULT_PORT,
     dataDir: null,
     outputDir: null,
+    pairCodeFile: null,
     debug: false,
     selfTest: false,
     pair: false,
@@ -91,6 +93,12 @@ const parseArgs = (argv) => {
       case '--output-dir': {
         const taken = takeValue(argv, index, inline, flag);
         options.outputDir = taken.value;
+        index = taken.next;
+        break;
+      }
+      case '--pair-code-file': {
+        const taken = takeValue(argv, index, inline, flag);
+        options.pairCodeFile = taken.value;
         index = taken.next;
         break;
       }
@@ -276,6 +284,9 @@ const main = async () => {
   const pairing = createPairing({
     store,
     onChange: ({ code, expiresAt }) => {
+      if (options.pairCodeFile) {
+        void writeFile(path.resolve(options.pairCodeFile), `${formatPairingCode(code)}\n`, { mode: 0o600 }).catch(() => {});
+      }
       console.log('');
       console.log(`Pairing code: ${formatPairingCode(code)}`);
       console.log(`Code expires: ${new Date(expiresAt).toISOString()}`);

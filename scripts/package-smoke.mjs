@@ -84,6 +84,15 @@ const waitForPairingCode = async (readStdout, child) => {
   throw new Error('pairing code did not appear on stdout');
 };
 
+const waitUntil = async (check, message, timeoutMs = 60000) => {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (await check()) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(message);
+};
+
 const findZip = async (arg) => {
   if (arg) return path.resolve(arg);
   const entries = await readdir(DIST).catch(() => []);
@@ -107,8 +116,22 @@ const checkShaFile = async (zipPath) => {
 const checkLayout = async (stage) => {
   const required = [
     'YT SuperTool Companion.cmd',
+    'Install YT SuperTool Companion.cmd',
     'README.txt',
     'LICENSES.txt',
+    'package-manifest.json',
+    'install/install.ps1',
+    'install/install.cmd',
+    'install/uninstall.ps1',
+    'install/uninstall.cmd',
+    'install/pair.ps1',
+    'install/pair.cmd',
+    'install/status.ps1',
+    'install/status.cmd',
+    'install/open-downloads.ps1',
+    'install/open-downloads.cmd',
+    'install/companion-common.ps1',
+    'install/launch-hidden.vbs',
     'node/node.exe',
     'app/package.json',
     'app/src/index.js',
@@ -138,6 +161,15 @@ const checkLayout = async (stage) => {
     expect(actual === manifest.files[entry], `manifest checksum mismatch for ${entry}`);
   }
   console.log(`layout ok (${dlls.length} dlls, ${Object.keys(manifest.files).length} checksums)`);
+
+  const packageManifest = JSON.parse(await readFile(path.join(stage, 'package-manifest.json'), 'utf8'));
+  const packageFiles = Object.entries(packageManifest.files || {});
+  expect(packageFiles.length >= 30, `package manifest lists ${packageFiles.length} files, expected 30 or more`);
+  for (const [relative, expected] of packageFiles) {
+    const actual = await sha256(path.join(stage, relative.split('/').join(path.sep)));
+    expect(actual === expected, `package manifest checksum mismatch for ${relative}`);
+  }
+  console.log(`package manifest ok (${packageFiles.length} files)`);
 };
 
 const main = async () => {
@@ -200,7 +232,13 @@ const main = async () => {
     expect(unauthorized.status === 401, `settings without token returned ${unauthorized.status}`);
     const blockedOrigin = await fetch(`${base}/api/health`, { headers: { Origin: 'https://example.com' } });
     expect(blockedOrigin.status === 403, `foreign origin returned ${blockedOrigin.status}`);
+    const version = await api(base, '/api/version');
+    expect(version.payload?.minimumClientVersion === '2.4.3', `unexpected minimum client version: ${version.payload?.minimumClientVersion}`);
     console.log('auth and origin checks ok');
+
+    const wrongPair = await api(base, '/api/pair', { method: 'POST', body: { code: 'ZZZZ-ZZZZ', clientName: 'userscript' } });
+    expect(wrongPair.status === 401, `wrong pairing code returned ${wrongPair.status}`);
+    expect(wrongPair.payload?.error?.code === 'PAIRING_CODE_INVALID', `wrong pairing code error ${JSON.stringify(wrongPair.payload)}`);
 
     const code = await waitForPairingCode(() => stdout, child);
     const paired = await api(base, '/api/pair', { method: 'POST', body: { code, clientName: 'userscript' } });
@@ -214,6 +252,44 @@ const main = async () => {
     const heights = (analyze.payload.options?.video || []).map((item) => item.quality);
     expect(heights.includes('360'), `analyze has no 360p preset: ${JSON.stringify(heights)}`);
     console.log(`analyze ok (${analyze.payload.video?.title || 'untitled'}, presets ${heights.join('/')})`);
+
+    const cancelTarget = await api(base, '/api/download', {
+      token,
+      method: 'POST',
+      body: { url: VIDEO_URL, mode: 'video', quality: '1440', container: 'mp4' }
+    });
+    expect(cancelTarget.status === 202, `cancel target returned ${cancelTarget.status}: ${JSON.stringify(cancelTarget.payload)}`);
+    const cancelId = cancelTarget.payload?.job?.id;
+    await waitUntil(
+      async () => (await api(base, `/api/download/${cancelId}`, { token })).payload?.job?.state === 'running',
+      'cancel target never started'
+    );
+    const cancelled = await api(base, `/api/download/${cancelId}/cancel`, { token, method: 'POST' });
+    expect(cancelled.status === 202, `cancel returned ${cancelled.status}: ${JSON.stringify(cancelled.payload)}`);
+    expect(cancelled.payload?.job?.state === 'cancelled', `cancel left state ${cancelled.payload?.job?.state}`);
+    await waitUntil(async () => {
+      const files = await readdir(path.join(outputDir, '.ytst-tmp'), { recursive: true }).catch(() => []);
+      return files.length === 0;
+    }, 'temp files left after cancel', 30000);
+    console.log('cancel ok (temp folder cleaned)');
+
+    const readOnlyDir = path.join(work, 'readonly');
+    await mkdir(readOnlyDir, { recursive: true });
+    const acl = await run('icacls', [readOnlyDir, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(OI)(CI)(RX)`]);
+    expect(acl.code === 0, `icacls failed with ${acl.code}: ${acl.stderr.trim()}`);
+    const changed = await api(base, '/api/settings', { token, method: 'PUT', body: { outputDir: readOnlyDir } });
+    expect(changed.status === 200, `settings update returned ${changed.status}: ${JSON.stringify(changed.payload)}`);
+    const blocked = await api(base, '/api/download', {
+      token,
+      method: 'POST',
+      body: { url: VIDEO_URL, mode: 'video', quality: '360', container: 'mp4' }
+    });
+    expect(blocked.status === 503, `read-only output returned ${blocked.status}: ${JSON.stringify(blocked.payload)}`);
+    expect(blocked.payload?.error?.code === 'OUTPUT_DIR_INVALID', `read-only output error ${JSON.stringify(blocked.payload)}`);
+    expect(blocked.payload?.error?.message === 'The output folder is not writable.', `read-only output message ${JSON.stringify(blocked.payload)}`);
+    const restored = await api(base, '/api/settings', { token, method: 'PUT', body: { outputDir } });
+    expect(restored.status === 200, `settings restore returned ${restored.status}: ${JSON.stringify(restored.payload)}`);
+    console.log('read-only output rejected with a clear error');
 
     const download = await api(base, '/api/download', {
       token,
@@ -280,6 +356,9 @@ const main = async () => {
     if (child && child.exitCode === null) {
       child.kill();
       if (process.platform === 'win32') await run('taskkill', ['/pid', String(child.pid), '/T', '/F']).catch(() => {});
+    }
+    if (process.platform === 'win32') {
+      await run('icacls', [path.join(work, 'readonly'), '/reset', '/t', '/c']).catch(() => {});
     }
     await rm(work, { recursive: true, force: true });
   }

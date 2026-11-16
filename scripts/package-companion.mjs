@@ -35,6 +35,18 @@ const sha256 = (file) => new Promise((resolve, reject) => {
   stream.on('end', () => resolve(hash.digest('hex')));
 });
 
+const listFiles = async (root, relative = '') => {
+  const entries = await readdir(path.join(root, relative), { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (relative === '' && entry.name === 'package-manifest.json') continue;
+    const next = relative ? path.join(relative, entry.name) : entry.name;
+    if (entry.isDirectory()) files.push(...await listFiles(root, next));
+    else if (entry.isFile()) files.push(next.split(path.sep).join('/'));
+  }
+  return files;
+};
+
 const readSums = async (file) => {
   const text = await readFile(file, 'utf8');
   const sums = new Map();
@@ -81,6 +93,14 @@ const writeLauncher = (file) => writeFile(file, [
   '  exit /b 1',
   ')',
   '"%~dp0node\\node.exe" "%~dp0app\\src\\index.js" %*',
+  ''
+].join('\r\n'));
+
+const writeInstallLauncher = (file) => writeFile(file, [
+  '@echo off',
+  'setlocal',
+  'call "%~dp0install\\install.cmd" %*',
+  'exit /b %ERRORLEVEL%',
   ''
 ].join('\r\n'));
 
@@ -137,6 +157,7 @@ const main = async () => {
 
     await cp(path.join(ROOT, 'companion', 'src'), path.join(appDir, 'src'), { recursive: true });
     await cp(path.join(ROOT, 'companion', 'package.json'), path.join(appDir, 'package.json'));
+    await cp(path.join(ROOT, 'companion', 'install'), path.join(stage, 'install'), { recursive: true });
 
     await copyBinary(cache.ytdlp, path.join(binDir, 'yt-dlp.exe'));
     const ffmpegBin = path.join(ffmpegDir, 'bin');
@@ -158,6 +179,7 @@ const main = async () => {
     );
 
     await writeLauncher(path.join(stage, 'YT SuperTool Companion.cmd'));
+    await writeInstallLauncher(path.join(stage, 'Install YT SuperTool Companion.cmd'));
     await writeFile(path.join(stage, 'LICENSES.txt'), [
       'YT SuperTool Companion bundles third-party software.',
       '',
@@ -177,9 +199,20 @@ const main = async () => {
     await writeFile(path.join(stage, 'README.txt'), [
       'YT SuperTool Companion',
       '',
-      'Start: double-click YT SuperTool Companion.cmd',
-      'The window prints a pairing code. Enter that code in the YT SuperTool',
-      'Download menu on YouTube. Keep the window open while downloading.',
+      'Install: double-click Install YT SuperTool Companion.cmd',
+      '',
+      'The installer copies the program to',
+      '%LOCALAPPDATA%\\YT SuperTool Companion, starts it in the background at',
+      'sign-in and prints a pairing code. Enter the code in the YT SuperTool',
+      'Download menu on YouTube. Do not move the installed folder afterwards.',
+      '',
+      'Shortcuts on the desktop:',
+      '  Pair browser    print a fresh pairing code',
+      '  Status          show the process, pairing state and download path',
+      '  Open downloads  open the download folder',
+      '  Uninstall       remove the program, shortcuts and optional data',
+      '',
+      'Manual start from this folder: YT SuperTool Companion.cmd',
       'No Node.js, Python, yt-dlp or FFmpeg installation is needed.',
       '',
       'Data:   %USERPROFILE%\\.yt-super-tool',
@@ -187,10 +220,10 @@ const main = async () => {
       'Port:   http://127.0.0.1:47831',
       '',
       'The companion never auto-updates and never opens a port outside',
-      '127.0.0.1. No installer, registry entry or service is created.',
+      '127.0.0.1. It creates no service and needs no administrator rights.',
+      'The installer adds one startup shortcut and four desktop shortcuts.',
       '',
-      'Uninstall: close the window, delete this folder, then delete',
-      '%USERPROFILE%\\.yt-super-tool',
+      'Uninstall: use the Uninstall shortcut, or run install\\uninstall.cmd.',
       '',
       `Package version ${version}, target ${TARGET}.`,
       'Build and test records: BUILD_AND_DISTRIBUTION.md in the source repository.',
@@ -198,6 +231,17 @@ const main = async () => {
       'produced yet.',
       ''
     ].join('\r\n'));
+
+    const packageFiles = (await listFiles(stage)).sort();
+    const packageHashes = {};
+    for (const relative of packageFiles) {
+      packageHashes[relative] = await sha256(path.join(stage, relative.split('/').join(path.sep)));
+    }
+    await writeFile(
+      path.join(stage, 'package-manifest.json'),
+      `${JSON.stringify({ version, target: TARGET, files: packageHashes }, null, 2)}\n`
+    );
+    console.log(`manifest  ${packageFiles.length} files`);
 
     console.log('self-test packaged runtime');
     await run(path.join(stage, 'node', 'node.exe'), [path.join(appDir, 'src', 'index.js'), '--self-test'], { cwd: stage });

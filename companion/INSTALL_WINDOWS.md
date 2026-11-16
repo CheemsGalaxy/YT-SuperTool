@@ -1,0 +1,210 @@
+# YT SuperTool Companion on Windows
+
+The companion is a separate desktop program. It runs beside the YT SuperTool
+extension and handles the downloads that a browser cannot merge or convert.
+Without it, the extension keeps using the direct MP4 stream and ytmp3pc.com.
+
+The Windows x64 package is self-contained. It includes Node.js, yt-dlp and
+FFmpeg, so you do not install those tools yourself. The installer needs no
+administrator rights and creates no service or registry entry.
+
+## Requirements
+
+- Windows 10 or Windows 11, 64-bit.
+- A user profile you can write to.
+- Free disk space for the program and for the videos you download.
+- One free loopback port, 47831 by default.
+
+## Install
+
+1. Download `yt-supertool-companion-1.0.0-win32-x64.zip`.
+2. Check the SHA-256 against the `.sha256` file or the release notes.
+3. Extract the folder `YT SuperTool Companion` to a temporary place.
+4. Open the folder and run `Install YT SuperTool Companion.cmd`.
+
+The installer checks the package checksums, copies the program to
+`%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and four
+desktop shortcuts, then starts the companion in the background.
+
+On the first install it prints a pairing code:
+
+```
+Pairing code: ABCD-2345
+```
+
+The installer window stays open until you press a key. Leave the code visible
+while you pair the extension.
+
+The package is not code signed. If SmartScreen shows a warning, check that the
+zip came from the expected source, then use "More info" and "Run anyway".
+
+The installed folder must stay in place. The startup shortcut and the desktop
+shortcuts point at it. If you move or delete the folder, run the installer
+again.
+
+## Pair with the extension
+
+1. Open YouTube in the browser where YT SuperTool is installed.
+2. Click the Download button next to Like and Share.
+3. Type the eight-character code into the pairing field. The dash is optional.
+4. Wait for the video and audio presets to appear.
+
+The code works once and expires after ten minutes. The companion stores only a
+hash of the token it gives the extension. Five failed attempts in a minute are
+rate limited.
+
+You pair once. The token stays in `%USERPROFILE%\.yt-super-tool` across
+restarts, sign-ins and program updates. If you revoke the token or change the
+data folder, print a new code with the **YT SuperTool - Pair browser** desktop
+shortcut or the installed `install\pair.cmd`.
+
+## Everyday use
+
+Windows starts the companion in the background when you sign in. There is no
+window to keep open. Open YouTube and the Download menu shows the companion
+presets when the extension is paired.
+
+The menu offers MP4 presets up to the highest height that yt-dlp reports for
+the video, MP3 at 192 kbps, and M4A at the best available quality. The
+companion merges video and audio with FFmpeg. The progress card shows percent,
+speed, ETA and size. Cancel stops the process and removes the temporary folder.
+
+The desktop shortcuts do these jobs:
+
+| Shortcut | Action |
+|---|---|
+| YT SuperTool - Pair browser | Print a fresh pairing code |
+| YT SuperTool - Status | Show the process, pairing state and output folder |
+| YT SuperTool - Open downloads | Open the download folder |
+| YT SuperTool - Uninstall | Remove the program and its shortcuts |
+
+The companion does not use YouTube cookies. Private videos, age-restricted
+videos, members-only videos and region-locked videos fail with a message that
+names the restriction.
+
+## Download folder
+
+The default folder is `%USERPROFILE%\Downloads\YT SuperTool`. To change it,
+stop the companion and edit `outputDir` in
+`%USERPROFILE%\.yt-super-tool\settings.json`. The path must be absolute and
+inside your home folder. The next start uses the new folder.
+
+For a one-off visible start with another folder, run this from the installed
+folder:
+
+```
+"YT SuperTool Companion.cmd" --output-dir "%USERPROFILE%\Videos\YT SuperTool"
+```
+
+The companion accepts only folders inside the user home. It creates a hidden
+`.ytst-tmp` folder there for partial files, then moves the finished file into
+the output folder. An existing file is never overwritten. A name clash adds
+` (1)`, ` (2)` and so on.
+
+## Update
+
+1. Download the new zip and check its SHA-256.
+2. Extract it to a temporary place.
+3. Run `Install YT SuperTool Companion.cmd` from the new folder.
+
+The installer stops the running companion, replaces the program folder and
+starts the new version. Active downloads stop when the old process exits.
+`%USERPROFILE%\.yt-super-tool` stays untouched, so the pairing token and the
+settings survive.
+
+Read the release notes when the API version changes. The extension and the
+companion must support the same API version.
+
+## Uninstall
+
+1. Use the **YT SuperTool - Uninstall** desktop shortcut, or run
+   `install\uninstall.cmd` from the installed folder.
+2. Confirm the removal.
+3. Choose whether to delete `%USERPROFILE%\.yt-super-tool`.
+
+The uninstaller stops the companion, removes the startup shortcut and the four
+desktop shortcuts, then deletes the program folder. If you keep the data
+folder, a later install can reuse the pairing token. Files already saved in the
+output folder stay where they are.
+
+## Manual start and checks
+
+The installed folder has a visible launcher for debugging:
+
+```
+"YT SuperTool Companion.cmd"
+```
+
+It prints the startup state and the pairing code when needed. Keep that window
+open while it runs. Close it to stop the companion.
+
+Run the self-test from the installed folder:
+
+```
+"YT SuperTool Companion.cmd" --self-test
+```
+
+A healthy package prints seven `ok` lines and `SELF-TEST OK`.
+
+The status shortcut runs the same checks as:
+
+```
+install\status.cmd
+```
+
+With the companion running:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:47831/api/health
+```
+
+The response reports the service name, API version, pairing state and the
+detected yt-dlp and FFmpeg versions.
+
+For extra detail in a visible session:
+
+```
+"YT SuperTool Companion.cmd" --debug
+```
+
+## Troubleshooting
+
+| Symptom | What to check |
+|---|---|
+| Menu says "Companion not running" | Run the Status shortcut. If the process is stopped, run the Pair browser shortcut; it starts the companion again. Check that another program does not use port 47831. The extension always uses 47831. |
+| Companion does not start after sign-in | Run the Status shortcut. Check that `YT SuperTool Companion.lnk` exists in `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. Run the installer again if the shortcut is missing. |
+| Menu says "Companion not paired" after a restart | The token was revoked or the data folder changed. Run the Pair browser shortcut and enter the new code. |
+| "Pairing code expired or was already used" | Run the Pair browser shortcut for a fresh code. |
+| "Too many pairing attempts" | Wait one minute, then pair again. |
+| "The output folder is not writable" | Pick a folder inside your home folder and grant your account write access. |
+| "The output folder is out of free space" | Free disk space, then retry. |
+| "The companion is missing yt-dlp or FFmpeg" | Antivirus may have quarantined a file from `app\bin\win32-x64`. Restore it, or run the installer again. |
+| "YouTube refused this download (HTTP 403)" | The video may need a sign-in the companion does not support. The direct MP4 option can still work. |
+| "This video is age restricted" | The companion does not send cookies, so age-restricted videos are not supported. |
+| "This video is for channel members only" | Membership content is not supported. |
+| "The companion could not reach YouTube" | Check the network connection. The companion has no proxy setting. |
+| FFmpeg uses a lot of CPU | Merging a high-resolution video takes CPU time. The job finishes when the merge ends. |
+| Port 47831 is already in use | Stop the other process, then run the Pair browser shortcut. |
+| SmartScreen blocks the installer | Verify the zip checksum first. The build is unsigned. |
+| The installed folder was deleted or moved | Run the installer again from the package. It recreates the shortcuts and the program folder. |
+
+## Security notes
+
+- The server binds `127.0.0.1` only. Other devices on the network cannot reach
+  it.
+- Every private route needs `X-YTST-Token`. The Origin allowlist and the Host
+  check run before the token check.
+- The companion accepts YouTube video URLs only. It rejects playlists, channels
+  and other hosts before it starts a process.
+- It runs yt-dlp with an argument array, `--ignore-config`, `--no-exec` and
+  `--no-playlist`.
+- It does not bypass DRM, paywalls, authentication or region locks.
+- The output folder must stay inside the user home, and jobs write to a
+  per-job temporary folder first.
+- The installer verifies every packaged file against
+  `package-manifest.json`. It needs no administrator rights, installs no
+  service and writes no registry value. It adds one startup shortcut and four
+  desktop shortcuts.
+
+The full control list is in `../SECURITY.md`. The failure matrix is in
+`TEST_MATRIX.md`.
