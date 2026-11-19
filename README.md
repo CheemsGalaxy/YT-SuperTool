@@ -6,49 +6,111 @@
   <img src="promo/banner-light.png" alt="YT SuperTool banner: settings panel with SponsorBlock categories and an open download menu">
 </picture>
 
-[Tiếng Việt](#vi) | [English](#en) | [Donate](#donate)
+[Tiếng Việt](#vi) | [English](#en) | [Ủng hộ](#donate)
 
 <a name="vi"></a>
 ## Tiếng Việt
 
-YT SuperTool là bộ công cụ YouTube tất cả trong một: chặn quảng cáo ba lớp tùy chọn, dọn feed, khôi phục số dislike, thêm điều khiển trình phát và tải MP4 trực tiếp hoặc chuyển link sang ytmp3pc.com cho MP4/MP3 chất lượng cao. Một lõi mã nguồn build ra userscript, extension Manifest V2 và Manifest V3.
+YT SuperTool thêm vào YouTube bộ điều khiển cho feed, trình phát và quảng cáo. Tool ẩn Shorts, dọn trang chủ, khôi phục số dislike, bỏ qua đoạn SponsorBlock, đổi tốc độ phát, chụp khung hình, mở cửa sổ nổi và tải video. Ba lớp chặn quảng cáo có sẵn nhưng tắt mặc định. Một lõi mã nguồn build ra userscript, extension Manifest V2 và Manifest V3.
 
-[Bản phát hành](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
+[Firefox Add-ons](https://addons.mozilla.org/vi/firefox/addon/yt-supertool/) | [Bản phát hành](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
 Phiên bản hiện tại: 2.4.3
 
 ### Tải xuống
 
-| Nền tảng | Gói | Chạy trên | Tải |
-|---|---|---|---|
-| Userscript | `yt-supertool.user.js` | Tampermonkey, Violentmonkey | [Cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) · [Tải về](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
-| Extension MV3 | `yt-supertool-mv3.zip` | Chrome, Edge, Brave, Chromium khác | [Tải ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) |
-| Extension MV2 | `yt-supertool-mv2.zip` | Firefox 109 trở lên | [Tải ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) |
+| Nền tảng | Gói | Cài đặt |
+|---|---|---|
+| Firefox 109 trở lên | Mozilla Add-ons | [Thêm vào Firefox](https://addons.mozilla.org/vi/firefox/addon/yt-supertool/) |
+| Userscript | `yt-supertool.user.js` | [Cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
+| Chrome, Edge, Brave, Chromium khác | `yt-supertool-mv3.zip` | [Tải ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv3.zip) |
+| Firefox 109 trở lên, tự cài | `yt-supertool-mv2.zip` | [Tải ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv2.zip) |
+| Companion Windows x64 | `yt-supertool-companion-1.0.0-win32-x64.zip` | [Tải ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-companion-1.0.0-win32-x64.zip) · [SHA-256](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/SHA256SUMS.txt) |
+
+### Cài đặt
+
+#### Firefox
+
+1. Mở [YT SuperTool trên Mozilla Add-ons](https://addons.mozilla.org/vi/firefox/addon/yt-supertool/).
+2. Bấm "Thêm vào Firefox" và xác nhận quyền.
+3. Mở YouTube. Nút YT SuperTool nằm ở header, popup mở bộ cài đặt.
+
+Bản trên Add-ons hỗ trợ Firefox 109 trở lên và tự cập nhật. Cách này không cần bật chế độ nhà phát triển.
+
+#### Userscript
+
+1. Cài [Tampermonkey](https://www.tampermonkey.net/) hoặc [Violentmonkey](https://violentmonkey.github.io/).
+2. Bấm [cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js). Trình quản lý userscript mở màn hình cài đặt.
+3. Kiểm tra quyền rồi xác nhận.
+4. Mở YouTube.
+
+Userscript không chạy trên YouTube Music và Studio. Trình quản lý userscript tự kiểm tra bản mới qua `@updateURL`.
+
+#### Chrome, Edge và Brave
+
+1. Tải [`yt-supertool-mv3.zip`](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv3.zip).
+2. Giải nén vào một thư mục cố định. Trình duyệt đọc extension từ thư mục này, nên đừng xóa sau khi cài.
+3. Mở `chrome://extensions`, `edge://extensions` hoặc `brave://extensions`.
+4. Bật "Developer mode".
+5. Bấm "Load unpacked" và chọn thư mục vừa giải nén.
+6. Mở YouTube.
+
+Popup extension có ba tab giống panel. Chrome, Edge và Brave cảnh báo với extension cài ngoài Web Store. Cảnh báo này bình thường khi dùng "Load unpacked".
+
+#### Firefox, cài thủ công
+
+Dùng cách này khi bạn muốn chạy gói MV2 hoặc tự kiểm tra build:
+
+1. Tải [`yt-supertool-mv2.zip`](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv2.zip).
+2. Giải nén vào thư mục cố định.
+3. Mở `about:debugging#/runtime/this-firefox`.
+4. Bấm "Load Temporary Add-on".
+5. Chọn `manifest.json` trong thư mục đã giải nén.
+
+Firefox xóa add-on tạm khi đóng trình duyệt. Cài lâu dài cần gói XPI đã ký. Bản trên Mozilla Add-ons đã được ký.
+
+#### Companion trên Windows (tùy chọn)
+
+Companion là ứng dụng desktop riêng, chỉ cần khi bạn muốn tải MP4/MP3 chất lượng cao bằng yt-dlp và FFmpeg trên máy. Không có companion, extension vẫn tải MP4 progressive trực tiếp và chuyển link sang ytmp3pc.com.
+
+1. Tải [`yt-supertool-companion-1.0.0-win32-x64.zip`](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-companion-1.0.0-win32-x64.zip) và file [SHA-256](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/SHA256SUMS.txt).
+2. Đối chiếu hash:
+
+   ```powershell
+   Get-FileHash .\yt-supertool-companion-1.0.0-win32-x64.zip -Algorithm SHA256
+   ```
+
+3. Giải nén và chạy `Install YT SuperTool Companion.cmd`.
+4. Mở YouTube, bấm "Download", nhập mã pair mà installer in ra.
+
+Installer chép chương trình vào `%LOCALAPPDATA%\YT SuperTool Companion`, thêm shortcut khởi động và năm shortcut desktop. Gói dành cho Windows 10 và 11 x64. Hướng dẫn đầy đủ nằm trong [companion/INSTALL_WINDOWS.md](companion/INSTALL_WINDOWS.md).
 
 ### Tính năng chính
 
-| Tính năng | Hành vi | Mặc định |
-|---|---|---|
-| Chặn quảng cáo | Ba lớp tùy chọn: JSON prune, cosmetic filtering và player fallback. | Tắt |
-| Ẩn Shorts | Xóa kệ Shorts, tab và thẻ trong feed. | Bật |
-| Dọn trang chủ | Ẩn promo, khảo sát, Playables và kệ live. | Bật |
-| Khôi phục dislike | Hiển thị số dislike ước tính từ API Return YouTube Dislike. | Bật |
-| SponsorBlock | Bỏ qua đoạn sponsor, self-promo và nhắc tương tác do cộng đồng gửi; tô màu các đoạn trên thanh tiến trình. | Bật |
-| Tự động xem tiếp | Đóng hộp thoại "Video paused. Continue watching?". | Bật |
-| Tốc độ phát | Thêm thanh tốc độ, preset và phím tắt `<` / `>`. | Bật |
-| Picture in picture | Mở video hiện tại trong cửa sổ nổi. | Bật |
-| Chụp màn hình | Lưu khung hình hiện tại thành PNG. | Bật |
-| Tải video | Tải MP4 progressive trực tiếp; MP4/MP3 chất lượng cao mở ytmp3pc.com với link đã copy. | Bật |
+| Nhóm | Tính năng | Hành vi | Mặc định |
+|---|---|---|---|
+| Browse | Ẩn Shorts | Xóa kệ Shorts, tab và thẻ trong feed. | Bật |
+| Browse | Dọn trang chủ | Ẩn promo, khảo sát, Playables và kệ live. | Bật |
+| Player | Khôi phục dislike | Hiện số dislike ước tính từ API Return YouTube Dislike. | Bật |
+| Player | SponsorBlock | Bỏ qua đoạn sponsor, self-promotion và nhắc tương tác do cộng đồng gửi; tô màu đoạn trên thanh tiến trình. | Bật |
+| Player | Tự động xem tiếp | Đóng hộp thoại "Video paused. Continue watching?". | Bật |
+| Player | Tốc độ phát | Thanh tốc độ 0.25x đến 10x, preset và phím `<` / `>`, mỗi lần 0.25x. | Bật |
+| Player | Picture in picture | Mở video hiện tại trong cửa sổ nổi. | Bật |
+| Player | Chụp màn hình | Lưu khung hình hiện tại thành PNG. | Bật |
+| Player | Tải video | MP4 progressive tải trực tiếp, preset companion tùy chọn, fallback ytmp3pc.com. | Bật |
+| Blocking | Chặn quảng cáo | Ba lớp: JSON prune, cosmetic filtering và player fallback. | Tắt |
 
-#### Các lớp chặn quảng cáo
+SponsorBlock bỏ qua sponsor, self-promotion và nhắc tương tác mặc định. Panel cũng có Intro, Outro, Preview, Off-topic music và Filler; các mục này tắt sẵn. Thông báo skip có nút Undo, và màu đoạn trên thanh tiến trình có thể tắt trong cài đặt.
 
-Ba lớp chặn quảng cáo trong trang mặc định tắt vì YouTube thay đổi cách phát quảng cáo và cách phát hiện adblock thường xuyên. Các lớp có sẵn có thể ngừng hoạt động, làm hỏng phát lại hoặc kích hoạt phản hồi chống adblock. Để dùng hàng ngày, cài [uBlock Origin](https://ublockorigin.com/) trên Firefox hoặc [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) trên Chrome, Edge và Brave. Chỉ bật các lớp có sẵn nếu bạn chấp nhận rủi ro bảo trì này.
+#### Chặn quảng cáo
 
-Các lớp trong trang không xóa dữ liệu quảng cáo khỏi phản hồi trình phát. Tool đổi tên khóa `adPlacements`, `playerAds`, `adSlots`, `adBreakHeartbeatParams`, `adParams` và `adSafetyReason` trong JSON, tắt cờ dò adblock của trình phát, rồi gỡ modal cảnh báo nếu nó vẫn hiện. Cách này ít phụ thuộc tên nút và selector quảng cáo, nên cần bảo trì ít hơn.
+Ba lớp trong trang tắt mặc định. YouTube thay đổi cách phát quảng cáo và cách phát hiện adblock thường xuyên, nên các lớp có sẵn có thể ngừng hoạt động, làm hỏng phát lại hoặc kích hoạt phản hồi chống adblock. Để dùng hàng ngày, cài [uBlock Origin](https://ublockorigin.com/) trên Firefox hoặc [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) trên Chrome, Edge và Brave. Chỉ bật các lớp có sẵn nếu bạn chấp nhận rủi ro bảo trì này.
 
-1. **JSON prune.** Đổi tên `adPlacements`, `playerAds`, `adSlots`, `adBreakHeartbeatParams`, `adParams` và `adSafetyReason` trong phản hồi trình phát trước khi YouTube đọc. Lớp này chạy trong main world tại `document-start`.
-2. **Cosmetic filtering.** Ẩn slot quảng cáo trong feed, masthead, sidebar và trình phát. Quy tắc chỉ áp dụng khi công tắc tổng và lớp cosmetic cùng bật.
-3. **Player fallback.** Tắt tiếng quảng cáo lọt vào trình phát, bấm nút bỏ qua và tua đến cuối. Lớp này khôi phục trạng thái tắt tiếng và tốc độ phát trước đó sau quảng cáo.
+Tool không xóa dữ liệu quảng cáo khỏi phản hồi trình phát. Tool đổi tên các khóa `adPlacements`, `playerAds`, `adSlots`, `adBreakHeartbeatParams`, `adParams` và `adSafetyReason` trong JSON, tắt cờ dò adblock của trình phát, rồi gỡ modal cảnh báo nếu nó vẫn hiện. Cách đổi tên khóa ít phụ thuộc nhãn nút và selector quảng cáo hơn quy tắc cosmetic.
+
+1. JSON prune: đổi tên các khóa quảng cáo trong phản hồi trình phát trước khi YouTube đọc. Lớp này chạy trong main world tại `document-start`.
+2. Cosmetic filtering: ẩn slot quảng cáo trong feed, masthead, sidebar và trình phát. Quy tắc chỉ áp dụng khi công tắc tổng và lớp cosmetic cùng bật.
+3. Player fallback: tắt tiếng quảng cáo lọt vào trình phát, bấm nút bỏ qua và tua đến cuối. Lớp này khôi phục trạng thái tắt tiếng và tốc độ phát trước đó sau quảng cáo.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-blocking.png">
@@ -56,7 +118,24 @@ Các lớp trong trang không xóa dữ liệu quảng cáo khỏi phản hồi 
   <img src="promo/popup-light-blocking.png" alt="Tab Blocking trong popup extension, với công tắc tổng và ba lớp JSON prune, cosmetic filtering, player fallback" width="420">
 </picture>
 
-Bản extension thêm lớp mạng. MV3 dùng quy tắc `declarativeNetRequest`, MV2 dùng chặn `webRequest`. Userscript vá `fetch` và `XMLHttpRequest` trong trang. Các bộ lọc này chạy trước ba lớp trong trang.
+Bản extension thêm lớp mạng. MV3 chỉ bật ruleset `declarativeNetRequest` khi chặn quảng cáo đang bật. MV2 chặn request khớp bằng `webRequest`. Userscript vá `fetch` và `XMLHttpRequest` trong trang. Các bộ lọc này chạy trước ba lớp trong trang.
+
+#### Tải video và audio
+
+Nút Download nằm cạnh hàng nút Like, Share và Save trên trang xem. Menu có ba nhóm: preset companion, MP4 tải trực tiếp và fallback ytmp3pc.com.
+
+<img src="promo/downloader.png" alt="Nút Download cạnh Like và Share, menu mở với preset Companion MP4 và audio, MP4 360p tải trực tiếp và fallback ytmp3pc.com" width="420">
+
+- Companion (tùy chọn): khi ứng dụng desktop đang chạy và đã pair, menu hiện preset MP4 tới độ cao lớn nhất của video, MP3 192 kbps và M4A chất lượng tốt nhất. Companion dùng yt-dlp để lấy danh sách định dạng, tải từng luồng bằng nhiều range request song song, ghép hoặc chuyển bằng FFmpeg, rồi lưu vào thư mục bạn chọn. Nút Cancel dừng các kết nối và xóa file tạm.
+- Cookie YouTube (tùy chọn): cookie mặc định tắt. Nếu YouTube đòi bot check hoặc video bị giới hạn tuổi, chạy shortcut "YT SuperTool - Browser cookies" và chọn trình duyệt hoặc file `cookies.txt`. Companion chỉ lưu tên trình duyệt hoặc đường dẫn file; yt-dlp đọc cookie trên máy và extension không nhận cookie. Nếu trình duyệt khóa cookie database, hãy đóng nó trước. Firefox thường đọc được khi vẫn mở.
+- Cài companion: bản Windows x64 đóng gói sẵn Node.js, yt-dlp và FFmpeg. Chạy `Install YT SuperTool Companion.cmd` một lần. Windows khởi động companion ẩn mỗi lần đăng nhập và bạn chỉ pair một lần.
+- MP4 progressive tải trực tiếp: tool đọc MP4 progressive cao nhất trong `streamingData.formats`. Luồng này đã có hình và tiếng, nên file lưu thẳng về máy, không qua proxy và không cần ghép. Menu hiện độ phân giải thật, thường là 360p.
+- MP4/MP3 chất lượng cao qua ytmp3pc.com: mục này sao chép URL video vào clipboard, hiện thông báo "Link copied", rồi mở [ytmp3pc.com](https://ytmp3pc.com/) trong tab mới. Bạn dán link để chọn độ phân giải hoặc MP3.
+- Không giải mã chữ ký: tool không chạy player JS, không dùng `eval` hay `new Function`, không xử lý n-parameter, nên hợp lệ với CSP của Manifest V3.
+- Link hết hạn: link tải của YouTube có hạn dùng. Nếu request trả 403 hoặc 410, mở lại menu để lấy link mới.
+- Hủy: thẻ tiến trình có nút Cancel. Chuyển video hoặc tắt tính năng cũng hủy tác vụ đang chạy.
+
+Không dùng companion thì chỉ luồng MP4 progressive đi qua tool. Các định dạng khác do ytmp3pc.com xử lý trong tab mới.
 
 #### Giao diện
 
@@ -68,22 +147,17 @@ Cài đặt mở trong panel Shadow DOM. Panel theo theme trang qua thuộc tín
   <img src="promo/panel-light-player.png" alt="Panel YT SuperTool, tab Player, với SponsorBlock, tốc độ phát và PiP">
 </picture>
 
-Tab **Browse** dọn feed, tab **Player** gom điều khiển video, tab **Blocking** chứa ba lớp chặn quảng cáo. Bộ ảnh đầy đủ cho cả theme sáng và tối nằm trong [`promo/`](promo/).
+Tab Browse dọn feed, tab Player gom điều khiển video, tab Blocking chứa ba lớp chặn quảng cáo. Popup extension dùng cùng ba tab. Bộ ảnh đầy đủ cho cả theme sáng và tối nằm trong [`promo/`](promo/).
 
-#### Tải video và audio
+#### Quyền truy cập và quyền riêng tư
 
-Nút **Download** nằm cạnh hàng nút Like, Share và Save trên trang xem. Menu có ba nhóm: companion tùy chọn cho chất lượng cao, tải trực tiếp, và dịch vụ ngoài.
+- Extension chạy trên `*://*.youtube.com/*`. Userscript bỏ qua YouTube Music và Studio.
+- Cài đặt lưu trong storage của extension hoặc GM storage. Không có tài khoản, analytics, telemetry hay server của tác giả.
+- Ba dịch vụ nhận request: `returnyoutubedislikeapi.com` nhận video ID khi bật dislike, `sponsor.ajay.app` nhận video ID khi bật SponsorBlock, và `raw.githubusercontent.com` nhận một request tự động mỗi 24 giờ để kiểm tra phiên bản.
+- Companion chỉ nghe trên `127.0.0.1:47831` và yêu cầu pairing token. Extension không nhận cookie YouTube.
+- Quyền host tới mạng quảng cáo chỉ dùng cho lớp chặn quảng cáo tùy chọn.
 
-<img src="promo/downloader.png" alt="Nút Download cạnh Like và Share, menu mở với MP4 360p và MP4/MP3 chất lượng cao">
-
-- **Companion (tùy chọn).** Khi ứng dụng desktop YT SuperTool Companion đang chạy và đã pair, menu hiện preset video và audio. Companion tải bằng yt-dlp và FFmpeg ngay trên máy, ghép luồng, rồi lưu file vào thư mục bạn chọn. Cookie YouTube mặc định tắt. Nếu YouTube đòi bot check hoặc video cần phiên đăng nhập, chạy shortcut **YT SuperTool - Browser cookies** để chọn trình duyệt. Companion chỉ lưu tên trình duyệt; yt-dlp đọc cookie trên máy và extension không nhận cookie. Bản Windows x64 đóng gói sẵn Node.js, yt-dlp và FFmpeg. Chạy `Install YT SuperTool Companion.cmd` một lần: chương trình tự chạy ẩn mỗi lần đăng nhập Windows, chỉ cần pair một lần. Hướng dẫn trong [companion/INSTALL_WINDOWS.md](companion/INSTALL_WINDOWS.md).
-- **MP4 progressive tải trực tiếp.** Tool lấy luồng progressive cao nhất trong `streamingData.formats` (đã có sẵn cả hình lẫn tiếng), thường là 360p nhưng có thể cao hơn. Menu hiển thị độ phân giải thật. File lưu thẳng về máy, không qua server trung gian, không cần ghép luồng.
-- **MP4/MP3 chất lượng cao qua dịch vụ ngoài.** Một nút duy nhất: sao chép URL video đang xem vào clipboard, hiện thông báo "Link copied", rồi mở tab mới tới [ytmp3pc.com](https://ytmp3pc.com/). Bạn dán link vừa copy vào đó để chọn độ phân giải hoặc MP3.
-- **Không giải mã chữ ký.** Tool không chạy player JS, không `eval`/`new Function`, không xử lý n-parameter, nên hợp lệ với CSP của Manifest V3.
-- **Link hết hạn.** Link tải của YouTube có hạn dùng. Nếu báo lỗi 403 hoặc 410, mở lại menu để lấy link mới.
-- **Hủy.** Thẻ tiến trình có nút Cancel. Chuyển video hoặc tắt tính năng cũng hủy tác vụ đang chạy.
-
-Không dùng companion thì chỉ luồng progressive MP4 đi qua tool; mọi định dạng khác do ytmp3pc.com xử lý trong tab mới.
+Chính sách đầy đủ: [PRIVACY.md](https://github.com/CheemsGalaxy/YT-SuperTool/blob/main/PRIVACY.md).
 
 ### Kiến trúc
 
@@ -92,67 +166,14 @@ YT SuperTool dùng một lõi và ba target build.
 | Lớp | Đường dẫn | Vai trò |
 |---|---|---|
 | Core | `src/core/` | Logic tính năng, cài đặt, vòng đời SPA và UI. Không gọi API của host. |
-| Adapters | `src/adapters/` | API lưu trữ, mạng, inject style và tab cho userscript và extension. |
-| Entries | `src/entries/` | Entry point cho userscript, content script, main world script, background worker và popup. |
+| Adapters | `src/adapters/` | API lưu trữ, mạng, inject style, tab và companion cho userscript và extension. |
+| Entries | `src/entries/` | Entry point cho userscript, content script, main world script, background MV2/MV3 và popup. |
 | Manifests | `src/manifests/` | Phần manifest dùng chung, MV2 và MV3. |
 | Rules | `src/rules/` | Bộ quy tắc `declarativeNetRequest` cho MV3. |
+| Companion | `companion/` | Dịch vụ desktop tùy chọn: pairing, job queue, tải theo range và ghép bằng FFmpeg. |
 | Build | `scripts/` | Bundle, ghép manifest, tạo archive và xác minh. |
 
 Vite build một IIFE cho mỗi entry target với `__TARGET__` đặt lúc build. MV2 không chạy được content script trong main world, nên `content.entry.js` inject `main-world.js` từ `web_accessible_resources` tại document-start. MV3 khai báo cùng file với `"world": "MAIN"`.
-
-### Cài đặt
-
-#### Cách 1: Userscript
-
-1. Cài [Tampermonkey](https://www.tampermonkey.net/) hoặc [Violentmonkey](https://violentmonkey.github.io/).
-2. Bấm [cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js). Trình quản lý userscript mở màn hình cài đặt.
-3. Xem quyền được yêu cầu và xác nhận cài.
-4. Mở YouTube. Nút YT SuperTool xuất hiện ở header.
-
-Nếu link cài nhanh không dùng được, build từ source và cài `dist/userscript/yt-supertool.user.js`.
-
-#### Cách 2: Extension trình duyệt
-
-Tải gói trực tiếp:
-
-| Trình duyệt | Gói | Trang quản lý |
-|---|---|---|
-| Chrome, Edge, Brave | [`yt-supertool-mv3.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) | `chrome://extensions`, `edge://extensions`, `brave://extensions` |
-| Firefox | [`yt-supertool-mv2.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) | `about:debugging#/runtime/this-firefox` |
-
-Nếu link tải không dùng được, build từ source. Build ghi cả ba target vào `dist/`.
-
-##### Chrome, Edge và Brave
-
-1. Giải nén zip vào thư mục cố định. Trình duyệt đọc extension từ thư mục này, nên không xóa sau khi cài.
-2. Mở `chrome://extensions`, `edge://extensions` hoặc `brave://extensions`.
-3. Bật **Developer mode**.
-4. Bấm **Load unpacked** và chọn thư mục đã giải nén.
-5. Mở YouTube. Extension hoạt động và popup hiển thị cùng bộ cài đặt như panel userscript.
-
-Popup chia ba tab như panel:
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-browse.png">
-  <source media="(prefers-color-scheme: light)" srcset="promo/popup-light-browse.png">
-  <img src="promo/popup-light-browse.png" alt="Popup extension YT SuperTool, tab Browse, với Hide Shorts và Clean homepage" width="360">
-</picture>
-
-Chrome, Edge và Brave đang bỏ dần extension Manifest V2. Dùng gói MV3 trên ba trình duyệt này.
-
-##### Firefox
-
-1. Giải nén `yt-supertool-mv2.zip` vào thư mục cố định.
-2. Mở `about:debugging#/runtime/this-firefox`.
-3. Bấm **Load Temporary Add-on**.
-4. Chọn `manifest.json` trong thư mục đã giải nén.
-5. Mở YouTube.
-
-Firefox xóa add-on tạm khi đóng trình duyệt. Cài vĩnh viễn cần gói XPI đã ký.
-
-Chrome, Edge và Brave hiện cảnh báo với extension cài ngoài Web Store. Cảnh báo này bình thường khi dùng **Load unpacked**.
-
-Ba lớp chặn quảng cáo trong trang vẫn tắt sau khi cài. Mở cài đặt YT SuperTool và chỉ bật nếu bạn muốn dùng các lớp có sẵn.
 
 ### Build từ mã nguồn
 
@@ -175,6 +196,10 @@ npm run build
 | `npm run build` | Build lại `dist/` với userscript, MV2, MV3 và cả hai file zip. |
 | `npm run verify` | Kiểm tra manifest, bundle, lớp adblock, quy tắc UI và archive. |
 | `npm run build:verify` | Chạy build rồi chạy xác minh. |
+| `npm test` | Chạy bộ test của extension. |
+| `npm run package:companion` | Đóng gói companion Windows x64 và file `.sha256`. |
+| `npm run smoke:companion` | Giải nén gói companion và chạy thử tải 360p. |
+| `npm run smoke:install` | Cài companion vào thư mục tạm, kiểm tra shortcut, pairing, khởi động lại và gỡ cài đặt. |
 
 #### Kết quả build
 
@@ -213,44 +238,106 @@ Số dislike lấy từ API [Return YouTube Dislike](https://returnyoutubedislik
 <a name="en"></a>
 ## English
 
-YT SuperTool is an all-in-one YouTube enhancer: optional three-layer ad blocking, feed cleanup, restored dislike counts, player controls, and direct MP4 downloads or link handoff to ytmp3pc.com for high-quality MP4 and MP3. One core builds the userscript and the Manifest V2 and Manifest V3 extensions.
+YT SuperTool adds feed cleanup, player controls, and optional ad blocking to YouTube. It hides Shorts, cleans the homepage, restores estimated dislike counts, skips SponsorBlock segments, changes playback speed, captures frames, opens picture-in-picture, and downloads video. Three ad-blocking layers ship with the tool but stay off by default. One core builds the userscript, the Manifest V2 extension, and the Manifest V3 extension.
 
-[Releases](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
+[Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/yt-supertool/) | [Releases](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
 Current version: 2.4.3
 
 ### Downloads
 
-| Target | Package | Runs in | Download |
-|---|---|---|---|
-| Userscript | `yt-supertool.user.js` | Tampermonkey, Violentmonkey | [Quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) · [Download](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
-| Extension MV3 | `yt-supertool-mv3.zip` | Chrome, Edge, Brave, other Chromium browsers | [Download ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) |
-| Extension MV2 | `yt-supertool-mv2.zip` | Firefox 109 and newer | [Download ZIP](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) |
+| Platform | Package | Install |
+|---|---|---|
+| Firefox 109 and newer | Mozilla Add-ons | [Install from Mozilla Add-ons](https://addons.mozilla.org/en-US/firefox/addon/yt-supertool/) |
+| Userscript | `yt-supertool.user.js` | [Quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
+| Chrome, Edge, Brave, other Chromium browsers | `yt-supertool-mv3.zip` | [Download ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv3.zip) |
+| Firefox 109 and newer, manual install | `yt-supertool-mv2.zip` | [Download ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv2.zip) |
+| Windows x64 companion | `yt-supertool-companion-1.0.0-win32-x64.zip` | [Download ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-companion-1.0.0-win32-x64.zip) · [SHA-256](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/SHA256SUMS.txt) |
+
+### Installation
+
+#### Firefox
+
+1. Open [YT SuperTool on Mozilla Add-ons](https://addons.mozilla.org/en-US/firefox/addon/yt-supertool/).
+2. Click "Add to Firefox" and accept the permissions.
+3. Open YouTube. The YT SuperTool button appears in the header, and the popup holds the settings.
+
+The Add-ons build supports Firefox 109 and newer. It updates itself and needs no developer mode.
+
+#### Userscript
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
+2. Click [quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js). The userscript manager opens its install screen.
+3. Review the permissions and confirm.
+4. Open YouTube.
+
+The userscript does not run on YouTube Music or Studio. The manager checks for new versions through `@updateURL`.
+
+#### Chrome, Edge, and Brave
+
+1. Download [`yt-supertool-mv3.zip`](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv3.zip).
+2. Extract it to a permanent folder. The browser reads the extension from that folder, so do not delete it after installation.
+3. Open `chrome://extensions`, `edge://extensions`, or `brave://extensions`.
+4. Turn on "Developer mode".
+5. Click "Load unpacked" and select the extracted folder.
+6. Open YouTube.
+
+The popup uses the same three tabs as the panel. Chrome, Edge, and Brave warn about extensions installed outside the Web Store. That warning is expected with "Load unpacked".
+
+#### Firefox, manual install
+
+Use this route to run the MV2 package or check a build yourself:
+
+1. Download [`yt-supertool-mv2.zip`](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv2.zip).
+2. Extract it to a permanent folder.
+3. Open `about:debugging#/runtime/this-firefox`.
+4. Click "Load Temporary Add-on".
+5. Select `manifest.json` in the extracted folder.
+
+Firefox removes temporary add-ons when it closes. A permanent install needs a signed XPI. The Mozilla Add-ons build is signed.
+
+#### Windows companion (optional)
+
+The companion is a separate desktop program. It is only needed for high-quality MP4 and MP3 downloads through yt-dlp and FFmpeg on your machine. Without it, the extension still downloads progressive MP4 directly and hands other links to ytmp3pc.com.
+
+1. Download [`yt-supertool-companion-1.0.0-win32-x64.zip`](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-companion-1.0.0-win32-x64.zip) and the [SHA-256 list](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/SHA256SUMS.txt).
+2. Compare the hash:
+
+   ```powershell
+   Get-FileHash .\yt-supertool-companion-1.0.0-win32-x64.zip -Algorithm SHA256
+   ```
+
+3. Extract the package and run `Install YT SuperTool Companion.cmd`.
+4. Open YouTube, click "Download", and enter the pairing code printed by the installer.
+
+The installer copies the program to `%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and five desktop shortcuts. The package targets Windows 10 and 11 x64. Full steps are in [companion/INSTALL_WINDOWS.md](companion/INSTALL_WINDOWS.md).
 
 ### Key features
 
-| Feature | Behavior | Default |
-|---|---|---|
-| Ad blocking | Optional three layers: JSON prune, cosmetic filtering, and player fallback. | Off |
-| Hide Shorts | Removes Shorts shelves, tabs, and feed cards. | On |
-| Clean homepage | Hides promos, surveys, Playables, and live shelves. | On |
-| Return dislike | Shows estimated dislike counts from the Return YouTube Dislike API. | On |
-| SponsorBlock | Skips community-submitted sponsor, self-promo, and interaction segments, and colors them on the progress bar. | On |
-| Auto continue | Dismisses the "Video paused. Continue watching?" prompt. | On |
-| Playback speed | Adds a speed slider, presets, and `<` / `>` shortcuts. | On |
-| Picture in picture | Opens the current video in a floating window. | On |
-| Screenshot | Saves the current video frame as PNG. | On |
-| Downloader | Saves the progressive MP4 directly. An optional desktop companion adds higher-quality MP4 and MP3 through local yt-dlp and FFmpeg; ytmp3pc.com stays as a fallback. | On |
+| Group | Feature | Behavior | Default |
+|---|---|---|---|
+| Browse | Hide Shorts | Removes Shorts shelves, tabs, and feed cards. | On |
+| Browse | Clean homepage | Hides promos, surveys, Playables, and live shelves. | On |
+| Player | Return dislike | Shows an estimated dislike count from the Return YouTube Dislike API. | On |
+| Player | SponsorBlock | Skips community-submitted sponsor, self-promotion, and interaction segments, and colors them on the progress bar. | On |
+| Player | Auto continue | Dismisses the "Video paused. Continue watching?" prompt. | On |
+| Player | Playback speed | Slider from 0.25x to 10x, presets, and `<` / `>` keys in 0.25x steps. | On |
+| Player | Picture in picture | Opens the current video in a floating window. | On |
+| Player | Screenshot | Saves the current frame as PNG. | On |
+| Player | Downloader | Direct progressive MP4, optional companion presets, ytmp3pc.com fallback. | On |
+| Blocking | Ad blocking | Three layers: JSON prune, cosmetic filtering, and player fallback. | Off |
 
-#### Ad blocking layers
+SponsorBlock skips sponsor, self-promotion, and interaction reminders by default. The panel also lists Intro, Outro, Preview, Off-topic music, and Filler; those start off. A skip notice offers Undo, and segment colors on the progress bar can be turned off in settings.
 
-The three in-page ad-blocking layers are off by default. YouTube changes ad delivery and ad-block detection often. The built-in layers can stop working, break playback, or trigger anti-adblock responses. For daily use, install [uBlock Origin](https://ublockorigin.com/) on Firefox or [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) on Chrome, Edge, and Brave. Enable the built-in layers only if you accept that maintenance risk.
+#### Ad blocking
 
-The in-page layers do not delete ad data from player responses. The tool renames the `adPlacements`, `playerAds`, `adSlots`, `adBreakHeartbeatParams`, `adParams`, and `adSafetyReason` keys in the JSON, clears the player's adblock detection flags, and removes the warning modal if it still appears. This depends less on button names and ad selectors, so it needs less maintenance.
+The three in-page layers are off by default. YouTube changes ad delivery and ad-block detection often, so the built-in layers can stop working, break playback, or trigger an anti-adblock response. For daily use, install [uBlock Origin](https://ublockorigin.com/) on Firefox or [uBlock Origin Lite](https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh) on Chrome, Edge, and Brave. Turn on the built-in layers only if you accept that maintenance risk.
 
-1. **JSON prune.** Renames `adPlacements`, `playerAds`, `adSlots`, `adBreakHeartbeatParams`, `adParams`, and `adSafetyReason` in player responses before YouTube reads them. It runs in the main world at `document-start`.
-2. **Cosmetic filtering.** Hides feed, masthead, sidebar, and player ad slots. The rules apply only when the master switch and the cosmetic layer are on.
-3. **Player fallback.** Mutes an ad that reaches the player, clicks the skip button, and seeks to the end. It restores the previous mute state and playback speed after the ad.
+The tool does not delete ad data from player responses. It renames the `adPlacements`, `playerAds`, `adSlots`, `adBreakHeartbeatParams`, `adParams`, and `adSafetyReason` keys in the JSON, clears the player's adblock detection flags, and removes the warning modal if it still appears. Renaming keys depends less on button labels and ad selectors than cosmetic rules do.
+
+1. JSON prune: renames the ad keys in player responses before YouTube reads them. It runs in the main world at `document-start`.
+2. Cosmetic filtering: hides ad slots in the feed, masthead, sidebar, and player. The rules apply only when the master switch and the cosmetic layer are on.
+3. Player fallback: mutes an ad that reaches the player, clicks the skip button, and seeks to the end. It restores the previous mute state and playback speed after the ad.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-blocking.png">
@@ -258,11 +345,28 @@ The in-page layers do not delete ad data from player responses. The tool renames
   <img src="promo/popup-light-blocking.png" alt="Blocking tab in the extension popup, with the master switch and the JSON prune, cosmetic filtering, and player fallback layers" width="420">
 </picture>
 
-Extension builds add a network layer. MV3 uses `declarativeNetRequest` rules, and MV2 uses `webRequest` blocking. The userscript patches `fetch` and `XMLHttpRequest` in the page. These filters run before the three in-page layers.
+Extension builds add a network layer. MV3 enables its `declarativeNetRequest` ruleset only while ad blocking is on. MV2 blocks matching requests with `webRequest`. The userscript patches `fetch` and `XMLHttpRequest` in the page. These filters run before the three in-page layers.
+
+#### Video and audio downloads
+
+The Download button sits in the Like, Share, and Save row on watch pages. Its menu has three groups: companion presets, a direct MP4, and the ytmp3pc.com fallback.
+
+<img src="promo/downloader.png" alt="Download button beside Like and Share, with the menu open on Companion MP4 and audio presets, a direct MP4 360p download, and the ytmp3pc.com fallback" width="420">
+
+- Companion (optional): when the desktop companion is running and paired, the menu lists MP4 presets up to the video's highest height, MP3 at 192 kbps, and M4A at the best available quality. The companion resolves formats with yt-dlp, downloads each stream through parallel range requests, merges or converts with FFmpeg, and saves into the folder you chose. Cancel stops the connections and removes temporary files.
+- YouTube cookies (optional): off by default. If YouTube asks for a bot check or the video is age-restricted, run the "YT SuperTool - Browser cookies" shortcut and pick a browser or a `cookies.txt` file. The companion stores only the browser name or file path; yt-dlp reads the cookies on your machine and the extension never receives them. A browser that locks its cookie database may need to be closed first. Firefox usually works while open.
+- Companion install: the Windows x64 build bundles Node.js, yt-dlp, and FFmpeg. Run `Install YT SuperTool Companion.cmd` once. Windows starts the companion hidden at sign-in and you pair once.
+- Direct progressive MP4: the tool reads the highest progressive MP4 from `streamingData.formats`. That stream already contains video and audio, so the file goes straight to disk without a proxy and without remuxing. The menu shows the actual resolution, usually 360p.
+- High-quality MP4/MP3 through ytmp3pc.com: this entry copies the current video URL to the clipboard, shows a "Link copied" toast, and opens [ytmp3pc.com](https://ytmp3pc.com/) in a new tab. Paste the link there to choose a resolution or MP3.
+- No signature solving: the tool never runs player JavaScript, never calls `eval` or `new Function`, and never touches the n-parameter, so it stays inside the Manifest V3 CSP.
+- Expired links: YouTube download links expire. If a request answers 403 or 410, open the menu again for a fresh link.
+- Cancel: the progress card has a Cancel button. Changing videos or turning the feature off also aborts the active job.
+
+Without the companion, only the progressive MP4 stream goes through the tool. Other formats go through ytmp3pc.com in a new tab.
 
 #### Interface
 
-Settings open in a Shadow DOM panel. The panel follows the page theme through YouTube's dark and light attributes, the page background, and `prefers-color-scheme`. All CSS and SVG icons ship in the bundle. The UI makes no external CDN or font request.
+Settings open in a Shadow DOM panel. The panel follows the page theme through YouTube's dark and light attributes, the page background, and `prefers-color-scheme`. All CSS and SVG icons ship in the bundle. The UI requests no external CDN or font.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="promo/panel-dark-player.png">
@@ -270,21 +374,17 @@ Settings open in a Shadow DOM panel. The panel follows the page theme through Yo
   <img src="promo/panel-light-player.png" alt="YT SuperTool panel on the Player tab, with SponsorBlock, playback speed, and PiP">
 </picture>
 
-The **Browse** tab cleans the feed, the **Player** tab holds the video controls, and the **Blocking** tab holds the three ad-blocking layers. The full light and dark set is in [`promo/`](promo/).
+The Browse tab cleans the feed, the Player tab holds the video controls, and the Blocking tab holds the three ad-blocking layers. The extension popup uses the same three tabs. The full light and dark set is in [`promo/`](promo/).
 
-#### Video and audio downloads
+#### Permissions and privacy
 
-The **Download** button sits in the Like, Share, and Save row on watch pages. Its menu has two groups: one direct download and the formats that continue elsewhere.
+- The extension runs on `*://*.youtube.com/*`. The userscript skips YouTube Music and Studio.
+- Settings stay in extension storage or GM storage. There is no account, analytics, telemetry, or developer server.
+- Three services receive requests: `returnyoutubedislikeapi.com` gets the video ID when dislikes are on, `sponsor.ajay.app` gets the video ID when SponsorBlock is on, and `raw.githubusercontent.com` gets one automatic request every 24 hours to check the version.
+- The companion listens on `127.0.0.1:47831` and requires a pairing token. The extension never receives YouTube cookies.
+- Host permissions for ad networks are used only by the optional ad-blocking layer.
 
-<img src="promo/downloader.png" alt="Download button beside Like and Share, with the menu open on MP4 360p and high quality MP4 or MP3">
-
-- **Direct progressive MP4.** The tool takes the highest progressive stream from `streamingData.formats`, which already carries video and audio. It is usually 360p but can be higher, and the menu shows the actual resolution. The file saves straight to disk with no proxy server and no remuxing.
-- **High quality MP4/MP3.** A single entry copies the current video URL to the clipboard, shows a "Link copied" toast, then opens [ytmp3pc.com](https://ytmp3pc.com/) in a new tab. Paste the link there to pick a resolution or MP3.
-- **No signature solving.** The tool never runs player JavaScript, never calls `eval`/`new Function` and never touches the n-parameter, so it stays inside the Manifest V3 CSP.
-- **Expired links.** YouTube download links expire. If a request answers 403 or 410, open the menu again for a fresh link.
-- **Cancel.** The progress card has a Cancel button. Changing videos or turning the feature off also aborts the active job.
-
-Only the progressive MP4 stream goes through the extension; everything else is handled by ytmp3pc.com in a new tab.
+Full policy: [PRIVACY.md](https://github.com/CheemsGalaxy/YT-SuperTool/blob/main/PRIVACY.md).
 
 ### Architecture
 
@@ -293,75 +393,14 @@ YT SuperTool uses one core and three build targets.
 | Layer | Path | Role |
 |---|---|---|
 | Core | `src/core/` | Feature logic, settings, SPA lifecycle, and UI. No host API calls. |
-| Adapters | `src/adapters/` | Storage, network, style injection, and tab APIs for userscript and extension hosts. |
-| Entries | `src/entries/` | Per-target entry points for the userscript, content script, main world script, background worker, and popup. |
+| Adapters | `src/adapters/` | Storage, network, style injection, tab, and companion APIs for userscript and extension hosts. |
+| Entries | `src/entries/` | Entry points for the userscript, content script, main world script, MV2/MV3 background, and popup. |
 | Manifests | `src/manifests/` | Shared, MV2, and MV3 manifest fragments. |
 | Rules | `src/rules/` | MV3 `declarativeNetRequest` ruleset. |
+| Companion | `companion/` | Optional desktop service: pairing, job queue, range downloads, and FFmpeg merges. |
 | Build | `scripts/` | Bundle, manifest assembly, archive creation, and verification. |
 
-Vite builds one IIFE per target entry with `__TARGET__` set at build time. MV2 cannot run a content script in the main world, so `content.entry.js` injects `main-world.js` from `web_accessible_resources` at document-start. MV3 declares the same file with `"world": "MAIN"`.
-
-### Installation
-
-#### Option 1: Userscript
-
-1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
-2. Click [quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js). The userscript manager opens its install screen.
-3. Review the requested permissions and confirm the install.
-4. Open YouTube. The YT SuperTool button appears in the header.
-
-If the quick install link does not work, build it from source and install `dist/userscript/yt-supertool.user.js`.
-
-#### Option 2: Browser extension
-
-Download the packages directly:
-
-| Browser | Package | Management page |
-|---|---|---|
-| Chrome, Edge, Brave | [`yt-supertool-mv3.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv3.zip) | `chrome://extensions`, `edge://extensions`, `brave://extensions` |
-| Firefox | [`yt-supertool-mv2.zip`](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/yt-supertool-mv2.zip) | `about:debugging#/runtime/this-firefox` |
-
-If a download link does not work, build from source. The build writes all three targets to `dist/`.
-
-##### Chrome, Edge, and Brave
-
-1. Extract the zip to a permanent folder. The browser reads the extension from this folder, so do not delete it after installation.
-2. Open `chrome://extensions`, `edge://extensions`, or `brave://extensions`.
-3. Turn on **Developer mode**.
-4. Click **Load unpacked** and select the extracted folder.
-5. Open YouTube. The extension is active, and its popup exposes the same settings as the userscript panel.
-
-The popup uses the same three tabs as the panel:
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="promo/popup-dark-browse.png">
-  <source media="(prefers-color-scheme: light)" srcset="promo/popup-light-browse.png">
-  <img src="promo/popup-light-browse.png" alt="YT SuperTool extension popup on the Browse tab, with Hide Shorts and Clean homepage" width="360">
-</picture>
-
-Chrome, Edge, and Brave are phasing out Manifest V2 extensions. Use the MV3 package on those browsers.
-
-##### Firefox
-
-1. Extract `yt-supertool-mv2.zip` to a permanent folder.
-2. Open `about:debugging#/runtime/this-firefox`.
-3. Click **Load Temporary Add-on**.
-4. Select `manifest.json` inside the extracted folder.
-5. Open YouTube.
-
-Firefox removes temporary add-ons when the browser closes. A permanent install needs a signed XPI package.
-
-Chrome, Edge, and Brave show a warning for extensions installed outside the Web Store. This is expected with **Load unpacked**.
-
-The three in-page ad-blocking layers stay off after installation. Open the YT SuperTool settings and enable them only if you want the built-in layers.
-
-#### Optional: desktop companion on Windows
-
-1. Get `yt-supertool-companion-1.0.0-win32-x64.zip` from the release or build it with `npm run package:companion`, check its SHA-256, and extract it.
-2. Run `Install YT SuperTool Companion.cmd`. The installer copies the program to `%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and five desktop shortcuts, starts the companion in the background, and prints a pairing code.
-3. Open YouTube, click Download, and enter the code. You pair once.
-
-Windows starts the companion hidden at each sign-in. The desktop shortcuts print a new pairing code, show the status, choose an optional browser cookie source or cookies.txt file, open the download folder, or uninstall the program. Full details are in [`companion/INSTALL_WINDOWS.md`](companion/INSTALL_WINDOWS.md).
+Vite builds one IIFE per entry with `__TARGET__` set at build time. MV2 cannot run a content script in the main world, so `content.entry.js` injects `main-world.js` from `web_accessible_resources` at document-start. MV3 declares the same file with `"world": "MAIN"`.
 
 ### Build from source
 
@@ -384,9 +423,10 @@ npm run build
 | `npm run build` | Rebuild `dist/` with the userscript, MV2, MV3, and both zip archives. |
 | `npm run verify` | Check manifests, bundles, adblock layers, UI rules, and archives. |
 | `npm run build:verify` | Run the build, then run verification. |
+| `npm test` | Run the extension test suite. |
 | `npm run package:companion` | Build the Windows x64 companion zip and its `.sha256` file. |
-| `npm run smoke:companion` | Unpack the companion zip and run the packaged 360p download smoke test. |
-| `npm run smoke:install` | Install the companion into temporary folders and test the shortcuts, pairing, relaunch and uninstall. |
+| `npm run smoke:companion` | Extract the companion zip and run the packaged 360p download smoke test. |
+| `npm run smoke:install` | Install the companion into temporary folders and test shortcuts, pairing, relaunch, and uninstall. |
 
 #### Build output
 
