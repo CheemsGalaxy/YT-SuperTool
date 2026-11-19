@@ -65,9 +65,11 @@ window to keep open. Open YouTube and the Download menu shows the companion
 presets when the extension is paired.
 
 The menu offers MP4 presets up to the highest height that yt-dlp reports for
-the video, MP3 at 192 kbps, and M4A at the best available quality. The
-companion merges video and audio with FFmpeg. The progress card shows percent,
-speed, ETA and size. Cancel stops the process and removes the temporary folder.
+the video, MP3 at 192 kbps, and M4A at the best available quality. yt-dlp only
+resolves the format; the companion downloads each stream with parallel range
+requests, then merges or converts with FFmpeg. The progress card shows percent,
+speed, ETA and size. Cancel aborts every connection and removes the temporary
+folder.
 
 The desktop shortcuts do these jobs:
 
@@ -75,11 +77,11 @@ The desktop shortcuts do these jobs:
 |---|---|
 | YT SuperTool - Pair browser | Print a fresh pairing code |
 | YT SuperTool - Status | Show the process, pairing state and output folder |
-| YT SuperTool - Browser cookies | Choose an optional YouTube cookie source |
+| YT SuperTool - Browser cookies | Choose an optional YouTube cookie source, browser or cookies.txt |
 | YT SuperTool - Open downloads | Open the download folder |
 | YT SuperTool - Uninstall | Remove the program and its shortcuts |
 
-Browser cookies are off by default. Without them, age-restricted, members-only
+YouTube cookies are off by default. Without them, age-restricted, members-only
 and some private videos fail with a message that names the restriction. Region
 locks are not bypassed.
 
@@ -102,30 +104,60 @@ The companion accepts only folders inside the user home. It creates a hidden
 the output folder. An existing file is never overwritten. A name clash adds
 ` (1)`, ` (2)` and so on.
 
-## Browser cookies (optional)
+## Connections and speed limit
+
+Downloads use parallel HTTP range requests instead of one yt-dlp stream. Each
+stream is split into chunks and every connection pulls its own chunk. Two
+settings control this in `%USERPROFILE%\.yt-super-tool\settings.json`:
+
+| Key | Range | Default | Meaning |
+|---|---|---|---|
+| `connections` | Integer `1` to `32` | `8` | Parallel requests per stream |
+| `speedLimitKbps` | Integer `0` to `1048576` | `0` | Total download limit in KB/s, `0` means unlimited |
+
+Lower `connections` on a weak network or when YouTube throttles a single
+client. A high value helps on fast links and can hurt on slow ones. The speed
+limit applies across all connections of a job.
+
+Stop the companion before you edit the file, then start it again. Invalid
+values are ignored and the default is used. The API returns both values in
+`GET /api/settings` and accepts them in `PUT /api/settings`.
+
+## YouTube cookies (optional)
 
 YouTube sometimes asks for a bot check or refuses an age-restricted video. The
 companion can use the YouTube session from a browser on this machine to answer
-that check.
+that check. There are two sources: a browser store or a Netscape cookies.txt
+file. They are mutually exclusive.
 
 1. Sign in to YouTube in the browser you want to use.
 2. Run the **YT SuperTool - Browser cookies** desktop shortcut, or
    `install\cookies.cmd` in the installed folder.
-3. Choose the browser and confirm.
+3. Choose the browser, or choose `file` and enter the path to a cookies.txt
+   export.
 
-The companion saves only the browser name in
-`%USERPROFILE%\.yt-super-tool\settings.json` and restarts. It passes
-`--cookies-from-browser <name>` to yt-dlp. yt-dlp reads the cookie store
-directly. The companion does not store, log or send cookie values, and the
-extension never receives them. yt-dlp uses them for its YouTube requests.
+The companion saves only the browser name or the file path in
+`%USERPROFILE%\.yt-super-tool\settings.json` and restarts. For a browser it
+passes `--cookies-from-browser <name>` to yt-dlp. For a file it passes
+`--cookies <path>`. yt-dlp reads the source directly. The companion does not
+store, log or send cookie values, and the extension never receives them. yt-dlp
+uses them for its YouTube requests.
 
-Supported names: `chrome`, `chromium`, `edge`, `brave`, `firefox`, `opera` and
-`vivaldi`. Choose `off` to turn the setting off.
+Supported browser names: `chrome`, `chromium`, `edge`, `brave`, `firefox`,
+`opera` and `vivaldi`. Choose `off` to turn the setting off.
 
 Edge, Chrome and Brave may lock the cookie database or protect it with
 app-bound encryption. If the companion reports that it cannot read cookies,
 close the browser and retry. Firefox usually allows reading while it is open.
-If the browser still fails, choose another browser.
+If the browser still fails, use a cookies.txt file.
+
+A cookies.txt file must be a Netscape export inside your home folder, for
+example `%USERPROFILE%\Downloads\cookies.txt`. The companion rejects files
+larger than 5 MB, files without the `# Netscape HTTP Cookie File` header, and
+symbolic links. Create the export with a cookie tool you trust, keep the file
+private, and delete it when you no longer need it. The file contains live
+session cookies in plain text. The companion stores only its path and checks
+the file again before every analyze and download.
 
 Cookies help with content your account can already play, such as age-restricted
 videos. They do not unlock private, members-only or region-locked content that
@@ -213,7 +245,9 @@ For extra detail in a visible session:
 | "YouTube refused this download (HTTP 403)" | The video may need a sign-in the companion does not support. The direct MP4 option can still work. |
 | "YouTube asked for a bot check" | Sign in to YouTube in your browser, then run the Browser cookies shortcut and choose that browser. Retry the download. |
 | "This video is age restricted" | Run the Browser cookies shortcut and choose a browser where you can play the video. |
-| "The companion could not read cookies from the selected browser" | Close the browser and retry. If it still fails, choose another browser; Firefox usually works while open. |
+| "The companion could not read cookies from Microsoft Edge" (or Chrome, Brave) | The browser keeps its cookie file open. Quit it completely, including background processes, then retry. If it still fails, use a cookies.txt file or choose Firefox. Firefox cookies work while Firefox is open. |
+| "The companion could not decrypt cookies from ..." | The browser uses app-bound encryption that yt-dlp cannot open. Use a cookies.txt file exported from that browser, or choose Firefox. |
+| "The companion could not read the cookie file" | Export YouTube cookies to a fresh Netscape cookies.txt file and choose it again. The file must start with `# Netscape HTTP Cookie File`. |
 | "This video is for channel members only" | Membership content is not supported. |
 | "The companion could not reach YouTube" | Check the network connection. The companion has no proxy setting. |
 | FFmpeg uses a lot of CPU | Merging a high-resolution video takes CPU time. The job finishes when the merge ends. |
@@ -232,8 +266,9 @@ For extra detail in a visible session:
 - It runs yt-dlp with an argument array, `--ignore-config`, `--no-exec` and
   `--no-playlist`.
 - It does not bypass DRM, paywalls, authentication or region locks.
-- Browser cookies are opt-in and limited to one allowlisted browser name. The
-  companion stores no cookie value. yt-dlp reads the cookie store directly.
+- YouTube cookies are opt-in. The companion stores only an allowlisted
+  browser name or a cookies.txt path inside the user home. It stores no cookie
+  value.
 - The output folder must stay inside the user home, and jobs write to a
   per-job temporary folder first.
 - The installer verifies every packaged file against
@@ -241,5 +276,5 @@ For extra detail in a visible session:
   service and writes no registry value. It adds one startup shortcut and five
   desktop shortcuts.
 
-The full control list is in `../SECURITY.md`. The failure matrix is in
+The full control list is in `../docs/SECURITY.md`. The failure matrix is in
 `TEST_MATRIX.md`.

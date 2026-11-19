@@ -52,11 +52,12 @@ in that browser.
 | Command injection | `spawn(binary, argsArray, { shell: false })`. No user string is concatenated into a command. |
 | Arbitrary yt-dlp arguments | The client sends enums only. The server maps presets to a fixed argument array. |
 | Malicious yt-dlp config | Launch with `--ignore-config` and `--no-exec`, so a user or attacker config file cannot add arguments. |
-| Arbitrary URL fetch | URL parser accepts only YouTube hosts and video paths. Playlists, channels and search URLs are rejected. |
-| SSRF through redirects | Only normalized YouTube video URLs reach yt-dlp. The companion does not expose a generic fetch endpoint. |
+| Arbitrary URL fetch | URL parser accepts only YouTube hosts and video paths. Playlists, channels and search URLs are rejected. The segmented engine fetches only media URLs that yt-dlp returned for the current job. |
+| Header injection through media JSON | Only allowlisted headers (`User-Agent`, `Accept`, `Accept-Language`, `Referer`, `Origin`, `Sec-Fetch-*`) are copied from the yt-dlp result. Cookies, `Range` and custom names are dropped. |
+| SSRF through redirects | The client cannot submit a media URL. The engine follows redirects only over HTTP and HTTPS, rejects other protocols and has no public fetch endpoint. |
 | Path traversal | Output directory is absolute, inside the user's home, and not a root. Final path is resolved and checked against the job temporary directory before the move. |
 | Symlink swap | Reject symlinked output directories and final targets. Create the job directory with a random id and restrictive permissions. |
-| Overwrite of unrelated files | yt-dlp writes into a per-job temporary directory. The final rename refuses an existing target. |
+| Overwrite of unrelated files | Every stream and the merged file are written into a per-job temporary directory. The final rename refuses an existing target. |
 | Huge request or response | 64 KiB request limit. yt-dlp JSON output capped at 10 MiB. Job progress lines capped. |
 | Resource exhaustion | Two concurrent jobs maximum, one job per URL, process timeout for analyze, queue cap of 20. |
 | Binary replacement | Bundled binaries are checked against a SHA-256 manifest before first use. Environment overrides are explicit and logged without secrets. |
@@ -113,7 +114,8 @@ origin.
 
 yt-dlp arguments are fixed by mode and presets. The only values interpolated
 into arguments are validated enums, a normalized URL and the optional cookie
-source name. FFmpeg is called by yt-dlp, not by a user supplied command line.
+source name. The companion calls FFmpeg itself with a fixed argument array built
+from the job plan, so no user supplied command line reaches it.
 
 Required flags include:
 
@@ -141,9 +143,10 @@ are parsed, not executed. Output is capped per job.
 - `outputDir` must be absolute, must resolve inside the home directory and must
   not be a filesystem root.
 - The companion creates `outputDir` only after validation.
-- Each job writes to `outputDir/.ytst-tmp/<jobId>/`.
-- The filename uses the yt-dlp template with the video id and a bounded title.
-  Windows reserved names are handled by yt-dlp with `--windows-filenames`.
+- Each job writes to `outputDir/.ytst-tmp/<jobId>/`. Stream files and the
+  merged file stay there until the job finishes.
+- The final filename comes from a sanitized title and the video id. Path
+  separators, reserved characters and trailing dots are removed.
 - Before moving a finished file, the companion resolves both paths and checks
   that the source is inside the job directory and the destination is inside the
   output directory.
@@ -212,5 +215,8 @@ query string removed. Error stacks are available only with `--debug`.
 - A binary hash mismatch stops startup.
 - The cookie source defaults to off and rejects names outside the allowlist.
 - A cookie-enabled start passes only `--cookies-from-browser <allowlisted>`.
+- `connections` and `speedLimitKbps` reject values outside their integer ranges.
+- The segmented engine rejects a redirect to a non-HTTP(S) protocol and falls
+  back to one stream when the server ignores ranges.
 - Logs contain no token, code, cookie value or query string.
 - `npm run build:verify` passes for all targets.

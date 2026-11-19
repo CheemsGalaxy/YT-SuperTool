@@ -361,7 +361,7 @@ The three in-page ad-blocking layers stay off after installation. Open the YT Su
 2. Run `Install YT SuperTool Companion.cmd`. The installer copies the program to `%LOCALAPPDATA%\YT SuperTool Companion`, adds a startup shortcut and five desktop shortcuts, starts the companion in the background, and prints a pairing code.
 3. Open YouTube, click Download, and enter the code. You pair once.
 
-Windows starts the companion hidden at each sign-in. The desktop shortcuts print a new pairing code, show the status, choose an optional browser cookie source, open the download folder, or uninstall the program. Full details are in [`companion/INSTALL_WINDOWS.md`](companion/INSTALL_WINDOWS.md).
+Windows starts the companion hidden at each sign-in. The desktop shortcuts print a new pairing code, show the status, choose an optional browser cookie source or cookies.txt file, open the download folder, or uninstall the program. Full details are in [`companion/INSTALL_WINDOWS.md`](companion/INSTALL_WINDOWS.md).
 
 ### Build from source
 

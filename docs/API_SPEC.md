@@ -203,8 +203,9 @@ Errors:
 
 ### POST /api/download
 
-Requires a token. Creates a job. The server maps the preset to yt-dlp
-arguments. Raw format strings are not accepted.
+Requires a token. Creates a job. The server maps the preset to a yt-dlp format
+selector, resolves the direct media URLs, then downloads them with the
+segmented HTTP engine. Raw format strings are not accepted.
 
 Request:
 
@@ -306,8 +307,8 @@ Success, 202:
 { "ok": true, "job": { "id": "8b1b0f2e-5e0e-4d2d-9e0f-0d1f2f3a4b5c", "state": "cancelled" } }
 ```
 
-Cancellation kills the yt-dlp process tree, removes the job temporary
-directory and keeps the job record for the UI.
+Cancellation aborts every range worker, kills any yt-dlp or FFmpeg process
+tree, removes the job temporary directory and keeps the job record for the UI.
 
 ### GET /api/settings
 
@@ -323,7 +324,10 @@ Requires a token.
     "audioFormat": "mp3",
     "audioQuality": 192,
     "concurrentDownloads": 1,
-    "cookiesFromBrowser": null
+    "connections": 8,
+    "speedLimitKbps": 0,
+    "cookiesFromBrowser": null,
+    "cookiesFile": null
   }
 }
 ```
@@ -338,10 +342,20 @@ Requires a token. Accepts a partial object. Unknown keys are rejected.
 
 Success returns the full settings object. `outputDir` must be absolute, must not
 be a filesystem root and must resolve inside the user's home directory.
+`concurrentDownloads` is `1` or `2`. `connections` is an integer from `1` to
+`32` and sets parallel range requests per stream. `speedLimitKbps` is an integer
+from `0` to `1048576`; `0` means no limit.
 `cookiesFromBrowser` accepts `null` or one of `chrome`, `chromium`, `edge`,
 `brave`, `firefox`, `opera`, `vivaldi`. The setting stores only the browser
 name. yt-dlp reads the cookie store directly, and the API never returns a
 cookie value.
+
+`cookiesFile` accepts `null` or an absolute path inside the user home to a
+Netscape cookies.txt file. The file must be a regular file, no larger than
+5 MB, and start with `# Netscape HTTP Cookie File` or `# HTTP Cookie File`.
+The companion stores only the path and passes `--cookies <path>` to yt-dlp.
+It never reads the cookie values into the API response. A settings patch
+cannot set both sources; setting one clears the other.
 
 ## Error envelope
 

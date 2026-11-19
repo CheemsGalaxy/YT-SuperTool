@@ -36,7 +36,7 @@ mention SEA support.
 
 | Platform | Architecture | Build | Tested |
 |---|---|---|---|
-| Windows 10/11 | x64 | `yt-supertool-companion-1.0.0-win32-x64.zip` | Yes, 2026-11-16 |
+| Windows 10/11 | x64 | `yt-supertool-companion-1.0.0-win32-x64.zip` | Yes, 2026-11-18 |
 | Linux | x64 | Not yet | No |
 | Linux | arm64 | Not yet | No |
 | macOS Intel | x64 | Not yet | No |
@@ -59,6 +59,10 @@ companion/
     pairing.js
     jobs.js
     ytdlp.js
+    media.js
+    downloader/
+      planner.js
+      engine.js
     binaries.js
     settings.js
     store.js
@@ -165,7 +169,8 @@ the installed file layout. It then runs `install\pair.ps1`, pairs through the
 HTTP API, checks `status.ps1`, stops the process, starts it again with
 `launch-hidden.vbs`, confirms that the token survives and that a second launch
 does not duplicate the process. It sets and clears the browser cookie source
-with `cookies.ps1` and checks the saved setting. The last step runs
+with `cookies.ps1`, then sets and clears a Netscape cookie file path, and
+checks both saved settings. The last step runs
 `uninstall.ps1` and checks that the program folder, data folder, shortcuts and
 process are gone.
 
@@ -176,17 +181,20 @@ binary and runtime must match the target. Cross compilation is not used.
 The GitHub Actions matrix below still describes the planned per-platform build.
 No workflow file runs the package scripts yet.
 
-## Packaged build on 2026-11-16
+## Packaged build on 2026-11-18
 
 Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64, Node.js v26.13.1,
-yt-dlp 2026.10.26, FFmpeg `N-128909-g604ef3784d-20261114` from the BtbN
+yt-dlp 2026.10.26, FFmpeg `N-129000-g64f6bcffaf-20261117` from the BtbN
 `lgpl-shared` build.
 
 ```
 companion/dist/yt-supertool-companion-1.0.0-win32-x64.zip
-size    132,225,619 bytes
-sha256  423daa51709aef59cb91c662814f6b956553a83e459ebcb62bd34cb5a8d8a816
+size    132,221,123 bytes
+sha256  4b2c5432f22c082b97a2c320d636b076d8f9002d9402321844ca18998fa326e4
 ```
+
+`dist/SHA256SUMS.txt` lists the extension, userscript and companion artifacts
+with their SHA-256 values for release uploads.
 
 The zip contains `YT SuperTool Companion/` with `node/node.exe`,
 `app/src/*`, `app/bin/win32-x64/*` (yt-dlp, ffmpeg, ffprobe and 7 shared
@@ -199,12 +207,13 @@ then unpacked the zip and reported:
 
 ```
 layout ok (7 dlls, 10 checksums)
-package manifest ok (45 files)
+package manifest ok (48 files)
 self-test ok
-health ok (yt-dlp 2026.10.26, ffmpeg N-128909-g604ef3784d-20261114)
+health ok (yt-dlp 2026.10.26, ffmpeg N-129000-g64f6bcffaf-20261117)
 auth and origin checks ok
 pair ok
 analyze ok (Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film, presets best/2160/1440/1080/720/480/360)
+cookie file analyze ok
 cancel ok (temp folder cleaned)
 read-only output rejected with a clear error
 download accepted <job id>
@@ -214,14 +223,17 @@ unpair ok
 PACKAGE SMOKE OK
 ```
 
-That file size matches the three browser runs from the same day. The zip is a
-release artifact and is not committed. `companion/dist/` is in `.gitignore`.
+The 360p job ran through the segmented engine: yt-dlp resolved the streams and
+the companion downloaded them over range connections before the FFmpeg merge.
+The file size matches the earlier yt-dlp run because the same streams are
+selected. The zip is a release artifact and is not committed. `companion/dist/`
+is in `.gitignore`.
 
 `npm run smoke:install` then installed the same zip into temporary folders and
 reported:
 
 ```
-zip checksum ok (132222710 bytes)
+zip checksum ok (132221123 bytes)
 package extracted
 install ok
 paths.json ok
@@ -233,6 +245,8 @@ status ok
 stop ok
 relaunch ok (pairing persisted)
 duplicate launch guard ok
+browser cookie setting ok
+cookie file setting ok
 uninstall ok
 INSTALL SMOKE OK
 ```
@@ -246,6 +260,10 @@ script, which is not part of the repository.
 The failure matrix and the browser regression record are in
 `companion/TEST_MATRIX.md`. Install steps are in
 `companion/INSTALL_WINDOWS.md`.
+
+The source segmented engine also passed a 360p MP4 download and an M4A 192k
+download on 2026-11-18; both files were checked with `ffprobe`. The packaged
+smoke test repeated the 360p path with the bundled runtime.
 
 ## GitHub Actions plan
 
@@ -318,7 +336,8 @@ macOS:
 4. Allow incoming loopback connections if the firewall prompts.
 
 The README must state that the companion is optional, local only and uses
-YouTube cookies only when the user opts in.
+YouTube cookies only when the user opts in, from one browser or one cookies.txt
+path.
 
 ## Uninstall
 

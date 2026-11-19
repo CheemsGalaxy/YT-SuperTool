@@ -32,10 +32,10 @@ scripts is in the upstream repository above.
 ## FFmpeg
 
 - Build: BtbN `ffmpeg-master-latest-win64-lgpl-shared`, FFmpeg
-  `N-128909-g604ef3784d-20261114`.
+  `N-129000-g64f6bcffaf-20261117`.
 - Upstream build: <https://github.com/BtbN/FFmpeg-Builds>
 - Upstream source: <https://github.com/FFmpeg/FFmpeg>
-- Archive SHA-256: `1d70f82bcc24b9245f1feeb030855c9f94cd380e67867d5a4ac1ff78389a619a`
+- Archive SHA-256: `8108b340409da1f48fb1fd989984f0fc15dc3e505c10a3981fd185b7f725ea0f`
 - License: LGPL-3.0-or-later. The license text ships as
   `licenses/ffmpeg-LICENSE.txt`.
 - Bundled files: `ffmpeg.exe`, `ffprobe.exe` and the shared libraries

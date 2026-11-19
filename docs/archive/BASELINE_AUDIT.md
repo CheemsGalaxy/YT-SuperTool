@@ -207,13 +207,13 @@ Existing files:
 - `src/manifests/mv2.manifest.json`, `mv2.manifest.json`, `mv3.manifest.json`
 - `src/entries/userscript.entry.js`
 - `scripts/build-all.mjs`, `scripts/verify-build.mjs`
-- `README.md`, `ARCHITECTURE_AUDIT.md`
+- `README.md`, `docs/archive/ARCHITECTURE_AUDIT.md`
 
 New files:
 
 - `companion/` package, server, job manager, binary resolver, tests
 - `docs/API_SPEC.md`, `docs/SECURITY.md`, `docs/BUILD_AND_DISTRIBUTION.md`
-- `BASELINE_AUDIT.md` (this file), `ARCHITECTURE.md`
+- `docs/archive/BASELINE_AUDIT.md` (this file), `docs/ARCHITECTURE.md`
 
 ## Open decisions for Phase 1
 

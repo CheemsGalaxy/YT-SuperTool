@@ -4,12 +4,12 @@ Local service that downloads video and audio for YT SuperTool. It runs on the
 user's machine, binds to loopback and exposes HTTP API version 1 on
 `http://127.0.0.1:47831`.
 
-Status: Phase 6 is done on Windows x64. The API, pairing, job manager, browser
-adapters, the Download menu integration, the portable zip, the installer with
-sign-in autostart, and the failure matrix work on this machine. Linux, macOS
-and a real userscript manager remain open. Install steps are in
-`INSTALL_WINDOWS.md`, release details in `RELEASE_NOTES.md`, and the full test
-record in `TEST_MATRIX.md`.
+Status: Phase 7 is done on Windows x64. The API, pairing, job manager, browser
+adapters, the segmented download engine, the Download menu integration, the
+portable zip, the installer with sign-in autostart, and the failure matrix work
+on this machine. Linux, macOS and a real userscript manager remain open. Install
+steps are in `INSTALL_WINDOWS.md`, release details in `RELEASE_NOTES.md`, and
+the full test record in `TEST_MATRIX.md`.
 
 ## Capabilities
 
@@ -17,8 +17,11 @@ record in `TEST_MATRIX.md`.
 - One-time pairing code, SHA-256 token hashes and per-client revocation.
 - YouTube URL policy for watch, Shorts, live, embed and youtu.be links.
 - Job queue with preset quality, progress polling and cancel.
-- yt-dlp for metadata and download, FFmpeg for merge and MP3 extraction.
-- Optional browser cookie source for YouTube bot checks, off by default.
+- Native segmented HTTP downloader: range probe, chunk planner, parallel workers, retries and an optional resume state file.
+- yt-dlp media headers for each stream. If the engine still gets a refused media URL (HTTP 403), the job retries through yt-dlp.
+- Settings for connection count (1-32, default 8) and a speed limit in KB/s (0 means unlimited).
+- yt-dlp resolves formats only. The companion downloads each stream itself and merges or converts with FFmpeg.
+- Optional browser cookie source or Netscape cookies.txt file for YouTube bot checks, off by default.
 - Per-job temporary folder, final move into the output folder, no overwrite.
 - Bounded logs with token, pairing code and query string redaction.
 
@@ -70,6 +73,7 @@ Useful flags:
 --data-dir <path>     Settings and token storage, default ~/.yt-super-tool
 --output-dir <path>   Download folder inside the user home
 --set-cookies <name>  Save a cookie source and exit; use off to disable
+--set-cookies-file <p>  Save a cookies.txt path and exit; use off to clear
 --pair                Print a new pairing code when already paired
 --pair-code-file <p>  Also write the current pairing code to a file
 --self-test           Local checks without downloading media
@@ -88,21 +92,26 @@ by the `Origin` allowlist and the `Host` check, not by CORS alone.
 
 ## Test status
 
-Recorded on 2026-11-16, Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64,
+Recorded on 2026-11-18, Windows 10 IoT Enterprise LTSC 2021 (10.0.19044) x64,
 Node v26.13.0 for development and v26.13.1 in the package.
 
 | Check | Result |
 |---|---|
-| `npm test` in `companion/` | 66 tests pass, 0 fail |
+| `npm test` in `companion/` | 103 tests pass, 0 fail |
 | `npm test` in the repository root | 23 tests pass, 0 fail |
 | `npm run self-test` | 7 checks pass |
+| Source segmented download, 360p MP4 | Merged file 533,932 bytes, AV1 video plus AAC audio, 19.06 s |
+| Source segmented download, M4A 192k | 459,861 bytes, AAC stereo, 19.01 s |
+| Source segmented download, MP3 192k | 457,389 bytes, MP3 48 kHz stereo, 19.01 s |
 | Entry smoke test | Health, pairing code, token issue, settings read, code reuse 410, foreign Origin 403 |
 | yt-dlp 2026.10.26 analyze | Big Buck Bunny metadata and seven video presets |
-| Source video download, 360p MP4 | 46,283,922 bytes |
-| Source audio download, MP3 192k | 14.53 MB |
+| Source video download, 360p MP4 (pre-engine) | 46,283,922 bytes |
+| Source audio download, MP3 192k (pre-engine) | 14.53 MB |
 | Source cancel a running job | State changed to cancelled, no temp files left |
 | Error classification | Disk full, permission, network, HTTP 403 and unknown stderr mapped to safe messages |
 | Browser cookies, end to end | Source companion with a Firefox store: pairing, settings update, analyze and 360p job completed; 46,283,922 bytes |
+| Cookie file | Packaged yt-dlp 2026.10.26 with `--cookies` and a Netscape header file: analyze passed |
+| Cookie error text | Locked, decrypt, read and malformed-file failures map to safe messages; analyze and job errors covered by tests |
 | Read-only output folder | HTTP 503 `OUTPUT_DIR_INVALID` from the packaged build |
 | Edge 157 MV3 pair, analyze, 360p, cancel | Saved 25,786,983 bytes, progress and reopen checked |
 | Edge 157 MV3 without companion | Missing-companion message, direct MP4 saved |
@@ -110,9 +119,9 @@ Node v26.13.0 for development and v26.13.1 in the package.
 | Firefox 160 MV2 pair, analyze, 360p | Saved 25,786,983 bytes |
 | Edge 157 userscript build with GM shims | Saved 25,786,983 bytes |
 | `npm run build:verify` in the repository root | All targets and zips verified |
-| `npm run package:companion` | `SELF-TEST OK`, both bundled binaries available |
-| `npm run smoke:companion` | `PACKAGE SMOKE OK`, 46,283,922 byte file, cancel and read-only checks |
-| `npm run smoke:install` | `INSTALL SMOKE OK`, five shortcuts, cookie setting set and cleared |
+| `npm run package:companion` | `SELF-TEST OK`, 48 files, yt-dlp 2026.10.26 and FFmpeg `N-129000-g64f6bcffaf-20261117` available |
+| `npm run smoke:companion` | `PACKAGE SMOKE OK`, segmented download of 46,283,922 bytes, cancel and read-only checks |
+| `npm run smoke:install` | `INSTALL SMOKE OK`, five shortcuts, browser and cookie file setting set and cleared |
 
 Not tested yet: Linux, macOS, a real userscript manager, a real disk-full
 volume, proxy support, and Chrome stable. No platform outside Windows x64 is
@@ -120,8 +129,9 @@ advertised as supported. `TEST_MATRIX.md` lists every failure case and each
 item that did not run.
 
 Browser rows that saved 25,786,983 bytes ran before the companion passed a
-Node runtime to yt-dlp. Current builds select a higher-quality 360p stream and
-save 46,283,922 bytes for the same preset.
+Node runtime to yt-dlp. Rows marked pre-engine used the yt-dlp download path on
+the Blender film. Current builds use the segmented engine: the same 360p preset
+saved 533,932 bytes for the 19-second test video.
 
 The browser runs used a Creative Commons Blender Foundation film. The
 userscript run used injected shims for the `GM_*` calls, not Tampermonkey or
@@ -136,15 +146,20 @@ package script downloads them and checks the upstream checksums.
   normalized URL. The client sends enum presets, never raw arguments.
 - Accept only YouTube video URLs. Playlists, channels, search pages and other
   hosts are rejected before any process starts.
+- The segmented engine accepts only media URLs that yt-dlp returned for the
+  current job. It follows HTTP and HTTPS redirects, rejects other protocols, and
+  writes only inside the job temporary folder.
 - Keep browser cookies off by default. When the user opts in, store only the
-  allowlisted browser name and pass it to yt-dlp. Never store, log or return a
-  cookie value.
+  allowlisted browser name and pass it to yt-dlp. A cookie file source stores
+  only an absolute path inside the user home; the companion checks the file
+  before every analyze and download and passes the path to yt-dlp. Never
+  store, log or return a cookie value.
 - Keep the output directory inside the user home, write each job to
   `<output>/.ytst-tmp/<jobId>/`, then resolve and move the final file. Never
   overwrite an existing file.
 - Do not touch DRM, paywalls, authentication or region locks.
 
-The threat model and the full control list are in `../SECURITY.md`.
+The threat model and the full control list are in `../docs/SECURITY.md`.
 
 ## Source layout
 
@@ -156,7 +171,10 @@ The threat model and the full control list are in `../SECURITY.md`.
 | `src/url-policy.js` | YouTube URL parser and normalization |
 | `src/settings.js` | Defaults, enums, output directory validation |
 | `src/jobs.js` | Queue, progress, cancel, final move, cleanup |
-| `src/ytdlp.js` | Analyze and download argument maps, progress parser |
+| `src/ytdlp.js` | Analyze, format resolution, stream plan, merge arguments, progress parsers |
+| `src/media.js` | yt-dlp and FFmpeg process wiring |
+| `src/downloader/planner.js` | Chunk segmentation and resume validation |
+| `src/downloader/engine.js` | Range probe, parallel HTTP workers, retries, resume state, speed limit |
 | `src/binaries.js` | Path resolution, version probe, checksum manifest |
 | `src/store.js` | Atomic JSON read and write |
 | `src/log.js` | Bounded memory log and redaction |
@@ -170,4 +188,4 @@ sign-in and pairs once. Open work remains for Linux and macOS, which need their
 own runtime and binary sources plus a native runner. The other open items are a
 real Tampermonkey and Violentmonkey run, a Chrome stable run, a real logoff and
 logon check, and a published release asset. The Windows x64 zip is built and
-tested locally, but it has not been uploaded anywhere.
+tested locally with the segmented engine, but it has not been uploaded anywhere.

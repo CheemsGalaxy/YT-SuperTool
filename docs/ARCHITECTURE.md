@@ -44,8 +44,9 @@ Companion HTTP API
   http://127.0.0.1:47831
   pairing, auth, URL policy, settings, jobs
         |
-        +--> yt-dlp (analyze, download)
-        +--> FFmpeg (merge, remux, audio extraction)
+        +--> yt-dlp (metadata and format resolution)
+        +--> segmented HTTP engine (media streams)
+        +--> FFmpeg (merge, remux, audio conversion)
         +--> output directory
 ```
 
@@ -87,7 +88,10 @@ Process layout:
 | `src/pairing.js` | One-time code, token issue, hash storage, token check |
 | `src/url-policy.js` | YouTube URL parsing and normalization |
 | `src/jobs.js` | Queue, job state, progress, cancel, cleanup |
-| `src/ytdlp.js` | Binary resolution, analyze, download argument map, progress parser |
+| `src/ytdlp.js` | Analyze, resolve, stream plan, merge argument map, progress parsers |
+| `src/media.js` | yt-dlp resolve/fallback and FFmpeg merge process wiring |
+| `src/downloader/planner.js` | Segment layout, worker claims, resume validation |
+| `src/downloader/engine.js` | Range probe, parallel HTTP workers, retries, resume state, speed limit |
 | `src/binaries.js` | Path lookup, version probe, checksum manifest |
 | `src/settings.js` | Read and validate persistent settings |
 | `src/store.js` | Atomic JSON read and write under the user data directory |
@@ -150,6 +154,16 @@ client.start({ url, mode, quality })
   companion creates job, returns job id
         |
         v
+job runs
+  yt-dlp -J -f <preset> resolves requested formats
+  probe each media URL with Range: bytes=0-0
+  plan chunks, start HTTP workers
+  write ranged chunks at their file offsets
+  retry failed ranges, save optional resume state
+  on DOWNLOAD_FAILED, retry the job through yt-dlp
+  FFmpeg merges streams or converts audio
+        |
+        v
 client polls GET /api/download/:id every 700 ms
   queued, running, completed, failed, cancelled
         |
@@ -160,16 +174,16 @@ completed: show saved path and open-folder action
 ```
 
 The companion keeps jobs in memory. Completed history keeps the last 50 jobs.
-A restart drops unfinished jobs and removes their temporary folders. This is
-acceptable for the MVP because the browser UI polls and can show a clear
-"Companion restarted" error.
+A restart drops unfinished jobs and removes their temporary folders. The
+segmented engine can resume from a state file when one is supplied, but the
+job manager does not keep one across process restarts yet.
 
 ## Job model
 
 | State | Meaning |
 |---|---|
 | `queued` | Accepted, waiting for a slot |
-| `running` | yt-dlp or FFmpeg is active |
+| `running` | The segmented HTTP engine, yt-dlp or FFmpeg is active |
 | `completed` | Final file exists in the output directory |
 | `failed` | Ended with an error code |
 | `cancelled` | User cancelled or the process was stopped |
@@ -185,7 +199,11 @@ downloads by default, configurable from 1 to 2.
 - The companion rejects the filesystem root, the companion source directory
   and paths outside the user's home directory.
 - Each job writes to `<output>/.ytst-tmp/<jobId>/`.
-- yt-dlp uses a filename template with the video id and a bounded title.
+- The resolve step asks yt-dlp for the exact preset and reads only the direct
+  media URLs from its JSON. The client never supplies a media URL.
+- The engine writes stream files inside the job directory, then FFmpeg writes
+  the merged or converted file there. Only that final file moves to the output
+  directory, using a collision suffix instead of overwriting.
 - After completion, the companion resolves the final path, checks that it is
   inside the job temporary directory, then moves it to the output directory.
 - The companion never deletes files it did not create in the current job.
@@ -201,13 +219,22 @@ downloads by default, configurable from 1 to 2.
 | `audioFormat` | `mp3`, `m4a` | `mp3` |
 | `audioQuality` | `128`, `192`, `256`, `320` | `192` |
 | `concurrentDownloads` | `1`, `2` | `1` |
+| `connections` | Integer `1` to `32` | `8` |
+| `speedLimitKbps` | Integer `0` to `1048576`, `0` means unlimited | `0` |
 | `cookiesFromBrowser` | `null`, `chrome`, `chromium`, `edge`, `brave`, `firefox`, `opera`, `vivaldi` | `null` |
+| `cookiesFile` | `null` or an absolute path inside the user home | `null` |
 
 Values outside these sets are rejected with `BAD_REQUEST`. The client never
-sends raw yt-dlp or FFmpeg arguments. `cookiesFromBrowser` is a browser name,
+sends raw yt-dlp or FFmpeg arguments. `connections` controls parallel range
+requests per stream. `speedLimitKbps` throttles the segmented engine across all
+workers; the value is converted to bytes per second when a job starts. `cookiesFromBrowser` is a browser name,
 not a cookie value or a path. When it is set, the companion adds
 `--cookies-from-browser <name>` to yt-dlp; yt-dlp reads the browser store
-itself.
+itself. `cookiesFile` is a path to a Netscape cookies.txt file. The companion
+checks that the file exists, stays inside the user home, is a regular file, is
+no larger than 5 MB and has the Netscape header. It then adds
+`--cookies <path>`. The two sources are exclusive; setting one clears the
+other, and the companion never stores cookie values.
 
 ## Error handling
 
@@ -229,7 +256,8 @@ fallback decision is recorded.
 ## Testing
 
 - Companion unit tests with `node:test`: URL policy, pairing, auth, job state,
-  cancellation, argument mapping and path checks.
+  cancellation, argument mapping, chunk planning, range download, resume,
+  abort, speed limit and path checks.
 - Integration tests: start the server on an ephemeral port, pair, analyze a
   known public URL if network is available, start and cancel a job.
 - Browser tests: load each target, open the menu, pair, start a download,
@@ -244,7 +272,7 @@ tested on that platform.
 
 | Phase | Output |
 |---|---|
-| 0 | `BASELINE_AUDIT.md`, baseline build results |
+| 0 | `archive/BASELINE_AUDIT.md`, baseline build results |
 | 1 | This file, `API_SPEC.md`, `SECURITY.md`, `BUILD_AND_DISTRIBUTION.md` |
 | 2 | Companion server, pairing, jobs, tests |
 | 3 | Shared client and three adapters |

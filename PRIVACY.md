@@ -24,7 +24,7 @@ Each service has its own privacy policy. The developer of YT SuperTool does not 
 
 The companion is a separate desktop program that you install yourself. It is optional and is not part of the extension package. It listens on 127.0.0.1 and accepts requests only with the pairing token stored by the extension. It receives the YouTube URL you choose to save and writes the file to a folder you select on your computer. It uploads nothing.
 
-If you turn on browser cookies for the companion, which is off by default, yt-dlp reads YouTube cookies from the browser profile you select. The companion stores only the browser name in its settings file. Cookie values are read by yt-dlp from the browser store and are not copied into logs or settings. You can turn this off at any time with the companion's cookie setup and the off option.
+If you turn on YouTube cookies for the companion, which is off by default, you can choose a browser or a Netscape cookies.txt file. With a browser, yt-dlp reads cookies from the profile you select and the companion stores only the browser name. With a file, the companion stores only the file path inside your home folder and passes it to yt-dlp. Cookie values are not copied into logs or settings. You can turn this off at any time with the companion's cookie setup and the off option, and delete the file yourself.
 
 ## No tracking
 

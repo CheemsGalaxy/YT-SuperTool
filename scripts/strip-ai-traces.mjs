@@ -6,7 +6,7 @@ import postcss from 'postcss';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const targetDirs = ['src', 'scripts', 'public'];
-const targetFiles = ['vite.config.js', 'README.md', 'ARCHITECTURE_AUDIT.md'];
+const targetFiles = ['vite.config.js', 'README.md', 'docs/archive/ARCHITECTURE_AUDIT.md'];
 const textExtensions = new Set(['.js', '.mjs', '.cjs', '.css', '.html', '.md']);
 const skipDirs = new Set(['node_modules', 'dist', '.git', '.freebuff']);
 
