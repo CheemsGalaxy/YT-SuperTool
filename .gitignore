@@ -14,3 +14,4 @@ companion/dist/
 .env.*
 .DS_Store
 Thumbs.db
+dist/mv3/_metadata/
