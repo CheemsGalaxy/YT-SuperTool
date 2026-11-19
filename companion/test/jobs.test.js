@@ -3,13 +3,13 @@ import * as nodeFs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { createJobManager } from '../src/jobs.js';
-import { buildDownloadArgs, parseProgressLine } from '../src/ytdlp.js';
 import {
   availableBinaries,
-  completingLauncher,
+  fakeEngine,
+  fakeMedia,
   makeHome,
   makeSettings,
-  stuckLauncher,
+  stallingEngine,
   waitFor
 } from './support.js';
 
@@ -19,7 +19,14 @@ const VIDEO = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 const OTHER = 'https://www.youtube.com/watch?v=abcdefghijk';
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const setup = async (t, { launcher = completingLauncher(), binaries = availableBinaries(), settingsPatch = null, maxQueue = 20, fs = nodeFs } = {}) => {
+const setup = async (t, {
+  media = fakeMedia(),
+  engine = fakeEngine(),
+  binaries = availableBinaries(),
+  settingsPatch = null,
+  maxQueue = 20,
+  fs = nodeFs
+} = {}) => {
   const home = await makeHome();
   const { settings } = await makeSettings(home);
   if (settingsPatch) await settings.update(settingsPatch);
@@ -27,8 +34,8 @@ const setup = async (t, { launcher = completingLauncher(), binaries = availableB
   const manager = createJobManager({
     getSettings: () => settings.get(),
     binaries,
-    ytdlp: { buildDownloadArgs, parseProgressLine },
-    launcher,
+    media,
+    engine,
     homeDir: home,
     maxQueue,
     fs
@@ -40,7 +47,7 @@ const setup = async (t, { launcher = completingLauncher(), binaries = availableB
     await rm(home, { recursive: true, force: true });
   });
 
-  return { home, manager, settings };
+  return { home, manager, media, engine, settings };
 };
 
 test('moves a finished download into the output directory', async (t) => {
@@ -57,22 +64,38 @@ test('moves a finished download into the output directory', async (t) => {
   assert.equal(job.totalBytes, 10);
 });
 
-test('download uses the configured cookie source', async (t) => {
+test('passes connection and speed settings to the engine', async (t) => {
   const calls = [];
-  const launcher = (job, binaryPath, args) => {
-    calls.push({ binaryPath, args });
-    return completingLauncher()(job);
+  const engine = {
+    download: async (input) => {
+      calls.push(input);
+      await writeFile(input.filePath, Buffer.alloc(Number(input.size) || 1, 1));
+    }
   };
-  const { manager } = await setup(t, { launcher, settingsPatch: { cookiesFromBrowser: 'firefox' } });
-  const created = await manager.create({ url: VIDEO, mode: 'video', quality: '360', container: 'mp4' });
-
+  const { manager } = await setup(t, { engine, settingsPatch: { connections: 4, speedLimitKbps: 128 } });
+  const created = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(created.id)?.state === 'completed');
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].args[calls[0].args.indexOf('--cookies-from-browser') + 1], 'firefox');
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].connections, 4);
+  assert.equal(calls[0].speedLimitBps, 128000);
+  assert.match(calls[0].url, /^https:\/\/media\.test\//);
+});
+
+test('download fails when the configured cookie file disappeared', async (t) => {
+  const { home, manager, settings } = await setup(t);
+  const file = path.join(home, 'cookies.txt');
+  await writeFile(file, '# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tvalue\n');
+  await settings.update({ cookiesFile: file });
+  await rm(file, { force: true });
+
+  const created = await manager.create({ url: VIDEO });
+  await waitFor(() => manager.get(created.id)?.state === 'failed');
+  assert.match(manager.get(created.id).error.message, /Cookie file was not found/);
 });
 
 test('rejects a duplicate job for the same video', async (t) => {
-  const { manager } = await setup(t, { launcher: stuckLauncher() });
+  const { manager } = await setup(t, { engine: stallingEngine() });
   const first = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(first.id)?.state === 'running');
 
@@ -80,7 +103,7 @@ test('rejects a duplicate job for the same video', async (t) => {
 });
 
 test('rejects new jobs when the queue is full', async (t) => {
-  const { manager } = await setup(t, { launcher: stuckLauncher(), maxQueue: 1 });
+  const { manager } = await setup(t, { engine: stallingEngine(), maxQueue: 1 });
   const first = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(first.id)?.state === 'running');
   const second = await manager.create({ url: OTHER });
@@ -93,20 +116,19 @@ test('rejects new jobs when the queue is full', async (t) => {
 });
 
 test('cancels a running job and reports progress first', async (t) => {
-  const { manager } = await setup(t, { launcher: stuckLauncher() });
+  const { manager } = await setup(t, { engine: stallingEngine() });
   const created = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(created.id)?.state === 'running');
-  await waitFor(() => manager.get(created.id)?.progress === 0.42);
+  await waitFor(() => manager.get(created.id)?.progress > 0);
 
   const cancelled = await manager.cancel(created.id);
   assert.equal(cancelled.state, 'cancelled');
-  await delay(50);
-  assert.equal(manager.get(created.id).state, 'cancelled');
+  await waitFor(() => manager.get(created.id)?.state === 'cancelled');
   assert.equal(manager.get(created.id).error, null);
 });
 
 test('cancels a queued job', async (t) => {
-  const { manager } = await setup(t, { launcher: stuckLauncher(), settingsPatch: { concurrentDownloads: 1 } });
+  const { manager } = await setup(t, { engine: stallingEngine(), settingsPatch: { concurrentDownloads: 1 } });
   const first = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(first.id)?.state === 'running');
   const second = await manager.create({ url: OTHER });
@@ -116,52 +138,30 @@ test('cancels a queued job', async (t) => {
   assert.equal(cancelled.state, 'cancelled');
 
   await manager.cancel(first.id);
-  await delay(50);
+  await waitFor(() => manager.get(first.id)?.state === 'cancelled');
 });
 
 test('lists finished jobs', async (t) => {
-  const { manager } = await setup(t, { launcher: completingLauncher() });
+  const { manager } = await setup(t);
   const created = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(created.id)?.state === 'completed');
   assert.equal(manager.list().length, 1);
 });
 
-test('records a failed download and removes the temporary directory', async (t) => {
-  const { manager } = await setup(t, { launcher: completingLauncher({ fail: true }) });
+test('records a failed download', async (t) => {
+  const engine = fakeEngine({ fail: Object.assign(new Error('interrupted'), { code: 'DOWNLOAD_FAILED' }) });
+  const media = fakeMedia();
+  media.fallback = async () => {
+    throw Object.assign(new Error('The media server refused the download (HTTP 403).'), { code: 'DOWNLOAD_FAILED' });
+  };
+  const { manager } = await setup(t, { engine, media });
   const created = await manager.create({ url: VIDEO });
 
   await waitFor(() => manager.get(created.id)?.state === 'failed');
   const job = manager.get(created.id);
 
   assert.equal(job.error.code, 'DOWNLOAD_FAILED');
-  assert.equal(job.error.message, 'The connection to YouTube was interrupted. Try again.');
   assert.equal(job.outputPath, null);
-});
-
-test('reports a network failure without leaking signed urls', async (t) => {
-  const stderr = 'ERROR: Unable to download webpage: <urlopen error [Errno -2] Name or service not known> https://rr3.googlevideo.com/videoplayback?expire=1&sig=SECRET';
-  const { manager } = await setup(t, { launcher: completingLauncher({ fail: true, errorText: stderr }) });
-  const created = await manager.create({ url: VIDEO });
-
-  await waitFor(() => manager.get(created.id)?.state === 'failed');
-  const job = manager.get(created.id);
-
-  assert.equal(job.error.code, 'DOWNLOAD_FAILED');
-  assert.equal(job.error.message, 'The companion could not reach YouTube. Check the network connection.');
-  assert.doesNotMatch(job.error.message, /googlevideo|SECRET/);
-});
-
-test('reports a full disk as an unusable output folder', async (t) => {
-  const stderr = "ERROR: unable to write data: [Errno 28] No space left on device: 'C:\\\\Users\\\\Cheems\\\\Downloads\\\\YT SuperTool\\\\.ytst-tmp\\\\job\\\\file.part'";
-  const { manager } = await setup(t, { launcher: completingLauncher({ fail: true, errorText: stderr }) });
-  const created = await manager.create({ url: VIDEO });
-
-  await waitFor(() => manager.get(created.id)?.state === 'failed');
-  const job = manager.get(created.id);
-
-  assert.equal(job.error.code, 'OUTPUT_DIR_INVALID');
-  assert.equal(job.error.message, 'The output folder is out of free space.');
-  assert.doesNotMatch(job.error.message, /Cheems|ytst-tmp/);
 });
 
 test('reports a temporary folder that cannot be created', async (t) => {
@@ -182,10 +182,10 @@ test('reports a temporary folder that cannot be created', async (t) => {
 });
 
 test('does not overwrite an existing file', async (t) => {
-  const { home, manager } = await setup(t);
+  const { home, manager, media } = await setup(t);
   const outputDir = path.join(home, 'Downloads', 'YT SuperTool');
   await mkdir(outputDir, { recursive: true });
-  await writeFile(path.join(outputDir, 'Sample [dQw4w9WgXcQ].mp4'), 'old');
+  await writeFile(path.join(outputDir, `Sample [dQw4w9WgXcQ].${media === null ? 'mp4' : 'mp4'}`), 'old');
 
   const created = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(created.id)?.state === 'completed');
@@ -220,6 +220,43 @@ test('rejects cancel for a finished job', async (t) => {
   const created = await manager.create({ url: VIDEO });
   await waitFor(() => manager.get(created.id)?.state === 'completed');
   await assert.rejects(() => manager.cancel(created.id), (error) => error.code === 'JOB_FINISHED');
+});
+
+test('names an audio download with the requested format', async (t) => {
+  const { manager } = await setup(t);
+  const created = await manager.create({ url: VIDEO, mode: 'audio', audioFormat: 'm4a', audioQuality: 256 });
+  await waitFor(() => manager.get(created.id)?.state === 'completed');
+  assert.match(manager.get(created.id).outputPath, /\.m4a$/);
+});
+
+test('falls back to yt-dlp when no direct media url is available', async (t) => {
+  const fallback = Object.assign(new Error('no direct url'), { fallback: true });
+  const media = fakeMedia({ resolveError: fallback });
+  const { manager } = await setup(t, { media });
+  const created = await manager.create({ url: VIDEO });
+
+  await waitFor(() => manager.get(created.id)?.state === 'completed');
+  assert.equal(media.calls.fallback, 1);
+  assert.equal(await readFile(manager.get(created.id).outputPath, 'utf8'), 'video-data');
+});
+
+test('falls back to yt-dlp when the engine cannot download a stream', async (t) => {
+  const failure = new Error('The media server refused the download (HTTP 403).');
+  failure.code = 'DOWNLOAD_FAILED';
+  const { manager, media } = await setup(t, { engine: fakeEngine({ fail: failure }) });
+  const created = await manager.create({ url: VIDEO, mode: 'video', quality: '1080', container: 'mp4' });
+  await waitFor(() => manager.get(created.id)?.state === 'completed');
+  assert.equal(media.calls.fallback, 1);
+  assert.match(manager.get(created.id).outputPath, /Sample \[dQw4w9WgXcQ\]\.mp4$/);
+});
+
+test('reports a merge failure', async (t) => {
+  const media = fakeMedia({ mergeError: Object.assign(new Error('ffmpeg failed'), { code: 'DOWNLOAD_FAILED' }) });
+  const { manager } = await setup(t, { media });
+  const created = await manager.create({ url: VIDEO });
+
+  await waitFor(() => manager.get(created.id)?.state === 'failed');
+  assert.equal(manager.get(created.id).error.code, 'DOWNLOAD_FAILED');
 });
 
 test('removes stale temporary directories', async (t) => {

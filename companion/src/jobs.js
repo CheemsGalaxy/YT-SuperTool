@@ -1,12 +1,11 @@
-import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import * as nodeFs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { AppError } from './errors.js';
-import { assertOutputDirSafe } from './settings.js';
+import { assertCookieFileSafe, assertOutputDirSafe } from './settings.js';
 import { parseYouTubeUrl } from './url-policy.js';
-import { describeYtdlpError } from './ytdlp.js';
+import { safeFileName } from './ytdlp.js';
 
 const FINISHED = new Set(['completed', 'failed', 'cancelled']);
 const PARTIAL = /\.(part|ytdl|temp|tmp)$/i;
@@ -74,31 +73,32 @@ const uniqueDestination = async (dir, name, fs) => {
   throw new AppError('OUTPUT_DIR_INVALID', 'Cannot find a free file name.');
 };
 
-const attachLines = (stream, onLine) => {
-  if (!stream?.on) return;
-  let buffer = '';
-  stream.setEncoding?.('utf8');
-  stream.on('data', (chunk) => {
-    buffer += chunk;
-    const parts = buffer.split(/\r\n|\n|\r/);
-    buffer = parts.pop() ?? '';
-    for (const part of parts) {
-      if (part) onLine(part);
-    }
-    if (buffer.length > 64 * 1024) buffer = buffer.slice(-4096);
-  });
-};
-
 const validateChoice = (value, allowed, name) => {
   if (!allowed.includes(value)) throw new AppError('BAD_REQUEST', `Invalid ${name}.`);
   return value;
 };
 
+const formatSpeed = (bytesPerSecond) => {
+  if (!Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) return null;
+  if (bytesPerSecond < 1024 * 1024) return `${Math.max(1, Math.round(bytesPerSecond / 1024))}KB/s`;
+  return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)}MiB/s`;
+};
+
+const formatEta = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  const total = Math.round(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = total % 60;
+  const pad = (value) => String(value).padStart(2, '0');
+  return hours > 0 ? `${hours}:${pad(minutes)}:${pad(rest)}` : `${pad(minutes)}:${pad(rest)}`;
+};
+
 export const createJobManager = ({
   getSettings,
   binaries,
-  ytdlp,
-  launcher,
+  media,
+  engine,
   homeDir = os.homedir(),
   now = () => Date.now(),
   fs = nodeFs,
@@ -154,25 +154,6 @@ export const createJobManager = ({
     }
   };
 
-  const killChild = (job) => {
-    const child = job.child;
-    if (!child || typeof child.kill !== 'function') return;
-    try {
-      if (process.platform === 'win32' && child.pid) {
-        const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
-        killer.on('error', () => {});
-        return;
-      }
-      if (child.pid) {
-        try {
-          process.kill(-child.pid, 'SIGTERM');
-          return;
-        } catch {}
-      }
-      child.kill('SIGTERM');
-    } catch {}
-  };
-
   const fail = (job, error) => {
     let safe = error;
     if (!(safe instanceof AppError)) {
@@ -185,7 +166,43 @@ export const createJobManager = ({
     touch(job);
   };
 
-  const finalize = async (job) => {
+  const moveIntoPlace = async (job, source) => {
+    const resolved = path.resolve(source);
+    if (!inside(job.dir, resolved)) throw new AppError('OUTPUT_MISSING', 'Output path escaped the job directory.');
+
+    const destination = await uniqueDestination(job.outputDir, path.basename(resolved), fs);
+    if (!inside(job.outputDir, destination)) {
+      throw new AppError('OUTPUT_DIR_INVALID', 'Output path escaped the output directory.');
+    }
+
+    await fs.rename(resolved, destination);
+    job.outputPath = destination;
+    return destination;
+  };
+
+  const fallback = async (job, settings, controller) => {
+    const result = await media.fallback({
+      url: job.url,
+      mode: job.mode,
+      quality: job.quality,
+      container: job.container,
+      audioFormat: job.audioFormat,
+      audioQuality: job.audioQuality,
+      outputTemplate: path.join(job.dir, '%(title).120B [%(id)s].%(ext)s'),
+      cookiesFromBrowser: settings?.cookiesFromBrowser ?? null,
+      cookiesFile: settings?.cookiesFile ?? null,
+      signal: controller.signal,
+      onProgress: (progress) => {
+        if (!progress) return;
+        job.progress = Math.min(0.95, Math.max(0, progress.progress * 0.95));
+        job.receivedBytes = progress.receivedBytes ?? job.receivedBytes;
+        job.totalBytes = progress.totalBytes ?? job.totalBytes;
+        job.speed = progress.speed ?? job.speed;
+        job.eta = progress.eta ?? job.eta;
+        touch(job);
+      }
+    });
+
     const files = await listFiles(job.dir, fs);
     const candidates = files.filter((file) => !PARTIAL.test(file) && !/\.json$/i.test(file));
     if (candidates.length === 0) throw new AppError('OUTPUT_MISSING');
@@ -197,122 +214,163 @@ export const createJobManager = ({
     }
     if (!best || best.size === 0) throw new AppError('OUTPUT_MISSING');
 
-    const source = path.resolve(best.file);
-    if (!inside(job.dir, source)) {
-      throw new AppError('OUTPUT_MISSING', 'Output path escaped the job directory.');
-    }
-
-    const destination = await uniqueDestination(job.outputDir, path.basename(source), fs);
-    if (!inside(job.outputDir, destination)) {
-      throw new AppError('OUTPUT_DIR_INVALID', 'Output path escaped the output directory.');
-    }
-
-    await fs.rename(source, destination);
-
-    job.outputPath = destination;
+    await moveIntoPlace(job, best.file);
     job.progress = 1;
     job.totalBytes = best.size;
     job.receivedBytes = best.size;
     job.state = 'completed';
     job.error = null;
+    job.speed = null;
+    job.eta = null;
     touch(job);
-    await cleanup(job);
+    return result;
   };
 
-  const finish = async (job, outcome) => {
-    if (job.settled) return;
-    job.settled = true;
-    job.child = null;
-
-    if (job.state === 'cancelled') {
-      await cleanup(job);
-    } else if (outcome.error) {
-      fail(job, outcome.error);
-      await cleanup(job);
-    } else if (outcome.code === 0) {
-      try {
-        await finalize(job);
-      } catch (error) {
-        fail(job, error);
-        await cleanup(job);
-      }
-    } else {
-      const detail = job.stderr.slice(-6).join('\n');
-      fail(job, detail ? describeYtdlpError(detail) : new AppError('DOWNLOAD_FAILED'));
-      await cleanup(job);
-    }
-
-    prune();
-    void pump();
-  };
-
-  const start = async (job) => {
-    job.state = 'running';
-    touch(job);
+  const run = async (job) => {
+    const settings = getSettings();
+    const controller = job.controller;
 
     try {
-      const outputTemplate = path.join(job.dir, '%(title).120B [%(id)s].%(ext)s');
-      const settings = getSettings();
-      const args = ytdlp.buildDownloadArgs({
-        url: job.url,
+      if (settings?.cookiesFile) await assertCookieFileSafe(settings.cookiesFile, homeDir);
+
+      let plan;
+      try {
+        plan = await media.resolve({
+          url: job.url,
+          mode: job.mode,
+          quality: job.quality,
+          container: job.container,
+          audioFormat: job.audioFormat,
+          audioQuality: job.audioQuality,
+          cookiesFromBrowser: settings?.cookiesFromBrowser ?? null,
+          cookiesFile: settings?.cookiesFile ?? null,
+          signal: controller.signal
+        });
+      } catch (error) {
+        if (!error?.fallback) throw error;
+        await fallback(job, settings, controller);
+        return;
+      }
+
+      job.title = plan.title || job.title;
+      job.videoId = plan.id || job.videoId;
+      job.totalBytes = plan.totalBytes ?? null;
+
+      const weights = plan.streams.map((stream) => stream.size);
+      const known = weights.every((weight) => Number.isFinite(weight) && weight > 0);
+      const totalWeight = known ? weights.reduce((sum, weight) => sum + weight, 0) : plan.streams.length;
+      let completedWeight = 0;
+      let completedBytes = 0;
+      const inputs = [];
+
+      try {
+        for (let index = 0; index < plan.streams.length; index += 1) {
+          const stream = plan.streams[index];
+          const target = path.join(job.dir, `stream-${index}.${stream.ext || 'bin'}`);
+          const weight = known ? weights[index] : 1;
+
+          await engine.download({
+            url: stream.url,
+            filePath: target,
+            size: stream.size,
+            headers: stream.headers ?? {},
+            connections: Math.min(32, Math.max(1, Number(settings?.connections) || 8)),
+            speedLimitBps: Math.max(0, Number(settings?.speedLimitKbps) || 0) * 1000,
+            signal: controller.signal,
+            onProgress: (progress) => {
+              const fraction = progress.total ? Math.min(1, progress.received / progress.total) : 0;
+              const overall = totalWeight > 0 ? (completedWeight + weight * fraction) / totalWeight : 0;
+              job.progress = Math.min(0.95, Math.max(0, overall * 0.95));
+              job.receivedBytes = completedBytes + progress.received;
+              job.totalBytes = plan.totalBytes;
+              job.speed = formatSpeed(progress.speedBps);
+              job.eta = formatEta(progress.etaSeconds);
+              touch(job);
+            }
+          });
+
+          inputs.push(target);
+          completedWeight += weight;
+          completedBytes += Number(stream.size) || 0;
+          job.receivedBytes = completedBytes;
+          job.speed = null;
+          job.eta = null;
+          touch(job);
+        }
+      } catch (error) {
+        if (error?.name === 'AbortError' || controller.signal.aborted) throw error;
+        if (error?.code !== 'DOWNLOAD_FAILED') throw error;
+        for (const input of inputs) await fs.rm(input, { force: true }).catch(() => {});
+        await fallback(job, settings, controller);
+        return;
+      }
+
+      const extension = job.mode === 'audio' ? (job.audioFormat || 'mp3') : plan.extension;
+      const name = `${safeFileName(plan.title || job.title || 'video')} [${plan.id || job.videoId || 'video'}].${extension}`;
+      const merged = path.join(job.dir, name);
+      await media.merge({
+        inputs,
+        output: merged,
         mode: job.mode,
-        quality: job.quality,
         container: job.container,
         audioFormat: job.audioFormat,
         audioQuality: job.audioQuality,
-        outputTemplate,
-        ffmpegDir: binaries.ffmpeg?.path ? path.dirname(binaries.ffmpeg.path) : null,
-        cookiesFromBrowser: settings?.cookiesFromBrowser ?? null
+        duration: plan.duration,
+        signal: controller.signal,
+        onProgress: (fraction) => {
+          job.progress = 0.95 + Math.min(1, Math.max(0, fraction)) * 0.05;
+          touch(job);
+        }
       });
 
-      const child = launcher(job, binaries.ytdlp.path, args);
-      job.child = child;
-
-      attachLines(child.stdout, (line) => {
-        const progress = ytdlp.parseProgressLine(line);
-        if (!progress) return;
-        job.progress = progress.progress;
-        job.receivedBytes = progress.receivedBytes ?? job.receivedBytes;
-        job.totalBytes = progress.totalBytes ?? job.totalBytes;
-        job.speed = progress.speed;
-        job.eta = progress.eta;
-        touch(job);
-      });
-
-      attachLines(child.stderr, (line) => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        job.stderr.push(trimmed);
-        if (job.stderr.length > 40) job.stderr.shift();
-      });
-
-      child.on('error', (error) => {
-        void finish(job, { error });
-      });
-
-      child.on('close', (code, signal) => {
-        void finish(job, { code, signal });
-      });
+      const destination = await moveIntoPlace(job, merged);
+      const stat = await fs.stat(destination);
+      job.outputPath = destination;
+      job.progress = 1;
+      job.receivedBytes = stat.size;
+      job.totalBytes = stat.size;
+      job.speed = null;
+      job.eta = null;
+      job.state = 'completed';
+      job.error = null;
+      touch(job);
     } catch (error) {
-      fail(job, error);
+      if (controller.signal.aborted || error?.name === 'AbortError') {
+        job.state = 'cancelled';
+        job.error = null;
+        touch(job);
+      } else {
+        fail(job, error);
+      }
+    } finally {
+      job.child = null;
+      job.controller = null;
+      job.task = null;
       await cleanup(job);
       prune();
       void pump();
     }
   };
 
+  const start = (job) => {
+    job.state = 'running';
+    job.controller = new AbortController();
+    touch(job);
+    job.task = run(job);
+  };
+
   const pump = async () => {
     if (pumping) return;
     pumping = true;
     try {
-      while (true) {
+      for (;;) {
         const settings = getSettings();
         const limit = Math.min(Math.max(Number(settings?.concurrentDownloads) || 1, 1), 2);
         const active = [...jobs.values()].filter((job) => job.state === 'running').length;
         if (active >= limit) break;
         const next = [...jobs.values()].find((job) => job.state === 'queued');
         if (!next) break;
-        await start(next);
+        start(next);
       }
     } finally {
       pumping = false;
@@ -324,7 +382,6 @@ export const createJobManager = ({
     const settings = getSettings();
 
     const mode = validateChoice(input.mode ?? 'video', ['video', 'audio'], 'mode');
-
     const quality = mode === 'video'
       ? validateChoice(String(input.quality ?? settings.videoQuality), ['best', '2160', '1440', '1080', '720', '480', '360'], 'quality')
       : null;
@@ -379,9 +436,9 @@ export const createJobManager = ({
       updatedAt: timestamp,
       dir,
       outputDir,
-      child: null,
-      settled: false,
-      stderr: []
+      controller: null,
+      task: null,
+      settled: false
     };
 
     jobs.set(id, job);
@@ -416,7 +473,7 @@ export const createJobManager = ({
     if (job.state === 'running') {
       job.state = 'cancelled';
       touch(job);
-      killChild(job);
+      job.controller?.abort();
       return publicView(job);
     }
 
@@ -424,17 +481,20 @@ export const createJobManager = ({
   };
 
   const shutdown = async () => {
+    const running = [];
     for (const job of jobs.values()) {
       if (job.state === 'running') {
         job.state = 'cancelled';
         touch(job);
-        killChild(job);
+        job.controller?.abort();
+        if (job.task) running.push(job.task);
       } else if (job.state === 'queued') {
         job.state = 'cancelled';
         touch(job);
         await cleanup(job);
       }
     }
+    await Promise.allSettled(running);
   };
 
   const cleanStale = async (outputDir) => {

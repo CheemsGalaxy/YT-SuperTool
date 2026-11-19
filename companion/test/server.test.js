@@ -1,18 +1,21 @@
 import assert from 'node:assert/strict';
-import { access, rm } from 'node:fs/promises';
+import { access, rm, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import test from 'node:test';
 import { createJobManager } from '../src/jobs.js';
 import { createPairing } from '../src/pairing.js';
 import { createServer } from '../src/server.js';
-import { buildDownloadArgs, parseProgressLine } from '../src/ytdlp.js';
-import { availableBinaries, completingLauncher, makeHome, makeSettings } from './support.js';
+import { availableBinaries, fakeEngine, fakeMedia, makeHome, makeSettings } from './support.js';
 
 const VIDEO = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 const ORIGIN = 'https://www.youtube.com';
 
-const startApp = async (t, { launcher = completingLauncher(), binaries = availableBinaries() } = {}) => {
+const startApp = async (t, {
+  media = fakeMedia(),
+  engine = fakeEngine(),
+  binaries = availableBinaries()
+} = {}) => {
   const home = await makeHome();
   const { store, settings } = await makeSettings(home);
   const pairing = createPairing({ store });
@@ -21,8 +24,8 @@ const startApp = async (t, { launcher = completingLauncher(), binaries = availab
   const jobs = createJobManager({
     getSettings: () => settings.get(),
     binaries,
-    ytdlp: { buildDownloadArgs, parseProgressLine },
-    launcher,
+    media,
+    engine,
     homeDir: home
   });
 
@@ -243,6 +246,26 @@ test('analyze uses the configured cookie source', async (t) => {
   const ok = await request(base, '/api/analyze', { method: 'POST', token, body: { url: VIDEO } });
   assert.equal(ok.status, 200);
   assert.equal(analyzeCalls.at(-1).cookiesFromBrowser, 'edge');
+});
+
+test('analyze uses a cookie file and rejects a missing one', async (t) => {
+  const { base, home, pairing, analyzeCalls } = await startApp(t);
+  const token = await pairOverHttp(base, pairing);
+  const file = path.join(home, 'cookies.txt');
+  await writeFile(file, '# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tvalue\n');
+
+  const saved = await request(base, '/api/settings', { method: 'PUT', token, body: { cookiesFile: file } });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.body.settings.cookiesFromBrowser, null);
+
+  const ok = await request(base, '/api/analyze', { method: 'POST', token, body: { url: VIDEO } });
+  assert.equal(ok.status, 200);
+  assert.equal(analyzeCalls.at(-1).cookiesFile, file);
+
+  await rm(file, { force: true });
+  const missing = await request(base, '/api/analyze', { method: 'POST', token, body: { url: VIDEO } });
+  assert.equal(missing.status, 400);
+  assert.match(missing.body.error.message, /Cookie file was not found/);
 });
 
 test('download lifecycle reaches completion and blocks cancel', async (t) => {

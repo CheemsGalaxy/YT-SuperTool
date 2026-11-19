@@ -4,8 +4,22 @@ import { AppError } from './errors.js';
 const MAX_STDOUT = 10 * 1024 * 1024;
 const PRESET_HEIGHTS = [2160, 1440, 1080, 720, 480, 360];
 
+const BROWSER_LABELS = {
+  chrome: 'Google Chrome',
+  chromium: 'Chromium',
+  edge: 'Microsoft Edge',
+  brave: 'Brave',
+  firefox: 'Firefox',
+  opera: 'Opera',
+  vivaldi: 'Vivaldi'
+};
+
+const COOKIE_DB_LOCKED = /could not copy .*cookie|cookie database.*(?:locked|permission|denied)|failed to copy .*cookie/i;
+const COOKIE_DECRYPT_FAILED = /failed to decrypt|decrypt.*cookie|cookie.*decrypt|dpapi|app.?bound/i;
+const COOKIE_READ_FAILED = /could not read cookies|failed to extract cookies/i;
+const COOKIE_FILE_INVALID = /does not look like a netscape format cookies file|invalid cookie file|failed to read cookie file|cookie file.*invalid/i;
+
 const ERROR_RULES = [
-  { message: 'The companion could not read cookies from the selected browser. Close the browser, or choose another browser in the companion settings.', pattern: /could not copy .*cookie|could not read cookies|failed to decrypt|failed to extract cookies|cookie database.*(locked|permission|denied)/i },
   { code: 'OUTPUT_DIR_INVALID', message: 'The output folder is out of free space.', pattern: /no space left on device|enospc|disk quota exceeded|not enough space|winerror 112/i },
   { code: 'OUTPUT_DIR_INVALID', message: 'The output folder is not writable.', pattern: /permission denied|eacces|eperm|winerror 5\b|access is denied/i },
   { code: 'YTDLP_MISSING', message: 'The companion cannot start its download tool.', pattern: /spawn .*enoent|is not recognized as an internal|no such file or directory/i },
@@ -25,15 +39,34 @@ const ERROR_RULES = [
   { message: 'The companion could not reach YouTube. Check the network connection.', pattern: /unable to download|getaddrinfo|enotfound|econnreset|econnrefused|connection reset|connection aborted|network is unreachable|name resolution|timed out|timeout/i }
 ];
 
-export const describeYtdlpError = (text, { code = 'DOWNLOAD_FAILED' } = {}) => {
+export const describeYtdlpError = (text, { code = 'DOWNLOAD_FAILED', browser = null } = {}) => {
   const source = String(text ?? '');
+  const label = BROWSER_LABELS[browser] ?? 'the selected browser';
+  if (COOKIE_FILE_INVALID.test(source)) {
+    return new AppError(code, 'The companion could not read the cookie file. Export YouTube cookies to a fresh Netscape cookies.txt file, then choose it again.');
+  }
+  if (COOKIE_DB_LOCKED.test(source)) {
+    const fallback = browser === 'firefox'
+      ? ' If it still fails, use a cookies.txt file in the companion settings.'
+      : ' If it still fails, choose Firefox or a cookies.txt file in the companion settings.';
+    return new AppError(code, `The companion could not read cookies from ${label} because the browser keeps the cookie file open. Quit ${label} completely, including background processes, then retry.${fallback}`);
+  }
+  if (COOKIE_DECRYPT_FAILED.test(source)) {
+    const fallback = browser === 'firefox'
+      ? ' If it still fails, use a cookies.txt file in the companion settings.'
+      : ' If it keeps failing, choose Firefox or a cookies.txt file in the companion settings.';
+    return new AppError(code, `The companion could not decrypt cookies from ${label}. Open ${label}, sign in to YouTube again, then retry.${fallback}`);
+  }
+  if (COOKIE_READ_FAILED.test(source)) {
+    return new AppError(code, `The companion could not read cookies from ${label}. Choose another browser or a cookies.txt file in the companion settings, or turn cookies off.`);
+  }
   for (const rule of ERROR_RULES) {
     if (rule.pattern.test(source)) return new AppError(rule.code ?? code, rule.message);
   }
   return new AppError(code);
 };
 
-export const buildBaseArgs = ({ cookiesFromBrowser = null, jsRuntimePath = process.execPath } = {}) => {
+export const buildBaseArgs = ({ cookiesFromBrowser = null, cookiesFile = null, jsRuntimePath = process.execPath } = {}) => {
   const args = [
     '--ignore-config',
     '--no-exec',
@@ -42,7 +75,8 @@ export const buildBaseArgs = ({ cookiesFromBrowser = null, jsRuntimePath = proce
     '--newline'
   ];
   if (jsRuntimePath) args.push('--js-runtimes', `node:${jsRuntimePath}`);
-  if (cookiesFromBrowser) args.push('--cookies-from-browser', cookiesFromBrowser);
+  if (cookiesFile) args.push('--cookies', cookiesFile);
+  else if (cookiesFromBrowser) args.push('--cookies-from-browser', cookiesFromBrowser);
   return args;
 };
 
@@ -74,10 +108,11 @@ export const buildDownloadArgs = ({
   audioQuality,
   outputTemplate,
   ffmpegDir,
-  cookiesFromBrowser = null
+  cookiesFromBrowser = null,
+  cookiesFile = null
 }) => {
   const args = [
-    ...buildBaseArgs({ cookiesFromBrowser }),
+    ...buildBaseArgs({ cookiesFromBrowser, cookiesFile }),
     '--socket-timeout',
     '30',
     '--retries',
@@ -170,13 +205,13 @@ export const buildOptions = ({ heights = [] } = {}) => {
   return { video, audio };
 };
 
-export const analyzeVideo = ({ ytdlpPath, url, cookiesFromBrowser = null, timeoutMs = 30000, spawnImpl = spawn }) => new Promise((resolve, reject) => {
+export const analyzeVideo = ({ ytdlpPath, url, cookiesFromBrowser = null, cookiesFile = null, timeoutMs = 30000, spawnImpl = spawn }) => new Promise((resolve, reject) => {
   let settled = false;
   let stdout = '';
   let stderr = '';
   let stdoutBytes = 0;
 
-  const child = spawnImpl(ytdlpPath, buildAnalyzeArgs(url, { cookiesFromBrowser }), { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawnImpl(ytdlpPath, buildAnalyzeArgs(url, { cookiesFromBrowser, cookiesFile }), { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
 
   const finish = (error, value) => {
     if (settled) return;
@@ -221,7 +256,7 @@ export const analyzeVideo = ({ ytdlpPath, url, cookiesFromBrowser = null, timeou
     if (settled) return;
     if (code !== 0) {
       const detail = stderr.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(-6).join('\n');
-      finish(detail ? describeYtdlpError(detail, { code: 'ANALYZE_FAILED' }) : new AppError('ANALYZE_FAILED'));
+      finish(detail ? describeYtdlpError(detail, { code: 'ANALYZE_FAILED', browser: cookiesFromBrowser }) : new AppError('ANALYZE_FAILED'));
       return;
     }
 
@@ -237,3 +272,235 @@ export const analyzeVideo = ({ ytdlpPath, url, cookiesFromBrowser = null, timeou
     finish(null, { video, options: buildOptions(video) });
   });
 });
+
+const SELECTOR_LIMIT = 32 * 1024 * 1024;
+
+const abortError = () => {
+  const error = new Error('Download cancelled.');
+  error.name = 'AbortError';
+  return error;
+};
+
+export const buildResolveArgs = (url, { mode, quality, container, cookiesFromBrowser = null, cookiesFile = null, jsRuntimePath = process.execPath } = {}) => {
+  const selector = mode === 'audio' ? 'ba/b' : selectorFor(quality, container);
+  return [
+    ...buildBaseArgs({ cookiesFromBrowser, cookiesFile, jsRuntimePath }),
+    '-f',
+    selector,
+    '--skip-download',
+    '--dump-single-json',
+    '--no-progress',
+    '--socket-timeout',
+    '15',
+    '--',
+    url
+  ];
+};
+
+const runJson = ({ ytdlpPath, args, timeoutMs, signal, spawnImpl }) => new Promise((resolve, reject) => {
+  let settled = false;
+  let stdout = '';
+  let stderr = '';
+  let size = 0;
+
+  const child = spawnImpl(ytdlpPath, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+
+  const timer = setTimeout(() => finish(new AppError('ANALYZE_TIMEOUT', 'yt-dlp did not answer in time.')), timeoutMs);
+  timer.unref?.();
+
+  const stop = () => {
+    try {
+      child.kill('SIGKILL');
+    } catch {}
+  };
+
+  const finish = (error, value) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener('abort', onAbort);
+    if (error) {
+      stop();
+      reject(error);
+      return;
+    }
+    resolve(value);
+  };
+
+  const onAbort = () => finish(abortError());
+  if (signal) {
+    if (signal.aborted) {
+      finish(abortError());
+      return;
+    }
+    signal.addEventListener('abort', onAbort, { once: true });
+  }
+
+  child.on('error', (error) => finish(
+    error?.code === 'ENOENT' ? new AppError('YTDLP_MISSING') : new AppError('ANALYZE_FAILED', 'yt-dlp could not start.')
+  ));
+
+  child.stdout?.setEncoding('utf8');
+  child.stdout?.on('data', (chunk) => {
+    size += chunk.length;
+    if (size > SELECTOR_LIMIT) {
+      finish(new AppError('ANALYZE_FAILED', 'yt-dlp output is too large.'));
+      return;
+    }
+    stdout += chunk;
+  });
+
+  child.stderr?.setEncoding('utf8');
+  child.stderr?.on('data', (chunk) => {
+    stderr += chunk;
+    if (stderr.length > 64 * 1024) stderr = stderr.slice(-64 * 1024);
+  });
+
+  child.on('close', (code) => {
+    if (settled) return;
+    if (code !== 0) {
+      const detail = stderr.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(-6).join('\n');
+      finish(detail ? describeYtdlpError(detail, { code: 'DOWNLOAD_FAILED' }) : new AppError('DOWNLOAD_FAILED'));
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(stdout);
+    } catch {
+      finish(new AppError('DOWNLOAD_FAILED', 'yt-dlp returned invalid data.'));
+      return;
+    }
+    finish(null, parsed);
+  });
+});
+
+export const resolveDownload = async ({
+  ytdlpPath,
+  url,
+  mode,
+  quality,
+  container,
+  cookiesFromBrowser = null,
+  cookiesFile = null,
+  timeoutMs = 60000,
+  signal = null,
+  spawnImpl = spawn
+}) => {
+  const info = await runJson({
+    ytdlpPath,
+    args: buildResolveArgs(url, { mode, quality, container, cookiesFromBrowser, cookiesFile }),
+    timeoutMs,
+    signal,
+    spawnImpl
+  });
+
+  return planFromInfo(info, { mode, container });
+};
+
+const MEDIA_HEADERS = new Set([
+  'user-agent',
+  'accept',
+  'accept-language',
+  'referer',
+  'origin',
+  'sec-fetch-mode',
+  'sec-fetch-dest',
+  'sec-fetch-site'
+]);
+
+const mediaHeaders = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const result = {};
+  for (const [name, headerValue] of Object.entries(value)) {
+    if (typeof headerValue !== 'string') continue;
+    if (!MEDIA_HEADERS.has(name.toLowerCase())) continue;
+    result[name] = headerValue;
+  }
+  return result;
+};
+
+export const planFromInfo = (info, { mode, container }) => {
+  const requested = Array.isArray(info?.requested_downloads) && info.requested_downloads.length > 0
+    ? info.requested_downloads
+    : (typeof info?.url === 'string' ? [info] : []);
+
+  const entries = [];
+  for (const entry of requested) {
+    if (Array.isArray(entry?.requested_formats) && entry.requested_formats.length > 0) entries.push(...entry.requested_formats);
+    else entries.push(entry);
+  }
+
+  const streams = entries.map((entry) => {
+    const exact = Number(entry?.filesize);
+    const approximate = Number(entry?.filesize_approx);
+    return {
+      url: typeof entry?.url === 'string' ? entry.url : null,
+      formatId: String(entry?.format_id ?? ''),
+      ext: String(entry?.ext ?? ''),
+      vcodec: typeof entry?.vcodec === 'string' ? entry.vcodec : null,
+      acodec: typeof entry?.acodec === 'string' ? entry.acodec : null,
+      headers: mediaHeaders(entry?.http_headers),
+      size: Number.isSafeInteger(exact) && exact > 0 ? exact : (Number.isSafeInteger(approximate) && approximate > 0 ? approximate : null)
+    };
+  }).filter((stream) => stream.url);
+
+  if (streams.length === 0) {
+    const error = new AppError('DOWNLOAD_FAILED', 'yt-dlp returned no direct media URL.');
+    error.fallback = true;
+    throw error;
+  }
+
+  const sizesKnown = streams.every((stream) => stream.size !== null);
+
+  return {
+    id: String(info?.id ?? ''),
+    title: String(info?.title ?? ''),
+    duration: Number(info?.duration) || 0,
+    extension: mode === 'audio' ? 'mp3' : container,
+    streams,
+    totalBytes: sizesKnown ? streams.reduce((sum, stream) => sum + stream.size, 0) : null
+  };
+};
+
+export const safeFileName = (value, fallback = 'video') => {
+  const clean = String(value ?? '')
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120)
+    .replace(/[. ]+$/g, '');
+  return clean || fallback;
+};
+
+export const buildMergeArgs = ({ inputs, output, mode, container, audioFormat, audioQuality }) => {
+  const args = ['-y', '-hide_banner', '-loglevel', 'error', '-nostdin', '-progress', 'pipe:1', '-nostats'];
+  for (const input of inputs) args.push('-i', input);
+
+  if (mode === 'audio') {
+    args.push('-map', '0:a:0', '-vn');
+    if (audioFormat === 'mp3') {
+      args.push('-c:a', 'libmp3lame', '-b:a', `${audioQuality}k`);
+    } else {
+      args.push('-c:a', 'aac', '-b:a', `${audioQuality}k`);
+    }
+  } else {
+    if (inputs.length > 1) args.push('-map', '0:v:0', '-map', '1:a:0');
+    else args.push('-map', '0:v:0', '-map', '0:a:0?');
+    args.push('-c', 'copy');
+    if (container === 'mp4') args.push('-movflags', '+faststart');
+  }
+
+  args.push(output);
+  return args;
+};
+
+export const parseFfmpegProgress = (line, duration) => {
+  const match = String(line ?? '').match(/^out_time_ms=(\d+)$/);
+  if (!match) return null;
+  const seconds = Number(match[1]) / 1_000_000;
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  if (!Number.isFinite(duration) || duration <= 0) return null;
+  return Math.min(1, seconds / duration);
+};
+

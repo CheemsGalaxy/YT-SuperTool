@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, mkdtemp, readdir, readFile, rm, stat } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import net from 'node:net';
 import os from 'node:os';
@@ -254,6 +254,17 @@ const main = async () => {
     const heights = (analyze.payload.options?.video || []).map((item) => item.quality);
     expect(heights.includes('360'), `analyze has no 360p preset: ${JSON.stringify(heights)}`);
     console.log(`analyze ok (${analyze.payload.video?.title || 'untitled'}, presets ${heights.join('/')})`);
+
+    const cookieFile = path.join(work, 'cookies.txt');
+    await writeFile(cookieFile, '# Netscape HTTP Cookie File\r\n');
+    const cookieSetting = await api(base, '/api/settings', { token, method: 'PUT', body: { cookiesFile: cookieFile } });
+    expect(cookieSetting.status === 200, `cookie file setting returned ${cookieSetting.status}: ${JSON.stringify(cookieSetting.payload)}`);
+    expect(cookieSetting.payload?.settings?.cookiesFromBrowser === null, 'cookie file did not clear the browser source');
+    const cookieAnalyze = await api(base, '/api/analyze', { token, method: 'POST', body: { url: VIDEO_URL }, timeout: 60000 });
+    expect(cookieAnalyze.status === 200, `cookie file analyze returned ${cookieAnalyze.status}: ${JSON.stringify(cookieAnalyze.payload)}`);
+    const clearedCookies = await api(base, '/api/settings', { token, method: 'PUT', body: { cookiesFile: null } });
+    expect(clearedCookies.status === 200, `cookie file reset returned ${clearedCookies.status}: ${JSON.stringify(clearedCookies.payload)}`);
+    console.log('cookie file analyze ok');
 
     const cancelTarget = await api(base, '/api/download', {
       token,

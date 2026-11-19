@@ -6,9 +6,14 @@ import {
   analyzeVideo,
   buildAnalyzeArgs,
   buildDownloadArgs,
+  buildMergeArgs,
   buildOptions,
+  buildResolveArgs,
   describeYtdlpError,
+  parseFfmpegProgress,
   parseProgressLine,
+  planFromInfo,
+  safeFileName,
   summarizeInfo
 } from '../src/ytdlp.js';
 
@@ -56,6 +61,24 @@ test('cookie source and node runtime are passed to yt-dlp', () => {
   });
   assert.equal(download[download.indexOf('--cookies-from-browser') + 1], 'firefox');
   assert.equal(download[download.indexOf('--js-runtimes') + 1], `node:${process.execPath}`);
+});
+
+test('cookie file replaces the browser source', () => {
+  const file = 'C:\\Users\\Cheems\\cookies.txt';
+  const analyze = buildAnalyzeArgs(VIDEO, { cookiesFromBrowser: 'edge', cookiesFile: file });
+  assert.equal(analyze[analyze.indexOf('--cookies') + 1], file);
+  assert.ok(!analyze.includes('--cookies-from-browser'));
+
+  const download = buildDownloadArgs({
+    url: VIDEO,
+    mode: 'video',
+    quality: '720',
+    container: 'mp4',
+    outputTemplate: 'C:\\out\\%(title)s.%(ext)s',
+    cookiesFile: file
+  });
+  assert.equal(download[download.indexOf('--cookies') + 1], file);
+  assert.ok(!download.includes('--cookies-from-browser'));
 });
 
 test('video download arguments map presets without raw format strings', () => {
@@ -179,8 +202,34 @@ test('classifies yt-dlp failures without echoing raw output', () => {
   const age = describeYtdlpError('ERROR: Sign in to confirm your age');
   assert.equal(age.message, 'This video is age restricted. Turn on browser cookies in the companion settings to download it.');
 
-  const cookies = describeYtdlpError('ERROR: Could not copy Chrome cookie database.');
-  assert.equal(cookies.message, 'The companion could not read cookies from the selected browser. Close the browser, or choose another browser in the companion settings.');
+  const locked = describeYtdlpError('ERROR: Could not copy Chrome cookie database.', { browser: 'edge' });
+  assert.equal(locked.code, 'DOWNLOAD_FAILED');
+  assert.match(locked.message, /could not read cookies from Microsoft Edge/);
+  assert.match(locked.message, /Quit Microsoft Edge completely/);
+
+  const decrypt = describeYtdlpError('ERROR: Failed to decrypt with DPAPI', { browser: 'chrome' });
+  assert.match(decrypt.message, /could not decrypt cookies from Google Chrome/);
+
+  const unreadable = describeYtdlpError('ERROR: could not read cookies', {});
+  assert.match(unreadable.message, /the selected browser/);
+
+  const badFile = describeYtdlpError("ERROR: '/home/user/cookies.txt' does not look like a Netscape format cookies file");
+  assert.equal(badFile.code, 'DOWNLOAD_FAILED');
+  assert.match(badFile.message, /Export YouTube cookies to a fresh Netscape cookies.txt file/);
+});
+
+test('analyze names the browser when cookies are locked', async () => {
+  const promise = analyzeVideo({
+    ytdlpPath: 'yt-dlp',
+    url: VIDEO,
+    cookiesFromBrowser: 'edge',
+    spawnImpl: fakeSpawn({ stderr: 'ERROR: Could not copy Chrome cookie database.' })
+  });
+  await assert.rejects(promise, (error) => {
+    assert.equal(error.code, 'ANALYZE_FAILED');
+    assert.match(error.message, /Microsoft Edge/);
+    return true;
+  });
 });
 
 test('analyze reports a safe message when yt-dlp fails', async () => {
@@ -215,4 +264,163 @@ test('analyze passes the cookie source to yt-dlp', async () => {
   const result = await analyzeVideo({ ytdlpPath: 'yt-dlp', url: VIDEO, cookiesFromBrowser: 'edge', spawnImpl });
   assert.equal(result.video.id, 'dQw4w9WgXcQ');
   assert.equal(spawnedArgs[spawnedArgs.indexOf('--cookies-from-browser') + 1], 'edge');
+});
+
+test('analyze passes the cookie file to yt-dlp', async () => {
+  let spawnedArgs = null;
+  const spawnImpl = (command, args) => {
+    spawnedArgs = args;
+    return fakeSpawn({
+      code: 0,
+      stdout: JSON.stringify({ id: 'dQw4w9WgXcQ', title: 'Sample', duration: 1, formats: [{ height: 360 }] })
+    })();
+  };
+  const file = 'C:\\Users\\Cheems\\cookies.txt';
+  const result = await analyzeVideo({ ytdlpPath: 'yt-dlp', url: VIDEO, cookiesFile: file, spawnImpl });
+  assert.equal(result.video.id, 'dQw4w9WgXcQ');
+  assert.equal(spawnedArgs[spawnedArgs.indexOf('--cookies') + 1], file);
+  assert.ok(!spawnedArgs.includes('--cookies-from-browser'));
+});
+
+test('resolve arguments use the same safe flags and skip the download', () => {
+  const args = buildResolveArgs(VIDEO, { mode: 'video', quality: '720', container: 'mp4' });
+  for (const flag of ['--ignore-config', '--no-exec', '--no-playlist', '--dump-single-json', '--skip-download']) {
+    assert.ok(args.includes(flag), `missing ${flag}`);
+  }
+  assert.equal(args[args.indexOf('--js-runtimes') + 1], `node:${process.execPath}`);
+  assert.equal(args.at(-2), '--');
+  assert.equal(args.at(-1), VIDEO);
+  assert.match(args[args.indexOf('-f') + 1], /\[height<=720\]/);
+});
+
+test('resolve arguments request best audio for audio mode', () => {
+  const args = buildResolveArgs(VIDEO, { mode: 'audio', quality: null, container: null });
+  assert.equal(args[args.indexOf('-f') + 1], 'ba/b');
+});
+
+test('plan maps requested downloads to byte ranges', () => {
+  const info = {
+    id: 'dQw4w9WgXcQ',
+    title: 'Sample',
+    duration: 213,
+    requested_downloads: [
+      { url: 'https://media.test/v', format_id: '137', ext: 'mp4', vcodec: 'avc1', acodec: 'none', filesize: 1000 },
+      { url: 'https://media.test/a', format_id: '140', ext: 'm4a', vcodec: 'none', acodec: 'mp4a', filesize_approx: 2000 }
+    ]
+  };
+
+  const plan = planFromInfo(info, { mode: 'video', container: 'mp4' });
+  assert.equal(plan.id, 'dQw4w9WgXcQ');
+  assert.equal(plan.extension, 'mp4');
+  assert.equal(plan.streams.length, 2);
+  assert.equal(plan.streams[0].size, 1000);
+  assert.equal(plan.streams[1].size, 2000);
+  assert.equal(plan.totalBytes, 3000);
+  assert.equal(plan.streams[1].ext, 'm4a');
+});
+
+test('plan flattens merged requested formats into separate streams', () => {
+  const plan = planFromInfo({
+    id: 'x',
+    title: 'Merged',
+    duration: 10,
+    requested_downloads: [{
+      format_id: '137+140',
+      ext: 'mp4',
+      requested_formats: [
+        { url: 'https://media.test/v', format_id: '137', ext: 'mp4', vcodec: 'avc1', acodec: 'none', filesize: 300 },
+        { url: 'https://media.test/a', format_id: '140', ext: 'm4a', vcodec: 'none', acodec: 'mp4a', filesize: 200 }
+      ]
+    }]
+  }, { mode: 'video', container: 'mp4' });
+
+  assert.equal(plan.streams.length, 2);
+  assert.deepEqual(plan.streams.map((stream) => stream.ext), ['mp4', 'm4a']);
+  assert.equal(plan.totalBytes, 500);
+});
+
+test('plan keeps safe media headers and drops cookies', () => {
+  const plan = planFromInfo({
+    id: 'x',
+    title: 't',
+    duration: 1,
+    requested_downloads: [{
+      url: 'https://media.test/v',
+      ext: 'mp4',
+      filesize: 10,
+      http_headers: {
+        'User-Agent': 'UA/1',
+        Accept: '*/*',
+        Cookie: 'secret=1',
+        Range: 'bytes=0-1',
+        'X-Custom': 'no'
+      }
+    }]
+  }, { mode: 'video', container: 'mp4' });
+
+  assert.deepEqual(plan.streams[0].headers, { 'User-Agent': 'UA/1', Accept: '*/*' });
+});
+
+test('plan marks audio output as mp3', () => {
+  const plan = planFromInfo({
+    id: 'x',
+    title: 't',
+    duration: 1,
+    requested_downloads: [{ url: 'https://media.test/a', ext: 'webm', filesize: 10 }]
+  }, { mode: 'audio', container: null });
+  assert.equal(plan.extension, 'mp3');
+});
+
+test('plan requests a fallback when no direct url exists', () => {
+  assert.throws(
+    () => planFromInfo({ id: 'x', title: 't', requested_downloads: [{ format_id: '18' }] }, { mode: 'video', container: 'mp4' }),
+    (error) => error.code === 'DOWNLOAD_FAILED' && error.fallback === true
+  );
+});
+
+test('safe file names drop reserved characters and trailing dots', () => {
+  assert.equal(safeFileName('A/B:C*D?E"F<G>H|I'), 'A B C D E F G H I');
+  assert.equal(safeFileName('  trailing dots...  '), 'trailing dots');
+  assert.equal(safeFileName(''), 'video');
+  assert.equal(safeFileName(null, 'fallback'), 'fallback');
+  assert.equal(safeFileName('x'.repeat(300)).length, 120);
+});
+
+test('merge arguments copy video and audio into the container', () => {
+  const args = buildMergeArgs({
+    inputs: ['C:\\tmp\\v.mp4', 'C:\\tmp\\a.m4a'],
+    output: 'C:\\out\\final.mp4',
+    mode: 'video',
+    container: 'mp4'
+  });
+
+  assert.equal(args[args.indexOf('-map') + 1], '0:v:0');
+  assert.equal(args.filter((item) => item === '-map').length, 2);
+  assert.equal(args[args.indexOf('-c') + 1], 'copy');
+  assert.equal(args[args.indexOf('-movflags') + 1], '+faststart');
+  assert.equal(args.at(-1), 'C:\\out\\final.mp4');
+});
+
+test('audio merge arguments re-encode with the requested bitrate', () => {
+  const args = buildMergeArgs({
+    inputs: ['C:\\tmp\\a.webm'],
+    output: 'C:\\out\\final.mp3',
+    mode: 'audio',
+    container: null,
+    audioFormat: 'mp3',
+    audioQuality: 256
+  });
+
+  assert.equal(args[args.indexOf('-c:a') + 1], 'libmp3lame');
+  assert.equal(args[args.indexOf('-b:a') + 1], '256k');
+  assert.ok(args.includes('-vn'));
+});
+
+test('parses ffmpeg progress against the duration', () => {
+  assert.equal(parseFfmpegProgress('out_time_ms=5000000', 10), 0.5);
+  assert.equal(parseFfmpegProgress('out_time_ms=10000000', 10), 1);
+  assert.equal(parseFfmpegProgress('out_time_ms=20000000', 10), 1);
+  assert.equal(parseFfmpegProgress('out_time_ms=1000000', 0), null);
+  assert.equal(parseFfmpegProgress('frame=10', 10), null);
+  assert.equal(parseFfmpegProgress(null, 10), null);
 });

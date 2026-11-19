@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,35 +6,19 @@ import { fileURLToPath } from 'node:url';
 import { detectBinaries } from './binaries.js';
 import { createJobManager } from './jobs.js';
 import { createLog } from './log.js';
+import { createMedia } from './media.js';
 import { createPairing, formatPairingCode } from './pairing.js';
 import { createServer } from './server.js';
 import { createSettings } from './settings.js';
 import { createStore } from './store.js';
 import { parseYouTubeUrl } from './url-policy.js';
-import { analyzeVideo, buildDownloadArgs, parseProgressLine } from './ytdlp.js';
+import { downloadSegmented } from './downloader/engine.js';
+import { analyzeVideo } from './ytdlp.js';
 
 const VERSION = '1.0.0';
 const API_VERSION = 1;
 const DEFAULT_PORT = 47831;
 const BIN_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', `${process.platform}-${process.arch}`);
-
-const ENV_KEYS = ['PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'LANG', 'LC_ALL', 'LC_CTYPE'];
-
-const minimalEnv = () => {
-  const env = {};
-  for (const key of ENV_KEYS) {
-    if (process.env[key] !== undefined) env[key] = process.env[key];
-  }
-  return env;
-};
-
-const launcher = (job, binaryPath, args) => spawn(binaryPath, args, {
-  cwd: job.dir,
-  windowsHide: true,
-  detached: process.platform !== 'win32',
-  stdio: ['ignore', 'pipe', 'pipe'],
-  env: minimalEnv()
-});
 
 const printHelp = () => {
   console.log(`YT SuperTool Companion ${VERSION}`);
@@ -48,6 +31,9 @@ const printHelp = () => {
   console.log('  --set-cookies <name>  Save a browser cookie source and exit. Accepts');
   console.log('                        chrome, chromium, edge, brave, firefox, opera,');
   console.log('                        vivaldi or off.');
+  console.log('  --set-cookies-file <p> Save a Netscape cookies.txt file and exit. The');
+  console.log('                        path must be inside the user home. Use off to');
+  console.log('                        clear it. Browser and file sources are exclusive.');
   console.log('  --pair                Print a fresh pairing code even when already paired.');
   console.log('  --pair-code-file <p>  Also write the current pairing code to a file.');
   console.log('  --self-test           Run local checks without downloading media.');
@@ -68,6 +54,7 @@ const parseArgs = (argv) => {
     dataDir: null,
     outputDir: null,
     setCookies: undefined,
+    setCookiesFile: undefined,
     pairCodeFile: null,
     debug: false,
     selfTest: false,
@@ -106,6 +93,12 @@ const parseArgs = (argv) => {
         index = taken.next;
         break;
       }
+      case '--set-cookies-file': {
+        const taken = takeValue(argv, index, inline, flag);
+        options.setCookiesFile = taken.value;
+        index = taken.next;
+        break;
+      }
       case '--pair-code-file': {
         const taken = takeValue(argv, index, inline, flag);
         options.pairCodeFile = taken.value;
@@ -132,6 +125,9 @@ const parseArgs = (argv) => {
 
   if (!Number.isInteger(options.port) || options.port < 1 || options.port > 65535) {
     throw new Error('Port must be an integer between 1 and 65535.');
+  }
+  if (options.setCookies !== undefined && options.setCookiesFile !== undefined) {
+    throw new Error('Use --set-cookies or --set-cookies-file, not both.');
   }
 
   return options;
@@ -221,10 +217,18 @@ const runSelfTest = async () => {
     const jobs = createJobManager({
       getSettings: () => settings.get(),
       binaries,
-      ytdlp: { buildDownloadArgs, parseProgressLine },
-      launcher: () => {
-        throw new Error('self-test must not start a download');
+      media: {
+        resolve: async () => {
+          throw new Error('self-test must not start a download');
+        },
+        merge: async () => {
+          throw new Error('self-test must not start a download');
+        },
+        fallback: async () => {
+          throw new Error('self-test must not start a download');
+        }
       },
+      engine: { download: async () => {} },
       homeDir: root
     });
 
@@ -297,6 +301,14 @@ const main = async () => {
     return;
   }
 
+  if (options.setCookiesFile !== undefined) {
+    const file = /^(off|none)$/i.test(options.setCookiesFile) ? null : path.resolve(options.setCookiesFile);
+    await settings.update({ cookiesFile: file });
+    console.log(file ? `Cookie file: ${file}` : 'Cookie file: off');
+    console.log(`Saved: ${path.join(dataDir, 'settings.json')}`);
+    return;
+  }
+
   const logger = createLog({ debug: options.debug });
 
   const pairing = createPairing({
@@ -317,11 +329,15 @@ const main = async () => {
   if (options.pair || !pairing.isPaired()) pairing.startPairing();
 
   const binaries = await detectBinaries({ binDir: BIN_DIR });
+  const media = createMedia({
+    ytdlpPath: binaries.ytdlp.path ?? 'yt-dlp',
+    ffmpegPath: binaries.ffmpeg.path ?? null
+  });
   const jobs = createJobManager({
     getSettings: () => settings.get(),
     binaries,
-    ytdlp: { buildDownloadArgs, parseProgressLine },
-    launcher,
+    media,
+    engine: { download: downloadSegmented },
     logger
   });
 

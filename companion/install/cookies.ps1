@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
-  [ValidateSet('chrome', 'chromium', 'edge', 'brave', 'firefox', 'opera', 'vivaldi', 'off')]
-  [string]$Source = ''
+  [ValidateSet('chrome', 'chromium', 'edge', 'brave', 'firefox', 'opera', 'vivaldi', 'file', 'off')]
+  [string]$Source = '',
+  [string]$CookieFile = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,21 +15,24 @@ $current = 'off'
 if (Test-Path -LiteralPath $settingsPath -PathType Leaf) {
   try {
     $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
-    if ($settings.cookiesFromBrowser) {
+    if ($settings.cookiesFile) {
+      $current = 'file: ' + [string]$settings.cookiesFile
+    } elseif ($settings.cookiesFromBrowser) {
       $current = [string]$settings.cookiesFromBrowser
     }
   } catch {}
 }
 
-Write-Host "Current browser cookie source: $current"
+Write-Host "Current YouTube cookie source: $current"
 Write-Host ''
 
 if (-not $Source) {
-  $choices = @('off', 'chrome', 'chromium', 'edge', 'brave', 'firefox', 'opera', 'vivaldi')
-  Write-Host 'Choose the browser whose YouTube cookies the companion may use.'
-  Write-Host 'Sign in to YouTube in that browser first. The companion passes the'
-  Write-Host 'source name to yt-dlp, which reads the cookie store on this machine.'
-  Write-Host 'The companion does not store, log or send those cookies anywhere.'
+  $choices = @('off', 'chrome', 'chromium', 'edge', 'brave', 'firefox', 'opera', 'vivaldi', 'file')
+  Write-Host 'Choose where the companion may read YouTube cookies.'
+  Write-Host 'A browser source reads that browser store directly. The file source'
+  Write-Host 'uses a Netscape cookies.txt export. Sign in to YouTube first.'
+  Write-Host 'The companion stores only the browser name or the file path. It never'
+  Write-Host 'stores, logs or sends cookie values.'
   Write-Host ''
   for ($index = 0; $index -lt $choices.Count; $index += 1) {
     Write-Host ("  {0}. {1}" -f ($index + 1), $choices[$index])
@@ -44,15 +48,36 @@ if (-not $Source) {
   } elseif ($choices -contains $answer) {
     $Source = $answer
   } else {
-    throw 'Unknown browser name.'
+    throw 'Unknown cookie source.'
+  }
+}
+
+if ($Source -eq 'file' -and -not $CookieFile) {
+  $default = Join-Path $env:USERPROFILE 'Downloads\cookies.txt'
+  $answer = (Read-Host "cookies.txt path [$default]").Trim().Trim('"')
+  $CookieFile = $(if ($answer) { $answer } else { $default })
+}
+
+if ($Source -eq 'file') {
+  $CookieFile = [System.IO.Path]::GetFullPath($CookieFile)
+  if (-not (Test-Path -LiteralPath $CookieFile -PathType Leaf)) {
+    throw "Cookie file not found: $CookieFile"
   }
 }
 
 Write-Host ''
-Write-Host "Saving browser cookie source: $Source"
+if ($Source -eq 'file') {
+  Write-Host "Saving cookie file: $CookieFile"
+} else {
+  Write-Host "Saving browser cookie source: $Source"
+}
 Stop-Companion -AppEntry $config.appEntry
 
-& $config.nodeExe $config.appEntry --data-dir $config.dataDir --set-cookies $Source
+if ($Source -eq 'file') {
+  & $config.nodeExe $config.appEntry --data-dir $config.dataDir --set-cookies-file $CookieFile
+} else {
+  & $config.nodeExe $config.appEntry --data-dir $config.dataDir --set-cookies $Source
+}
 if ($LASTEXITCODE -ne 0) {
   throw "The companion could not save the cookie setting (exit code $LASTEXITCODE)."
 }
@@ -66,9 +91,14 @@ if (-not $health) {
   throw "The companion did not answer on 127.0.0.1:$($config.port). Run the Status shortcut for details."
 }
 
-Write-Host "The companion is running with browser cookies: $Source"
-if ($Source -ne 'off') {
-  Write-Host 'If yt-dlp cannot read the cookie store, close the browser and retry.'
-  Write-Host 'Firefox usually allows reading while it is open.'
+if ($Source -eq 'file') {
+  Write-Host "The companion is running with cookie file: $CookieFile"
+  Write-Host 'Keep this file private. Export a fresh one when YouTube signs you out.'
+} else {
+  Write-Host "The companion is running with browser cookies: $Source"
+  if ($Source -ne 'off') {
+    Write-Host 'If yt-dlp cannot read the cookie store, close the browser and retry, or use a cookies.txt file.'
+    Write-Host 'Firefox usually allows reading while it is open.'
+  }
 }
 Write-Host 'You can close this window.'

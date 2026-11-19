@@ -204,12 +204,15 @@ export const createServer = ({
         const body = await readJson(req);
         const parsed = parseYouTubeUrl(body.url);
         if (!binaries?.ytdlp?.available) throw new AppError('YTDLP_MISSING');
+        const current = settings.get();
+        if (current.cookiesFile) await settings.assertCookieFile(current.cookiesFile);
         let result;
         try {
           result = await ytdlp.analyzeVideo({
             ytdlpPath: binaries.ytdlp.path,
             url: parsed.url,
-            cookiesFromBrowser: settings.get().cookiesFromBrowser ?? null
+            cookiesFromBrowser: current.cookiesFromBrowser ?? null,
+            cookiesFile: current.cookiesFile ?? null
           });
         } catch (error) {
           throw error instanceof AppError ? error : new AppError('ANALYZE_FAILED');

@@ -314,6 +314,24 @@ const main = async () => {
     expect(resetSettings.cookiesFromBrowser === null, `cookie reset left ${resetSettings.cookiesFromBrowser}`);
     console.log('browser cookie setting ok');
 
+    const cookieFile = path.join(work, 'cookies.txt');
+    await writeFile(cookieFile, '# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tvalue\n');
+    const cookiesFromFile = await runPowerShell(
+      path.join(installDir, 'install', 'cookies.ps1'),
+      ['-Source', 'file', '-CookieFile', cookieFile],
+      { cwd: installDir }
+    );
+    expect(cookiesFromFile.code === 0, `cookie file script failed with ${cookiesFromFile.code}: ${cookiesFromFile.stderr.trim()}`);
+    const fileSettings = await readJsonText(path.join(dataDir, 'settings.json'));
+    expect(fileSettings.cookiesFile === cookieFile, `cookie file setting is ${fileSettings.cookiesFile}`);
+    expect(fileSettings.cookiesFromBrowser === null, `cookie file left browser source ${fileSettings.cookiesFromBrowser}`);
+    const resetFile = await runPowerShell(path.join(installDir, 'install', 'cookies.ps1'), ['-Source', 'off'], { cwd: installDir });
+    expect(resetFile.code === 0, `cookie file reset failed with ${resetFile.code}: ${resetFile.stderr.trim()}`);
+    const clearedSettings = await readJsonText(path.join(dataDir, 'settings.json'));
+    expect(clearedSettings.cookiesFile === null, `cookie file reset left ${clearedSettings.cookiesFile}`);
+    expect(clearedSettings.cookiesFromBrowser === null, `cookie reset left ${clearedSettings.cookiesFromBrowser}`);
+    console.log('cookie file setting ok');
+
     const uninstall = await runPowerShell(path.join(installDir, 'install', 'uninstall.ps1'), ['-Force'], { cwd: installDir });
     expect(uninstall.code === 0, `uninstall failed with ${uninstall.code}: ${uninstall.stderr.trim()}`);
     await waitFor(async () => !(await stat(installDir).catch(() => null)), 'install folder still exists after uninstall', 30000);
