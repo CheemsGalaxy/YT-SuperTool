@@ -113,6 +113,27 @@
     "uppspelningen avbröts",
     "något gick fel"
   ];
+  const INTERRUPTION_PHRASES = [
+    "experiencing interruptions",
+    "gặp sự cố gây gián đoạn",
+    "interrupciones",
+    "interrupções",
+    "interruptions",
+    "unterbrechungen",
+    "interruzioni",
+    "перебои",
+    "перебої",
+    "中断",
+    "중단",
+    "रुकावट",
+    "gangguan",
+    "หยุดชะงัก",
+    "kesinti",
+    "انقطاع",
+    "onderbrekingen",
+    "przerwy",
+    "avbrott"
+  ];
   const ADBLOCK_PHRASES = [
     "adblock",
     "ad blocker",
@@ -193,6 +214,7 @@
   ];
   toPattern(PAUSE_PHRASES);
   toPattern(PLAYBACK_ERROR_PHRASES);
+  toPattern(INTERRUPTION_PHRASES);
   const ADBLOCK_HINT = toPattern(ADBLOCK_PHRASES);
   const ADBLOCK_TERMS_HINT = toPattern(ADBLOCK_TERMS_PHRASES);
   const AD_KEYS = [

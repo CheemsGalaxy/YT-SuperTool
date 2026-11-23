@@ -93,4 +93,3 @@ export const COSMETIC_FILTERS = [
   'youtube.com##.ytp-ad-suggested-action',
   'youtube.com##.ytp-suggested-action:has(.ytp-ad-suggested-action)'
 ];
-

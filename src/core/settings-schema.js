@@ -44,7 +44,7 @@ export const FEATURES = [
     key: 'nonstop',
     group: 'player',
     label: 'Auto continue',
-    description: 'Dismiss the “Video paused. Continue watching?” prompt.',
+    description: 'Dismiss pause prompts and playback interruption notices.',
     icon: 'repeat',
     default: true
   },

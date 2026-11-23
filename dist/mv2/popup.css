@@ -80,14 +80,13 @@ input {
   height: 28px;
   place-items: center;
   border-radius: 8px;
-  background: var(--ytst-accent);
-  color: #ffffff;
+  overflow: hidden;
 }
 
 .popup-brand svg {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
 }
 
 .popup-copy {

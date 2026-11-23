@@ -115,6 +115,28 @@ export const PLAYBACK_ERROR_PHRASES = [
   'något gick fel'
 ];
 
+export const INTERRUPTION_PHRASES = [
+  'experiencing interruptions',
+  'gặp sự cố gây gián đoạn',
+  'interrupciones',
+  'interrupções',
+  'interruptions',
+  'unterbrechungen',
+  'interruzioni',
+  'перебои',
+  'перебої',
+  '中断',
+  '중단',
+  'रुकावट',
+  'gangguan',
+  'หยุดชะงัก',
+  'kesinti',
+  'انقطاع',
+  'onderbrekingen',
+  'przerwy',
+  'avbrott'
+];
+
 export const ADBLOCK_PHRASES = [
   'adblock',
   'ad blocker',
@@ -197,5 +219,6 @@ export const ADBLOCK_TERMS_PHRASES = [
 
 export const PAUSE_HINT = toPattern(PAUSE_PHRASES);
 export const PLAYBACK_ERROR_HINT = toPattern(PLAYBACK_ERROR_PHRASES);
+export const INTERRUPTION_HINT = toPattern(INTERRUPTION_PHRASES);
 export const ADBLOCK_HINT = toPattern(ADBLOCK_PHRASES);
 export const ADBLOCK_TERMS_HINT = toPattern(ADBLOCK_TERMS_PHRASES);

@@ -9,6 +9,7 @@ const MIN_SEGMENT_LENGTH = 0.5;
 const NOTICE_DURATION = 5000;
 const RETRY_BASE = 2000;
 const RETRY_MAX = 30000;
+const NAV_DELAY = 50;
 
 const getPlayer = () => document.querySelector('#movie_player') || document.querySelector('.html5-video-player');
 const getVideo = () => getPlayer()?.querySelector('video') || document.querySelector('video');
@@ -86,11 +87,23 @@ export function createSponsorBlock({ bridge }) {
   let loadingVideoId = '';
   let loadedVideoId = '';
   let loadError = { videoId: '', attempt: 0, retryAt: 0 };
+  let boundVideo = null;
+  let navTimer = 0;
+  let navigationBound = false;
 
   const resetLoad = () => {
     loadingVideoId = '';
     loadedVideoId = '';
     loadError = { videoId: '', attempt: 0, retryAt: 0 };
+  };
+
+  const resetVideoState = () => {
+    setSegments([]);
+    skipped = new Set();
+    lastSkip = null;
+    hideNotice();
+    removeTrack();
+    resetLoad();
   };
 
   function setSegments(list) {
@@ -338,27 +351,81 @@ export function createSponsorBlock({ bridge }) {
     showNotice(segment);
   }
 
-  function tick() {
-    if (!enabled) return;
-    const video = getVideo();
-    if (!video || video.closest('.html5-video-player')?.classList.contains('ad-showing')) return;
+  function bindVideo(video) {
+    if (!video || boundVideo === video) return;
+    boundVideo?.removeEventListener('timeupdate', onTimeUpdate);
+    boundVideo = video;
+    boundVideo.addEventListener('timeupdate', onTimeUpdate, { passive: true });
+  }
 
+  function unbindVideo() {
+    boundVideo?.removeEventListener('timeupdate', onTimeUpdate);
+    boundVideo = null;
+  }
+
+  function onTimeUpdate() {
+    tick();
+  }
+
+  function syncVideo() {
     const videoId = getVideoId();
+    if (!videoId) return;
     if (videoId !== currentVideoId) {
       currentVideoId = videoId;
+      resetVideoState();
       void loadSegments(videoId);
       return;
     }
-
-    if (videoId && loadingVideoId !== videoId && loadedVideoId !== videoId) {
-      const retryAt = loadError.videoId === videoId ? loadError.retryAt : 0;
-      if (Date.now() >= retryAt) {
-        void loadSegments(videoId);
-        return;
-      }
+    if (loadingVideoId === videoId || loadedVideoId === videoId) {
+      renderSegments(getVideo());
+      return;
     }
+    const retryAt = loadError.videoId === videoId ? loadError.retryAt : 0;
+    if (Date.now() >= retryAt) void loadSegments(videoId);
+    else renderSegments(getVideo());
+  }
 
-    renderSegments(video);
+  function scheduleSync() {
+    if (!enabled) return;
+    clearTimeout(navTimer);
+    navTimer = setTimeout(() => {
+      navTimer = 0;
+      if (enabled) syncVideo();
+    }, NAV_DELAY);
+  }
+
+  function onNavigate() {
+    if (!enabled) return;
+    syncVideo();
+    scheduleSync();
+  }
+
+  const bindNavigation = () => {
+    if (navigationBound) return;
+    navigationBound = true;
+    document.addEventListener('yt-navigate-finish', onNavigate, { passive: true });
+    document.addEventListener('yt-page-data-updated', onNavigate, { passive: true });
+    globalThis.window?.addEventListener?.('popstate', onNavigate, { passive: true });
+  };
+
+  const unbindNavigation = () => {
+    if (!navigationBound) return;
+    navigationBound = false;
+    document.removeEventListener('yt-navigate-finish', onNavigate);
+    document.removeEventListener('yt-page-data-updated', onNavigate);
+    globalThis.window?.removeEventListener?.('popstate', onNavigate);
+    clearTimeout(navTimer);
+    navTimer = 0;
+  };
+
+  function tick() {
+    if (!enabled) return;
+    const video = getVideo();
+    if (!video) return;
+    bindVideo(video);
+    if (video.closest('.html5-video-player')?.classList.contains('ad-showing')) return;
+
+    syncVideo();
     if (!segments.length || video.readyState < 1) return;
     const duration = Number(video.duration);
     if (!Number.isFinite(duration) || duration <= 0) return;
@@ -412,34 +479,13 @@ export function createSponsorBlock({ bridge }) {
     })
     .catch((error) => console.error('YT SuperTool could not load SponsorBlock bar setting:', error));
 
-  document.addEventListener('yt-navigate-finish', () => {
-    if (!enabled) return;
-    const videoId = getVideoId();
-    if (videoId === currentVideoId) {
-      renderSegments(getVideo());
-      return;
-    }
-    currentVideoId = videoId;
-    setSegments([]);
-    skipped = new Set();
-    lastSkip = null;
-    hideNotice();
-    removeTrack();
-    resetLoad();
-    if (videoId) void loadSegments(videoId);
-  }, { passive: true });
-
   return {
     init() {
+      bindNavigation();
+      bindVideo(getVideo());
       if (enabled) {
         if (!tickTimer) tickTimer = setInterval(tick, TICK_INTERVAL);
-        const videoId = getVideoId();
-        if (videoId && videoId !== currentVideoId) {
-          currentVideoId = videoId;
-          void loadSegments(videoId);
-        } else {
-          renderSegments(getVideo());
-        }
+        syncVideo();
         return;
       }
       enabled = true;
@@ -449,15 +495,10 @@ export function createSponsorBlock({ bridge }) {
       currentVideoId = getVideoId();
       void loadSegments(currentVideoId);
     },
-    pause() {
-      clearInterval(tickTimer);
-      tickTimer = 0;
-    },
-    resume() {
-      if (enabled && !tickTimer) tickTimer = setInterval(tick, TICK_INTERVAL);
-    },
     stop() {
       enabled = false;
+      unbindNavigation();
+      unbindVideo();
       clearInterval(tickTimer);
       tickTimer = 0;
       if (seekingBound) {
@@ -465,13 +506,8 @@ export function createSponsorBlock({ bridge }) {
         seekingBound = false;
       }
       fetchToken += 1;
-      setSegments([]);
-      skipped = new Set();
-      lastSkip = null;
+      resetVideoState();
       currentVideoId = '';
-      resetLoad();
-      hideNotice();
-      removeTrack();
       noticeEl?.remove();
       noticeEl = null;
     }

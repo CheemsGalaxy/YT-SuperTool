@@ -535,6 +535,27 @@
     "uppspelningen avbröts",
     "något gick fel"
   ];
+  const INTERRUPTION_PHRASES = [
+    "experiencing interruptions",
+    "gặp sự cố gây gián đoạn",
+    "interrupciones",
+    "interrupções",
+    "interruptions",
+    "unterbrechungen",
+    "interruzioni",
+    "перебои",
+    "перебої",
+    "中断",
+    "중단",
+    "रुकावट",
+    "gangguan",
+    "หยุดชะงัก",
+    "kesinti",
+    "انقطاع",
+    "onderbrekingen",
+    "przerwy",
+    "avbrott"
+  ];
   const ADBLOCK_PHRASES = [
     "adblock",
     "ad blocker",
@@ -615,6 +636,7 @@
   ];
   const PAUSE_HINT = toPattern(PAUSE_PHRASES);
   const PLAYBACK_ERROR_HINT = toPattern(PLAYBACK_ERROR_PHRASES);
+  const INTERRUPTION_HINT = toPattern(INTERRUPTION_PHRASES);
   const ADBLOCK_HINT = toPattern(ADBLOCK_PHRASES);
   const ADBLOCK_TERMS_HINT = toPattern(ADBLOCK_TERMS_PHRASES);
   const AD_KEYS = [
@@ -1249,7 +1271,7 @@
       key: "nonstop",
       group: "player",
       label: "Auto continue",
-      description: "Dismiss the “Video paused. Continue watching?” prompt.",
+      description: "Dismiss pause prompts and playback interruption notices.",
       icon: "repeat",
       default: true
     },
@@ -1479,7 +1501,7 @@
       refresh: handleNavigation
     };
   }
-  const themeCss = ':host {\n  all: initial;\n\n  --ytst-font: "Roboto", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\n  --ytst-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;\n  --ytst-space-1: 4px;\n  --ytst-space-2: 8px;\n  --ytst-space-3: 12px;\n  --ytst-space-4: 16px;\n\n  --ytst-surface: rgba(15, 15, 15, 0.88);\n  --ytst-elevated: rgba(255, 255, 255, 0.04);\n  --ytst-elevated-hover: rgba(255, 255, 255, 0.08);\n  --ytst-line: rgba(255, 255, 255, 0.08);\n  --ytst-line-strong: rgba(255, 255, 255, 0.14);\n  --ytst-text: #f1f1f1;\n  --ytst-text-muted: #aaaaaa;\n  --ytst-text-faint: #717171;\n  --ytst-accent: #ff0033;\n  --ytst-accent-control: #3ea6ff;\n  --ytst-track: rgba(255, 255, 255, 0.2);\n  --ytst-focus: #3ea6ff;\n  --ytst-backdrop: rgba(0, 0, 0, 0.6);\n  --ytst-radius-panel: 12px;\n  --ytst-radius-item: 8px;\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);\n\n  display: block;\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  color: var(--ytst-text);\n  color-scheme: dark;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n:host([data-theme="light"]) {\n  --ytst-surface: rgba(255, 255, 255, 0.92);\n  --ytst-elevated: rgba(15, 15, 15, 0.045);\n  --ytst-elevated-hover: rgba(15, 15, 15, 0.08);\n  --ytst-line: rgba(15, 15, 15, 0.1);\n  --ytst-line-strong: rgba(15, 15, 15, 0.18);\n  --ytst-text: #0f0f0f;\n  --ytst-text-muted: #606060;\n  --ytst-text-faint: #909090;\n  --ytst-track: rgba(15, 15, 15, 0.24);\n  --ytst-backdrop: rgba(15, 15, 15, 0.4);\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);\n  color-scheme: light;\n}\n\n* {\n  box-sizing: border-box;\n}\n\n.ytst-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 2147483000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 24px;\n  background: var(--ytst-backdrop);\n  opacity: 0;\n  visibility: hidden;\n  transition: opacity 160ms ease, visibility 0s linear 160ms;\n}\n\n.ytst-overlay[data-open="true"] {\n  opacity: 1;\n  visibility: visible;\n  transition: opacity 160ms ease;\n}\n\n.ytst-panel {\n  display: grid;\n  grid-template-rows: auto minmax(0, 1fr) auto;\n  width: min(640px, 100%);\n  height: min(520px, 100%);\n  overflow: hidden;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-panel);\n  background: var(--ytst-surface);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  box-shadow: var(--ytst-shadow);\n  transform: translateY(8px) scale(0.995);\n  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-overlay[data-open="true"] .ytst-panel {\n  transform: none;\n}\n\n.ytst-panel:focus {\n  outline: none;\n}\n\n.ytst-header {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: var(--ytst-space-3) var(--ytst-space-4);\n  border-bottom: 1px solid var(--ytst-line);\n}\n\n.ytst-brand {\n  display: grid;\n  flex: 0 0 28px;\n  width: 28px;\n  height: 28px;\n  place-items: center;\n  border-radius: 8px;\n  background: var(--ytst-accent);\n  color: #ffffff;\n}\n\n.ytst-brand svg {\n  display: block;\n  width: 16px;\n  height: 16px;\n}\n\n.ytst-header-copy {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-title {\n  margin: 0;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 1.2;\n  letter-spacing: -0.01em;\n}\n\n.ytst-subtitle {\n  color: var(--ytst-text-muted);\n  font-size: 11px;\n  line-height: 1.2;\n}\n\n.ytst-badge {\n  padding: 2px 5px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.02em;\n  line-height: 1.2;\n}\n\n.ytst-header-actions {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-icon-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 30px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-icon-button:hover {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-icon-button:active {\n  background: var(--ytst-elevated);\n}\n\n.ytst-body {\n  display: grid;\n  grid-template-columns: 168px minmax(0, 1fr);\n  min-height: 0;\n}\n\n.ytst-rail {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: var(--ytst-space-2);\n  overflow-y: auto;\n  border-right: 1px solid var(--ytst-line);\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-tab {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  height: 34px;\n  min-height: 34px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  font-weight: 500;\n  text-align: left;\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-tab svg {\n  flex: 0 0 18px;\n  opacity: 0.9;\n}\n\n.ytst-tab:hover {\n  background: var(--ytst-elevated);\n  color: var(--ytst-text);\n}\n\n.ytst-tab[aria-selected="true"] {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-tab-count {\n  margin-left: auto;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-tab[aria-selected="true"] .ytst-tab-count {\n  color: var(--ytst-text-muted);\n}\n\n.ytst-content {\n  min-height: 0;\n  padding: 8px 8px 12px;\n  overflow-y: auto;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-content::-webkit-scrollbar {\n  width: 8px;\n}\n\n.ytst-content::-webkit-scrollbar-track {\n  background: transparent;\n}\n\n.ytst-content::-webkit-scrollbar-thumb {\n  border: 2px solid transparent;\n  border-radius: 8px;\n  background: var(--ytst-line-strong);\n  background-clip: content-box;\n}\n\n.ytst-tabpanel[hidden] {\n  display: none;\n}\n\n.ytst-group {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.ytst-group-head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: var(--ytst-space-2);\n  padding: 4px 8px 8px;\n}\n\n.ytst-group-title {\n  margin: 0;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-group-meta {\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-section {\n  margin: 12px 8px 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  min-height: 52px;\n  padding: 8px 10px;\n  border-radius: var(--ytst-radius-item);\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-row:hover {\n  background: var(--ytst-elevated);\n}\n\n.ytst-row.is-disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.ytst-row-icon {\n  display: inline-flex;\n  flex: 0 0 20px;\n  color: var(--ytst-text-muted);\n}\n\n.ytst-row:hover .ytst-row-icon {\n  color: var(--ytst-text);\n}\n\n.ytst-row-copy {\n  display: flex;\n  flex: 1 1 auto;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-row-label {\n  color: var(--ytst-text);\n  font-size: 13.5px;\n  font-weight: 500;\n  line-height: 1.25;\n}\n\n.ytst-row-desc {\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.35;\n}\n\n.ytst-row-meta {\n  display: flex;\n  flex: 0 0 auto;\n  align-items: center;\n  gap: 8px;\n}\n\n.ytst-badge-layer {\n  padding: 1px 4px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 9.5px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.04em;\n  line-height: 1.4;\n}\n\n.ytst-switch-input {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip: rect(0 0 0 0);\n  white-space: nowrap;\n  border: 0;\n}\n\n.ytst-switch {\n  position: relative;\n  flex: 0 0 36px;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: var(--ytst-track);\n  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-thumb {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #f1f1f1;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-input:checked + .ytst-switch {\n  background: var(--ytst-accent-control);\n}\n\n.ytst-switch-input:checked + .ytst-switch .ytst-switch-thumb {\n  background: #ffffff;\n  transform: translateX(16px);\n}\n\n.ytst-switch-input:focus-visible + .ytst-switch {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n.ytst-switch-input:disabled + .ytst-switch {\n  opacity: 0.55;\n}\n\n.ytst-footer {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: 10px 14px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-status {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.2;\n}\n\n.ytst-status-dot {\n  flex: 0 0 5px;\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ytst-accent-control);\n}\n\n.ytst-footer-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-button {\n  height: 30px;\n  padding: 0 12px;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-button:hover {\n  background: var(--ytst-elevated-hover);\n}\n\n.ytst-button-primary {\n  border-color: transparent;\n  background: var(--ytst-text);\n  color: #0f0f0f;\n}\n\n.ytst-button-primary:hover {\n  background: #d9d9d9;\n  color: #0f0f0f;\n}\n\n:host([data-theme="light"]) .ytst-button-primary {\n  background: #0f0f0f;\n  color: #ffffff;\n}\n\n:host([data-theme="light"]) .ytst-button-primary:hover {\n  background: #272727;\n}\n\n.ytst-button:focus-visible,\n.ytst-tab:focus-visible,\n.ytst-icon-button:focus-visible {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n@media (max-width: 720px) {\n  .ytst-overlay {\n    padding: 12px;\n  }\n\n  .ytst-panel {\n    height: min(560px, 100%);\n  }\n\n  .ytst-body {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto minmax(0, 1fr);\n  }\n\n  .ytst-rail {\n    flex-direction: row;\n    gap: 6px;\n    padding: var(--ytst-space-2);\n    overflow-x: auto;\n    border-right: 0;\n    border-bottom: 1px solid var(--ytst-line);\n  }\n\n  .ytst-tab {\n    flex: 0 0 auto;\n    padding: 0 10px;\n  }\n\n  .ytst-tab-count {\n    display: none;\n  }\n}\n\n.ytst-sb {\n  display: grid;\n  grid-template-rows: 0fr;\n  opacity: 0;\n  transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;\n}\n\n.ytst-sb[data-open="true"] {\n  grid-template-rows: 1fr;\n  opacity: 1;\n}\n\n.ytst-sb-inner {\n  min-height: 0;\n  overflow: hidden;\n}\n\n.ytst-sb-list {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1px 10px;\n  padding: 2px 10px 2px 42px;\n}\n\n.ytst-sb-cat,\n.ytst-sb-notice {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  cursor: pointer;\n}\n\n.ytst-sb-cat {\n  min-height: 26px;\n}\n\n.ytst-sb-cat:hover,\n.ytst-sb-notice:hover {\n  color: var(--ytst-text);\n}\n\n.ytst-sb-cat input,\n.ytst-sb-notice input {\n  width: 14px;\n  height: 14px;\n  margin: 0;\n  accent-color: var(--ytst-accent-control);\n}\n\n.ytst-sb-dot {\n  flex: 0 0 7px;\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n}\n\n.ytst-sb-notice {\n  margin: 4px 10px 8px 42px;\n  padding-top: 8px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-sb-progress {\n  margin-top: 0;\n  padding-top: 0;\n  border-top: 0;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-overlay,\n  .ytst-panel,\n  .ytst-tab,\n  .ytst-row,\n  .ytst-switch,\n  .ytst-switch-thumb,\n  .ytst-sb {\n    transition-duration: 0ms;\n  }\n}\n';
+  const themeCss = ':host {\n  all: initial;\n\n  --ytst-font: "Roboto", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\n  --ytst-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;\n  --ytst-space-1: 4px;\n  --ytst-space-2: 8px;\n  --ytst-space-3: 12px;\n  --ytst-space-4: 16px;\n\n  --ytst-surface: rgba(15, 15, 15, 0.88);\n  --ytst-elevated: rgba(255, 255, 255, 0.04);\n  --ytst-elevated-hover: rgba(255, 255, 255, 0.08);\n  --ytst-line: rgba(255, 255, 255, 0.08);\n  --ytst-line-strong: rgba(255, 255, 255, 0.14);\n  --ytst-text: #f1f1f1;\n  --ytst-text-muted: #aaaaaa;\n  --ytst-text-faint: #717171;\n  --ytst-accent: #ff0033;\n  --ytst-accent-control: #3ea6ff;\n  --ytst-track: rgba(255, 255, 255, 0.2);\n  --ytst-focus: #3ea6ff;\n  --ytst-backdrop: rgba(0, 0, 0, 0.6);\n  --ytst-radius-panel: 12px;\n  --ytst-radius-item: 8px;\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.44);\n\n  display: block;\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  color: var(--ytst-text);\n  color-scheme: dark;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n:host([data-theme="light"]) {\n  --ytst-surface: rgba(255, 255, 255, 0.92);\n  --ytst-elevated: rgba(15, 15, 15, 0.045);\n  --ytst-elevated-hover: rgba(15, 15, 15, 0.08);\n  --ytst-line: rgba(15, 15, 15, 0.1);\n  --ytst-line-strong: rgba(15, 15, 15, 0.18);\n  --ytst-text: #0f0f0f;\n  --ytst-text-muted: #606060;\n  --ytst-text-faint: #909090;\n  --ytst-track: rgba(15, 15, 15, 0.24);\n  --ytst-backdrop: rgba(15, 15, 15, 0.4);\n  --ytst-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);\n  color-scheme: light;\n}\n\n* {\n  box-sizing: border-box;\n}\n\n.ytst-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 2147483000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 24px;\n  background: var(--ytst-backdrop);\n  opacity: 0;\n  visibility: hidden;\n  transition: opacity 160ms ease, visibility 0s linear 160ms;\n}\n\n.ytst-overlay[data-open="true"] {\n  opacity: 1;\n  visibility: visible;\n  transition: opacity 160ms ease;\n}\n\n.ytst-panel {\n  display: grid;\n  grid-template-rows: auto minmax(0, 1fr) auto;\n  width: min(640px, 100%);\n  height: min(520px, 100%);\n  overflow: hidden;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-panel);\n  background: var(--ytst-surface);\n  -webkit-backdrop-filter: blur(16px) saturate(180%);\n  backdrop-filter: blur(16px) saturate(180%);\n  box-shadow: var(--ytst-shadow);\n  transform: translateY(8px) scale(0.995);\n  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-overlay[data-open="true"] .ytst-panel {\n  transform: none;\n}\n\n.ytst-panel:focus {\n  outline: none;\n}\n\n.ytst-header {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: var(--ytst-space-3) var(--ytst-space-4);\n  border-bottom: 1px solid var(--ytst-line);\n}\n\n.ytst-brand {\n  display: grid;\n  flex: 0 0 28px;\n  width: 28px;\n  height: 28px;\n  place-items: center;\n  border-radius: 8px;\n  overflow: hidden;\n}\n\n.ytst-brand svg {\n  display: block;\n  width: 28px;\n  height: 28px;\n}\n\n.ytst-header-copy {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-title {\n  margin: 0;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 14px;\n  font-weight: 600;\n  line-height: 1.2;\n  letter-spacing: -0.01em;\n}\n\n.ytst-subtitle {\n  color: var(--ytst-text-muted);\n  font-size: 11px;\n  line-height: 1.2;\n}\n\n.ytst-badge {\n  padding: 2px 5px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.02em;\n  line-height: 1.2;\n}\n\n.ytst-header-actions {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-icon-button {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 30px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-icon-button:hover {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-icon-button:active {\n  background: var(--ytst-elevated);\n}\n\n.ytst-body {\n  display: grid;\n  grid-template-columns: 168px minmax(0, 1fr);\n  min-height: 0;\n}\n\n.ytst-rail {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: var(--ytst-space-2);\n  overflow-y: auto;\n  border-right: 1px solid var(--ytst-line);\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-tab {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  height: 34px;\n  min-height: 34px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text-muted);\n  font-family: var(--ytst-font);\n  font-size: 13px;\n  font-weight: 500;\n  text-align: left;\n  cursor: pointer;\n  transition: background-color 120ms ease, color 120ms ease;\n}\n\n.ytst-tab svg {\n  flex: 0 0 18px;\n  opacity: 0.9;\n}\n\n.ytst-tab:hover {\n  background: var(--ytst-elevated);\n  color: var(--ytst-text);\n}\n\n.ytst-tab[aria-selected="true"] {\n  background: var(--ytst-elevated-hover);\n  color: var(--ytst-text);\n}\n\n.ytst-tab-count {\n  margin-left: auto;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-tab[aria-selected="true"] .ytst-tab-count {\n  color: var(--ytst-text-muted);\n}\n\n.ytst-content {\n  min-height: 0;\n  padding: 8px 8px 12px;\n  overflow-y: auto;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ytst-line-strong) transparent;\n}\n\n.ytst-content::-webkit-scrollbar {\n  width: 8px;\n}\n\n.ytst-content::-webkit-scrollbar-track {\n  background: transparent;\n}\n\n.ytst-content::-webkit-scrollbar-thumb {\n  border: 2px solid transparent;\n  border-radius: 8px;\n  background: var(--ytst-line-strong);\n  background-clip: content-box;\n}\n\n.ytst-tabpanel[hidden] {\n  display: none;\n}\n\n.ytst-group {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.ytst-group-head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: var(--ytst-space-2);\n  padding: 4px 8px 8px;\n}\n\n.ytst-group-title {\n  margin: 0;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-group-meta {\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ytst-section {\n  margin: 12px 8px 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-font);\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n.ytst-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  min-height: 52px;\n  padding: 8px 10px;\n  border-radius: var(--ytst-radius-item);\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-row:hover {\n  background: var(--ytst-elevated);\n}\n\n.ytst-row.is-disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.ytst-row-icon {\n  display: inline-flex;\n  flex: 0 0 20px;\n  color: var(--ytst-text-muted);\n}\n\n.ytst-row:hover .ytst-row-icon {\n  color: var(--ytst-text);\n}\n\n.ytst-row-copy {\n  display: flex;\n  flex: 1 1 auto;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ytst-row-label {\n  color: var(--ytst-text);\n  font-size: 13.5px;\n  font-weight: 500;\n  line-height: 1.25;\n}\n\n.ytst-row-desc {\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.35;\n}\n\n.ytst-row-meta {\n  display: flex;\n  flex: 0 0 auto;\n  align-items: center;\n  gap: 8px;\n}\n\n.ytst-badge-layer {\n  padding: 1px 4px;\n  border: 1px solid var(--ytst-line);\n  border-radius: 4px;\n  color: var(--ytst-text-faint);\n  font-family: var(--ytst-mono);\n  font-size: 9.5px;\n  font-weight: 500;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: 0.04em;\n  line-height: 1.4;\n}\n\n.ytst-switch-input {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip: rect(0 0 0 0);\n  white-space: nowrap;\n  border: 0;\n}\n\n.ytst-switch {\n  position: relative;\n  flex: 0 0 36px;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: var(--ytst-track);\n  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-thumb {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #f1f1f1;\n  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.ytst-switch-input:checked + .ytst-switch {\n  background: var(--ytst-accent-control);\n}\n\n.ytst-switch-input:checked + .ytst-switch .ytst-switch-thumb {\n  background: #ffffff;\n  transform: translateX(16px);\n}\n\n.ytst-switch-input:focus-visible + .ytst-switch {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n.ytst-switch-input:disabled + .ytst-switch {\n  opacity: 0.55;\n}\n\n.ytst-footer {\n  display: flex;\n  align-items: center;\n  gap: var(--ytst-space-3);\n  padding: 10px 14px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-status {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  line-height: 1.2;\n}\n\n.ytst-status-dot {\n  flex: 0 0 5px;\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ytst-accent-control);\n}\n\n.ytst-footer-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--ytst-space-2);\n  margin-left: auto;\n}\n\n.ytst-button {\n  height: 30px;\n  padding: 0 12px;\n  border: 1px solid var(--ytst-line);\n  border-radius: var(--ytst-radius-item);\n  background: transparent;\n  color: var(--ytst-text);\n  font-family: var(--ytst-font);\n  font-size: 12px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 120ms ease;\n}\n\n.ytst-button:hover {\n  background: var(--ytst-elevated-hover);\n}\n\n.ytst-button-primary {\n  border-color: transparent;\n  background: var(--ytst-text);\n  color: #0f0f0f;\n}\n\n.ytst-button-primary:hover {\n  background: #d9d9d9;\n  color: #0f0f0f;\n}\n\n:host([data-theme="light"]) .ytst-button-primary {\n  background: #0f0f0f;\n  color: #ffffff;\n}\n\n:host([data-theme="light"]) .ytst-button-primary:hover {\n  background: #272727;\n}\n\n.ytst-button:focus-visible,\n.ytst-tab:focus-visible,\n.ytst-icon-button:focus-visible {\n  outline: 2px solid var(--ytst-focus);\n  outline-offset: 2px;\n}\n\n@media (max-width: 720px) {\n  .ytst-overlay {\n    padding: 12px;\n  }\n\n  .ytst-panel {\n    height: min(560px, 100%);\n  }\n\n  .ytst-body {\n    grid-template-columns: 1fr;\n    grid-template-rows: auto minmax(0, 1fr);\n  }\n\n  .ytst-rail {\n    flex-direction: row;\n    gap: 6px;\n    padding: var(--ytst-space-2);\n    overflow-x: auto;\n    border-right: 0;\n    border-bottom: 1px solid var(--ytst-line);\n  }\n\n  .ytst-tab {\n    flex: 0 0 auto;\n    padding: 0 10px;\n  }\n\n  .ytst-tab-count {\n    display: none;\n  }\n}\n\n.ytst-sb {\n  display: grid;\n  grid-template-rows: 0fr;\n  opacity: 0;\n  transition: grid-template-rows 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;\n}\n\n.ytst-sb[data-open="true"] {\n  grid-template-rows: 1fr;\n  opacity: 1;\n}\n\n.ytst-sb-inner {\n  min-height: 0;\n  overflow: hidden;\n}\n\n.ytst-sb-list {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 1px 10px;\n  padding: 2px 10px 2px 42px;\n}\n\n.ytst-sb-cat,\n.ytst-sb-notice {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  color: var(--ytst-text-muted);\n  font-size: 11.5px;\n  cursor: pointer;\n}\n\n.ytst-sb-cat {\n  min-height: 26px;\n}\n\n.ytst-sb-cat:hover,\n.ytst-sb-notice:hover {\n  color: var(--ytst-text);\n}\n\n.ytst-sb-cat input,\n.ytst-sb-notice input {\n  width: 14px;\n  height: 14px;\n  margin: 0;\n  accent-color: var(--ytst-accent-control);\n}\n\n.ytst-sb-dot {\n  flex: 0 0 7px;\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n}\n\n.ytst-sb-notice {\n  margin: 4px 10px 8px 42px;\n  padding-top: 8px;\n  border-top: 1px solid var(--ytst-line);\n}\n\n.ytst-sb-progress {\n  margin-top: 0;\n  padding-top: 0;\n  border-top: 0;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ytst-overlay,\n  .ytst-panel,\n  .ytst-tab,\n  .ytst-row,\n  .ytst-switch,\n  .ytst-switch-thumb,\n  .ytst-sb {\n    transition-duration: 0ms;\n  }\n}\n';
   const SVG_NS = "http://www.w3.org/2000/svg";
   const applyAttributes = (element, attributes) => {
     for (const [key, value] of Object.entries(attributes || {})) {
@@ -1629,12 +1651,28 @@
       viewBox: "0 0 24 24",
       width: String(size),
       height: String(size),
-      fill: "currentColor",
+      fill: "none",
       "aria-hidden": "true",
       focusable: "false",
       className: "ytst-icon"
     });
-    svg.appendChild(createSvgElement("path", { d: "M9.4 6.1v11.8L19 12 9.4 6.1Z" }));
+    svg.appendChild(createSvgElement("rect", { width: "24", height: "24", rx: "5", fill: "#212121" }));
+    const gear = createSvgElement("g", { fill: "#ffffff" });
+    gear.appendChild(createSvgElement("circle", { cx: "12", cy: "12", r: "7.9" }));
+    for (let index = 0; index < 8; index += 1) {
+      gear.appendChild(createSvgElement("rect", {
+        x: "10.7",
+        y: "1.4",
+        width: "2.6",
+        height: "3",
+        rx: "0.7",
+        transform: `rotate(${index * 45} 12 12)`
+      }));
+    }
+    svg.appendChild(gear);
+    svg.appendChild(createSvgElement("circle", { cx: "12", cy: "12", r: "4.8", fill: "#212121" }));
+    svg.appendChild(createSvgElement("rect", { x: "9", y: "9.8", width: "6", height: "4.4", rx: "1.3", fill: "#ff0033" }));
+    svg.appendChild(createSvgElement("path", { d: "M10.8 10.7v2.6l2.8-1.3-2.8-1.3Z", fill: "#ffffff" }));
     return svg;
   }
   const UI_STRINGS = {
@@ -2889,13 +2927,18 @@
     "ytd-modal-with-title-and-button-renderer"
   ];
   const POPUP_SELECTOR = POPUP_SELECTORS.join(",");
-  const CONTAINER_SELECTOR = '#dialog, [role="dialog"], ytd-popup-container, tp-yt-paper-dialog';
+  const NOTICE_SELECTORS = [
+    "snackbar-container.ytSnackbarContainerHost .ytSnackbarContainerSnackbarContainer",
+    "ytd-notification-action-renderer",
+    "yt-notification-action-renderer"
+  ];
+  const NOTICE_SELECTOR = NOTICE_SELECTORS.join(",");
   const CONFIRM_SELECTORS = [
     "#confirm-button button",
     "ytd-button-renderer#confirm-button button",
     "ytd-button-renderer#confirm-button a",
     "#confirm-button a",
-    "#confirm-button"
+    '#confirm-button [role="button"]'
   ];
   const BUTTON_SELECTOR = [
     "button",
@@ -2907,10 +2950,13 @@
     '[role="button"]'
   ].join(",");
   const HANDLE_COOLDOWN = 2e3;
+  const RETRY_DELAY = 250;
+  const RETRY_LIMIT = 20;
   const hasPauseText = (element) => {
     const text = element.textContent || "";
     return PAUSE_HINT.test(text) || PLAYBACK_ERROR_HINT.test(text);
   };
+  const hasInterruptionText = (element) => INTERRUPTION_HINT.test(element.textContent || "");
   const isVisible = (element) => Boolean(element && element.getClientRects().length);
   const resumeVideo = () => {
     const player = document.querySelector("#movie_player, .html5-video-player");
@@ -2928,11 +2974,12 @@
       }
     }
   };
+  const isClickable = (button) => Boolean(button) && !button.disabled && button.getAttribute?.("aria-disabled") !== "true" && button.isConnected && isVisible(button);
   const buttonLabel = (button) => `${button.getAttribute("aria-label") || ""} ${button.textContent || ""}`.trim();
   const clickConfirm = (prompt) => {
     for (const selector of CONFIRM_SELECTORS) {
       const button = prompt.querySelector(selector);
-      if (button && !button.disabled && button.isConnected && isVisible(button)) {
+      if (isClickable(button)) {
         try {
           button.click();
           return true;
@@ -2940,7 +2987,7 @@
         }
       }
     }
-    const buttons = [...prompt.querySelectorAll(BUTTON_SELECTOR)].filter((button) => !button.disabled && button.isConnected && isVisible(button));
+    const buttons = [...prompt.querySelectorAll(BUTTON_SELECTOR)].filter(isClickable);
     const hinted = buttons.find((button) => {
       const label = buttonLabel(button);
       return PAUSE_HINT.test(label) || PLAYBACK_ERROR_HINT.test(label);
@@ -2957,52 +3004,110 @@
   function createNonstop() {
     let enabled = false;
     let handled = /* @__PURE__ */ new WeakMap();
+    let attempts = /* @__PURE__ */ new WeakMap();
+    let retries = /* @__PURE__ */ new WeakSet();
+    let timers = /* @__PURE__ */ new Set();
+    const clearTimers = () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+      retries = /* @__PURE__ */ new WeakSet();
+    };
+    const scheduleRetry = (prompt) => {
+      if (!enabled || retries.has(prompt)) return;
+      const count = attempts.get(prompt) || 0;
+      if (count >= RETRY_LIMIT) return;
+      attempts.set(prompt, count + 1);
+      retries.add(prompt);
+      const timer = setTimeout(() => {
+        timers.delete(timer);
+        retries.delete(prompt);
+        handlePrompt(prompt);
+      }, RETRY_DELAY);
+      timers.add(timer);
+    };
     const handlePrompt = (prompt) => {
-      if (!prompt.isConnected || !hasPauseText(prompt)) return;
-      if (!prompt.matches(POPUP_SELECTOR) && prompt.querySelector(POPUP_SELECTOR)) return;
+      if (!enabled || !prompt || prompt.nodeType !== 1) return;
+      if (!prompt.isConnected || !prompt.matches(POPUP_SELECTOR)) return;
+      if (!hasPauseText(prompt) || !isVisible(prompt)) return;
       const now = Date.now();
-      const last = handled.get(prompt) || 0;
-      if (now - last < HANDLE_COOLDOWN) return;
+      if (now - (handled.get(prompt) || 0) < HANDLE_COOLDOWN) return;
+      if (!clickConfirm(prompt)) {
+        scheduleRetry(prompt);
+        return;
+      }
       handled.set(prompt, now);
-      clickConfirm(prompt);
+      attempts.delete(prompt);
       resumeVideo();
+    };
+    const removeNotice = (notice) => {
+      if (!enabled || !notice?.isConnected || !hasInterruptionText(notice)) return;
+      try {
+        notice.remove();
+      } catch {
+      }
+    };
+    const collectNotice = (node, found) => {
+      if (!(node instanceof Element)) return;
+      if (node.matches(NOTICE_SELECTOR)) found.add(node);
+      const notice = node.closest?.(NOTICE_SELECTOR);
+      if (notice) found.add(notice);
+      node.querySelectorAll(NOTICE_SELECTOR).forEach((element) => found.add(element));
     };
     const collect = (node, found) => {
       if (!(node instanceof Element)) return;
-      if (node.matches(POPUP_SELECTOR) && hasPauseText(node)) found.add(node);
-      else if (node.matches(CONTAINER_SELECTOR) && hasPauseText(node)) found.add(node);
-      node.querySelectorAll(`${POPUP_SELECTOR}, ${CONTAINER_SELECTOR}`).forEach((element) => {
-        if (hasPauseText(element)) found.add(element);
-      });
+      if (node.matches(POPUP_SELECTOR)) found.add(node);
+      const prompt = node.closest?.(POPUP_SELECTOR);
+      if (prompt) found.add(prompt);
+      node.querySelectorAll(POPUP_SELECTOR).forEach((element) => found.add(element));
+    };
+    const collectAncestor = (node, found) => {
+      if (!(node instanceof Element)) return;
+      if (node.matches(POPUP_SELECTOR)) found.add(node);
+      const prompt = node.closest?.(POPUP_SELECTOR);
+      if (prompt) found.add(prompt);
     };
     const sweep = (root) => {
       if (!enabled || !root?.querySelectorAll) return;
       const found = /* @__PURE__ */ new Set();
-      collect(root, found);
+      if (root.nodeType === 1 && root.matches(POPUP_SELECTOR)) found.add(root);
+      root.querySelectorAll(POPUP_SELECTOR).forEach((element) => found.add(element));
       found.forEach(handlePrompt);
+      const notices = /* @__PURE__ */ new Set();
+      if (root.nodeType === 1 && root.matches(NOTICE_SELECTOR)) notices.add(root);
+      root.querySelectorAll(NOTICE_SELECTOR).forEach((element) => notices.add(element));
+      notices.forEach(removeNotice);
     };
     return {
       init() {
         if (enabled) return;
         enabled = true;
+        clearTimers();
         handled = /* @__PURE__ */ new WeakMap();
+        attempts = /* @__PURE__ */ new WeakMap();
         sweep(document);
       },
       update(mutations) {
         if (!enabled) return;
         const found = /* @__PURE__ */ new Set();
+        const notices = /* @__PURE__ */ new Set();
         for (const mutation of mutations) {
           const target = mutation.target;
-          if (target instanceof Element && target.matches(CONTAINER_SELECTOR) && hasPauseText(target)) {
-            found.add(target);
+          const element = target?.nodeType === 1 ? target : target?.parentElement;
+          collectAncestor(element, found);
+          collectNotice(element, notices);
+          for (const node of mutation.addedNodes || []) {
+            collect(node, found);
+            collectNotice(node, notices);
           }
-          for (const node of mutation.addedNodes) collect(node, found);
         }
         found.forEach(handlePrompt);
+        notices.forEach(removeNotice);
       },
       stop() {
         enabled = false;
+        clearTimers();
         handled = /* @__PURE__ */ new WeakMap();
+        attempts = /* @__PURE__ */ new WeakMap();
       }
     };
   }
@@ -3014,6 +3119,7 @@
   const NOTICE_DURATION = 5e3;
   const RETRY_BASE = 2e3;
   const RETRY_MAX = 3e4;
+  const NAV_DELAY = 50;
   const getPlayer = () => document.querySelector("#movie_player") || document.querySelector(".html5-video-player");
   const getVideo = () => getPlayer()?.querySelector("video") || document.querySelector("video");
   let cachedHref = "";
@@ -3076,10 +3182,21 @@
     let loadingVideoId = "";
     let loadedVideoId = "";
     let loadError = { videoId: "", attempt: 0, retryAt: 0 };
+    let boundVideo = null;
+    let navTimer = 0;
+    let navigationBound = false;
     const resetLoad = () => {
       loadingVideoId = "";
       loadedVideoId = "";
       loadError = { videoId: "", attempt: 0, retryAt: 0 };
+    };
+    const resetVideoState = () => {
+      setSegments([]);
+      skipped = /* @__PURE__ */ new Set();
+      lastSkip = null;
+      hideNotice();
+      removeTrack();
+      resetLoad();
     };
     function setSegments(list) {
       segments = list;
@@ -3297,24 +3414,72 @@
       }
       showNotice(segment);
     }
-    function tick() {
-      if (!enabled) return;
-      const video = getVideo();
-      if (!video || video.closest(".html5-video-player")?.classList.contains("ad-showing")) return;
+    function bindVideo(video) {
+      if (!video || boundVideo === video) return;
+      boundVideo?.removeEventListener("timeupdate", onTimeUpdate);
+      boundVideo = video;
+      boundVideo.addEventListener("timeupdate", onTimeUpdate, { passive: true });
+    }
+    function unbindVideo() {
+      boundVideo?.removeEventListener("timeupdate", onTimeUpdate);
+      boundVideo = null;
+    }
+    function onTimeUpdate() {
+      tick();
+    }
+    function syncVideo() {
       const videoId = getVideoId$1();
+      if (!videoId) return;
       if (videoId !== currentVideoId) {
         currentVideoId = videoId;
+        resetVideoState();
         void loadSegments(videoId);
         return;
       }
-      if (videoId && loadingVideoId !== videoId && loadedVideoId !== videoId) {
-        const retryAt = loadError.videoId === videoId ? loadError.retryAt : 0;
-        if (Date.now() >= retryAt) {
-          void loadSegments(videoId);
-          return;
-        }
+      if (loadingVideoId === videoId || loadedVideoId === videoId) {
+        renderSegments(getVideo());
+        return;
       }
-      renderSegments(video);
+      const retryAt = loadError.videoId === videoId ? loadError.retryAt : 0;
+      if (Date.now() >= retryAt) void loadSegments(videoId);
+      else renderSegments(getVideo());
+    }
+    function scheduleSync() {
+      if (!enabled) return;
+      clearTimeout(navTimer);
+      navTimer = setTimeout(() => {
+        navTimer = 0;
+        if (enabled) syncVideo();
+      }, NAV_DELAY);
+    }
+    function onNavigate() {
+      if (!enabled) return;
+      syncVideo();
+      scheduleSync();
+    }
+    const bindNavigation = () => {
+      if (navigationBound) return;
+      navigationBound = true;
+      document.addEventListener("yt-navigate-finish", onNavigate, { passive: true });
+      document.addEventListener("yt-page-data-updated", onNavigate, { passive: true });
+      globalThis.window?.addEventListener?.("popstate", onNavigate, { passive: true });
+    };
+    const unbindNavigation = () => {
+      if (!navigationBound) return;
+      navigationBound = false;
+      document.removeEventListener("yt-navigate-finish", onNavigate);
+      document.removeEventListener("yt-page-data-updated", onNavigate);
+      globalThis.window?.removeEventListener?.("popstate", onNavigate);
+      clearTimeout(navTimer);
+      navTimer = 0;
+    };
+    function tick() {
+      if (!enabled) return;
+      const video = getVideo();
+      if (!video) return;
+      bindVideo(video);
+      if (video.closest(".html5-video-player")?.classList.contains("ad-showing")) return;
+      syncVideo();
       if (!segments.length || video.readyState < 1) return;
       const duration = Number(video.duration);
       if (!Number.isFinite(duration) || duration <= 0) return;
@@ -3359,33 +3524,13 @@
       if (!progressEnabled) removeTrack();
       else renderSegments(getVideo());
     }).catch((error) => console.error("YT SuperTool could not load SponsorBlock bar setting:", error));
-    document.addEventListener("yt-navigate-finish", () => {
-      if (!enabled) return;
-      const videoId = getVideoId$1();
-      if (videoId === currentVideoId) {
-        renderSegments(getVideo());
-        return;
-      }
-      currentVideoId = videoId;
-      setSegments([]);
-      skipped = /* @__PURE__ */ new Set();
-      lastSkip = null;
-      hideNotice();
-      removeTrack();
-      resetLoad();
-      if (videoId) void loadSegments(videoId);
-    }, { passive: true });
     return {
       init() {
+        bindNavigation();
+        bindVideo(getVideo());
         if (enabled) {
           if (!tickTimer) tickTimer = setInterval(tick, TICK_INTERVAL$1);
-          const videoId = getVideoId$1();
-          if (videoId && videoId !== currentVideoId) {
-            currentVideoId = videoId;
-            void loadSegments(videoId);
-          } else {
-            renderSegments(getVideo());
-          }
+          syncVideo();
           return;
         }
         enabled = true;
@@ -3395,15 +3540,10 @@
         currentVideoId = getVideoId$1();
         void loadSegments(currentVideoId);
       },
-      pause() {
-        clearInterval(tickTimer);
-        tickTimer = 0;
-      },
-      resume() {
-        if (enabled && !tickTimer) tickTimer = setInterval(tick, TICK_INTERVAL$1);
-      },
       stop() {
         enabled = false;
+        unbindNavigation();
+        unbindVideo();
         clearInterval(tickTimer);
         tickTimer = 0;
         if (seekingBound) {
@@ -3411,13 +3551,8 @@
           seekingBound = false;
         }
         fetchToken += 1;
-        setSegments([]);
-        skipped = /* @__PURE__ */ new Set();
-        lastSkip = null;
+        resetVideoState();
         currentVideoId = "";
-        resetLoad();
-        hideNotice();
-        removeTrack();
         noticeEl?.remove();
         noticeEl = null;
       }
@@ -5381,11 +5516,9 @@ ${compileCosmeticCss(COSMETIC_FILTERS)}`;
       if (active) {
         apply();
         lifecycle.start();
-        features.sponsorblock?.resume?.();
         features.adblock?.setVisible?.(true);
       } else {
         lifecycle.stop();
-        features.sponsorblock?.pause?.();
         features.adblock?.setVisible?.(false);
       }
     };

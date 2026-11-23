@@ -93,7 +93,7 @@ Installer chép chương trình vào `%LOCALAPPDATA%\YT SuperTool Companion`, th
 | Browse | Dọn trang chủ | Ẩn promo, khảo sát, Playables và kệ live. | Bật |
 | Player | Khôi phục dislike | Hiện số dislike ước tính từ API Return YouTube Dislike. | Bật |
 | Player | SponsorBlock | Bỏ qua đoạn sponsor, self-promotion và nhắc tương tác do cộng đồng gửi; tô màu đoạn trên thanh tiến trình. | Bật |
-| Player | Tự động xem tiếp | Đóng hộp thoại "Video paused. Continue watching?". | Bật |
+| Player | Tự động xem tiếp | Đóng hộp thoại "Video paused. Continue watching?" và thông báo "sự cố gây gián đoạn". | Bật |
 | Player | Tốc độ phát | Thanh tốc độ 0.25x đến 10x, preset và phím `<` / `>`, mỗi lần 0.25x. | Bật |
 | Player | Picture in picture | Mở video hiện tại trong cửa sổ nổi. | Bật |
 | Player | Chụp màn hình | Lưu khung hình hiện tại thành PNG. | Bật |
@@ -158,6 +158,22 @@ Tab Browse dọn feed, tab Player gom điều khiển video, tab Blocking chứa
 - Quyền host tới mạng quảng cáo chỉ dùng cho lớp chặn quảng cáo tùy chọn.
 
 Chính sách đầy đủ: [PRIVACY.md](https://github.com/CheemsGalaxy/YT-SuperTool/blob/main/PRIVACY.md).
+
+#### Khắc phục sự cố khi chạy nền
+
+SponsorBlock tua bằng sự kiện `timeupdate` của thẻ video, cộng thêm một vòng kiểm tra định kỳ. Hai cơ chế này vẫn chạy khi cửa sổ bị thu nhỏ, miễn là trình duyệt còn phát video. Trình duyệt có thể giảm tần số timer ở tab nền, nhưng sự kiện media vẫn tiếp tục khi video đang phát.
+
+Chrome và Edge có thể ngủ hoặc loại bỏ tab nền để tiết kiệm RAM. Thêm YouTube vào danh sách ngoại lệ:
+
+- Chrome: mở `chrome://settings/performance`, trong Memory Saver thêm `https://www.youtube.com` vào "Always keep these sites active".
+- Edge: mở `edge://settings/system`, trong "Sleeping tabs" thêm `https://www.youtube.com` vào danh sách không bao giờ ngủ. Tắt Efficiency mode cho YouTube nếu đang bật.
+- Firefox: ghim tab YouTube. Trong `about:config`, đặt `browser.tabs.unloadOnLowMemory` thành `false` nếu có. Tắt các extension tự đóng tab nền.
+
+Windows có thể tạm dừng trình duyệt khi máy ngủ hoặc khi bật chế độ tiết kiệm pin. Đặt Power mode thành Best performance khi cần chạy nền, và đặt Screen and sleep thành Never trong lúc thử. Cơ chế Window Occlusion của Chromium trên Windows coi cửa sổ bị che hoàn toàn là ẩn; để một phần cửa sổ lộ ra, hoặc dùng shortcut với `--disable-features=CalculateNativeWinOcclusion` (tùy chọn nâng cao, Google có thể bỏ flag này).
+
+Khi chuyển video, tool nghe `yt-navigate-finish`, `yt-page-data-updated` và tự đối chiếu URL. Nếu đoạn mới chưa xuất hiện, chờ vài giây rồi kiểm tra công tắc SponsorBlock, danh mục đoạn và request tới `sponsor.ajay.app` trong DevTools. Tải lại trang chỉ dùng để kiểm tra, không phải cách dùng bình thường.
+
+Nếu tab bị discard hoặc máy ngủ, JavaScript dừng hoàn toàn và extension không thể tua. Đây là giới hạn của trình duyệt và hệ điều hành, không phải lỗi trong code.
 
 ### Kiến trúc
 
@@ -320,7 +336,7 @@ The installer copies the program to `%LOCALAPPDATA%\YT SuperTool Companion`, add
 | Browse | Clean homepage | Hides promos, surveys, Playables, and live shelves. | On |
 | Player | Return dislike | Shows an estimated dislike count from the Return YouTube Dislike API. | On |
 | Player | SponsorBlock | Skips community-submitted sponsor, self-promotion, and interaction segments, and colors them on the progress bar. | On |
-| Player | Auto continue | Dismisses the "Video paused. Continue watching?" prompt. | On |
+| Player | Auto continue | Dismisses the "Video paused. Continue watching?" prompt and the playback interruption notice. | On |
 | Player | Playback speed | Slider from 0.25x to 10x, presets, and `<` / `>` keys in 0.25x steps. | On |
 | Player | Picture in picture | Opens the current video in a floating window. | On |
 | Player | Screenshot | Saves the current frame as PNG. | On |
@@ -385,6 +401,22 @@ The Browse tab cleans the feed, the Player tab holds the video controls, and the
 - Host permissions for ad networks are used only by the optional ad-blocking layer.
 
 Full policy: [PRIVACY.md](https://github.com/CheemsGalaxy/YT-SuperTool/blob/main/PRIVACY.md).
+
+#### Troubleshooting background playback
+
+SponsorBlock seeks from the video's `timeupdate` event and a periodic check. Both keep working when the window is minimized as long as the browser still plays the video. Browsers may slow timers in background tabs, but media events continue while playback runs.
+
+Chrome and Edge can sleep or discard background tabs to save memory. Add YouTube as an exception:
+
+- Chrome: open `chrome://settings/performance` and add `https://www.youtube.com` to "Always keep these sites active" under Memory Saver.
+- Edge: open `edge://settings/system` and add `https://www.youtube.com` to the "Never put these sites to sleep" list under Sleeping tabs. Turn off Efficiency mode for YouTube if it is on.
+- Firefox: pin the YouTube tab. In `about:config`, set `browser.tabs.unloadOnLowMemory` to `false` if the setting exists. Disable tab-unloading extensions.
+
+Windows can suspend the browser when the PC sleeps or when battery saver is on. Set Power mode to Best performance when you need background playback, and set Screen and sleep to Never while testing. Chromium's Window Occlusion feature on Windows treats a fully covered window as hidden. Leave part of the window visible, or start the browser with `--disable-features=CalculateNativeWinOcclusion` (advanced option, and Google may remove the flag).
+
+On SPA navigation, the tool listens for `yt-navigate-finish`, `yt-page-data-updated`, and URL changes. If new segments do not appear, wait a few seconds, then check the SponsorBlock switch, the segment categories, and the request to `sponsor.ajay.app` in DevTools. Use a page reload only to diagnose the problem.
+
+If the tab is discarded or the machine sleeps, JavaScript stops and the extension cannot seek. The browser and operating system enforce that limit; the extension cannot override it.
 
 ### Architecture
 

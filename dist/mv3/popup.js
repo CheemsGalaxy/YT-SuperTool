@@ -149,12 +149,28 @@
       viewBox: "0 0 24 24",
       width: String(size),
       height: String(size),
-      fill: "currentColor",
+      fill: "none",
       "aria-hidden": "true",
       focusable: "false",
       className: "ytst-icon"
     });
-    svg.appendChild(createSvgElement("path", { d: "M9.4 6.1v11.8L19 12 9.4 6.1Z" }));
+    svg.appendChild(createSvgElement("rect", { width: "24", height: "24", rx: "5", fill: "#212121" }));
+    const gear = createSvgElement("g", { fill: "#ffffff" });
+    gear.appendChild(createSvgElement("circle", { cx: "12", cy: "12", r: "7.9" }));
+    for (let index = 0; index < 8; index += 1) {
+      gear.appendChild(createSvgElement("rect", {
+        x: "10.7",
+        y: "1.4",
+        width: "2.6",
+        height: "3",
+        rx: "0.7",
+        transform: `rotate(${index * 45} 12 12)`
+      }));
+    }
+    svg.appendChild(gear);
+    svg.appendChild(createSvgElement("circle", { cx: "12", cy: "12", r: "4.8", fill: "#212121" }));
+    svg.appendChild(createSvgElement("rect", { x: "9", y: "9.8", width: "6", height: "4.4", rx: "1.3", fill: "#ff0033" }));
+    svg.appendChild(createSvgElement("path", { d: "M10.8 10.7v2.6l2.8-1.3-2.8-1.3Z", fill: "#ffffff" }));
     return svg;
   }
   const FEATURE_GROUPS = [
@@ -201,7 +217,7 @@
       key: "nonstop",
       group: "player",
       label: "Auto continue",
-      description: "Dismiss the “Video paused. Continue watching?” prompt.",
+      description: "Dismiss pause prompts and playback interruption notices.",
       icon: "repeat",
       default: true
     },
