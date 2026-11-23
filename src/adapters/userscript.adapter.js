@@ -1,4 +1,4 @@
-const FALLBACK_VERSION = '2.4.3';
+const FALLBACK_VERSION = '2.5.0';
 const STORAGE_PREFIX = 'yt_supertool_';
 
 const gmApi = () => globalThis.GM || null;

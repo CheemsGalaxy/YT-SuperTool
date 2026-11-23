@@ -15,7 +15,7 @@ YT SuperTool thêm vào YouTube bộ điều khiển cho feed, trình phát và 
 
 [Firefox Add-ons](https://addons.mozilla.org/vi/firefox/addon/yt-supertool/) | [Bản phát hành](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
-Phiên bản hiện tại: 2.4.3
+Phiên bản hiện tại: 2.5.0
 
 ### Tải xuống
 
@@ -235,7 +235,7 @@ YT SuperTool adds feed cleanup, player controls, and optional ad blocking to You
 
 [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/yt-supertool/) | [Releases](https://github.com/CheemsGalaxy/YT-SuperTool/releases) | [Issues](https://github.com/CheemsGalaxy/YT-SuperTool/issues) | [Discord](https://discord.gg/n7JTT7ssNR) | [YouTube](https://www.youtube.com/@cheemsnogy)
 
-Current version: 2.4.3
+Current version: 2.5.0
 
 ### Downloads
 

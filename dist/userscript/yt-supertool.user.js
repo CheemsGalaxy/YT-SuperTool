@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YT SuperTool
 // @namespace    https://github.com/CheemsGalaxy/YT-SuperTool
-// @version      2.4.3
+// @version      2.5.0
 // @updateURL    https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @downloadURL  https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js
 // @description  All-in-one YouTube enhancer: ad blocking, clean feed, dislikes, SponsorBlock, speed, PiP, screenshots. Ad blocking is off by default and may not work, since YouTube keeps changing its detection. For best results, use uBlock Origin or uBO Lite.
@@ -201,7 +201,7 @@
     };
     return {
       env: "userscript",
-      version: "2.4.3",
+      version: "2.5.0",
       storage,
       network,
       injector,
@@ -2191,7 +2191,7 @@
           ]),
           createElement("span", {
             className: "ytst-badge",
-            textContent: UI_TEXT.versionTarget(meta.version || "2.4.3", meta.target || "mv3")
+            textContent: UI_TEXT.versionTarget(meta.version || "2.5.0", meta.target || "mv3")
           }),
           createElement("div", { className: "ytst-header-actions" }, [
             (() => {

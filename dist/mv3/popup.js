@@ -813,7 +813,7 @@
     if (brand) brand.appendChild(createBrandMark(16));
   };
   const renderMeta = () => {
-    const version = api?.runtime?.getManifest?.().version || "2.4.3";
+    const version = api?.runtime?.getManifest?.().version || "2.5.0";
     const manifestVersion = api?.runtime?.getManifest?.().manifest_version || 3;
     const versionNode = document.getElementById("popup-version");
     const targetNode = document.getElementById("popup-target");
