@@ -1,5 +1,3 @@
-import { requestCompanionDirect } from './local-fetch.js';
-
 const FALLBACK_VERSION = '2.4.3';
 const STORAGE_PREFIX = 'yt_supertool_';
 
@@ -168,39 +166,12 @@ export function createExtensionBridge(target = 'mv3') {
     }
   };
 
-  const companion = {
-    async request(options) {
-      if (!api?.runtime?.sendMessage) return requestCompanionDirect(options);
-
-      let result;
-      try {
-        result = await sendMessage(api, {
-          type: 'YT_SUPERTOOL_COMPANION',
-          payload: {
-            path: options.path,
-            method: options.method,
-            headers: options.headers,
-            body: options.body,
-            timeout: options.timeoutMs
-          }
-        });
-      } catch {
-        return { status: 0, error: 'NOT_RUNNING' };
-      }
-
-      if (!result) return { status: 0, error: 'NOT_RUNNING' };
-      if (result.error) return { status: result.status ?? 0, error: result.error };
-      return { status: result.status, data: result.body };
-    }
-  };
-
   return {
     env: target,
     version: api?.runtime?.getManifest?.().version || (typeof __VERSION__ !== 'undefined' ? __VERSION__ : FALLBACK_VERSION),
     storage,
     network,
     injector,
-    companion,
     mainWindow: globalThis,
     openExternal(url) {
       if (!api?.runtime?.sendMessage) {

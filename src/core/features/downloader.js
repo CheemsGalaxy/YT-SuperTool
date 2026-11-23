@@ -27,8 +27,7 @@ const CLIENTS = [
     extra: { androidSdkVersion: 32, osName: 'Android', osVersion: '12', deviceMake: 'Oculus', deviceModel: 'Quest 3' }
   }
 ];
-const THIRD_PARTY_ORIGIN = 'https://ytmp3pc.com/';
-const THIRD_PARTY_LABEL = 'ytmp3pc.com';
+const DEFAULT_WEAT_BASE_URL = 'https://cheemsgalaxy.github.io/wea-t/';
 const CACHE_TTL = 10 * 60 * 1000;
 
 const getVideoId = () => {
@@ -63,53 +62,15 @@ const abortError = () => {
   return error;
 };
 
-const watchUrl = (videoId) => `https://www.youtube.com/watch?v=${videoId}`;
+const getCleanWatchUrl = (videoId) => {
+  try {
+    const url = new URL(location.href);
+    const shortsMatch = url.pathname.match(/^\/shorts\/([^/?]+)/);
+    if (shortsMatch?.[1]) return `https://www.youtube.com/shorts/${shortsMatch[1]}`;
+  } catch {
 
-const companionIssueText = (error) => {
-  switch (error?.serverCode) {
-    case 'YTDLP_MISSING':
-    case 'FFMPEG_MISSING':
-      return UI_TEXT.companionMissingBinaries;
-    case 'QUEUE_FULL':
-      return UI_TEXT.companionQueueFull;
-    case 'JOB_EXISTS':
-      return UI_TEXT.companionJobExists;
-    case 'OUTPUT_DIR_INVALID':
-      return UI_TEXT.companionOutputInvalid;
-    case 'BAD_TOKEN':
-      return UI_TEXT.companionTokenInvalid;
-    default:
-      break;
   }
-
-  switch (error?.code) {
-    case 'NOT_RUNNING':
-    case 'NOT_PAIRED':
-      return UI_STRINGS.companionMissingHint;
-    case 'TIMEOUT':
-      return 'The companion did not answer in time.';
-    case 'UNAUTHORIZED':
-      return UI_TEXT.companionTokenInvalid;
-    default:
-      return error?.message || UI_STRINGS.unknownError;
-  }
-};
-
-const pairIssueText = (error) => {
-  switch (error?.serverCode) {
-    case 'PAIRING_CODE_INVALID':
-      return UI_TEXT.pairingInvalid;
-    case 'PAIRING_CODE_EXPIRED':
-    case 'PAIRING_UNAVAILABLE':
-      return UI_TEXT.pairingExpired;
-    case 'RATE_LIMITED':
-      return UI_TEXT.pairingRateLimited;
-    default:
-      break;
-  }
-
-  if (error?.code === 'NOT_RUNNING' || error?.code === 'TIMEOUT') return UI_STRINGS.companionMissingHint;
-  return error?.message || UI_STRINGS.unknownError;
+  return `https://www.youtube.com/watch?v=${videoId}`;
 };
 
 const readResponse = async (response, { signal, onProgress }) => {
@@ -188,7 +149,7 @@ const requestPlayerResponse = async (videoId, client) => {
   return data;
 };
 
-export function createDownloader({ bridge, toast, companion }) {
+export function createDownloader({ bridge, settings, toast }) {
   let enabled = false;
   let player = null;
   let button = null;
@@ -201,7 +162,6 @@ export function createDownloader({ bridge, toast, companion }) {
   let menuVideoId = '';
   let menuScrollFrame = 0;
   let menuData = null;
-  let companionView = { phase: 'checking' };
   let jobId = 0;
   let activeJob = null;
   let cache = { id: '', at: 0, data: null };
@@ -303,7 +263,6 @@ export function createDownloader({ bridge, toast, companion }) {
     const cancel = progress.querySelector('.ytst-dl-cancel');
     cancel.addEventListener('click', () => {
       if (activeJob?.kind === 'direct') activeJob.controller.abort();
-      else if (activeJob?.kind === 'companion') void cancelCompanion();
       else removeProgress();
     });
     (document.body || document.documentElement).appendChild(progress);
@@ -361,7 +320,6 @@ export function createDownloader({ bridge, toast, companion }) {
     if (!videoId) return;
     menuVideoId = videoId;
     menuData = null;
-    companionView = { phase: 'checking' };
     menu = createElement('div', {
       className: 'ytst-dl-menu',
       role: 'menu',
@@ -380,7 +338,6 @@ export function createDownloader({ bridge, toast, companion }) {
     window.addEventListener('resize', handleMenuScroll);
     refreshMenu();
     void loadMenu(videoId, token);
-    void inspectCompanion(videoId, token);
   };
 
   const loadMenu = async (videoId, token) => {
@@ -401,157 +358,46 @@ export function createDownloader({ bridge, toast, companion }) {
     }
   };
 
-  const copyText = async (text) => {
+  const buildWeatUrl = (videoId, fmt = '', auto = false) => {
+    const rawBase = String(settings?.get?.('weatBaseUrl') || DEFAULT_WEAT_BASE_URL).trim() || DEFAULT_WEAT_BASE_URL;
+    let target;
     try {
-      await navigator.clipboard.writeText(text);
-      return true;
+      target = new URL(rawBase);
     } catch {
-
+      target = new URL(DEFAULT_WEAT_BASE_URL);
     }
-    const area = createElement('textarea', {
-      className: 'ytst-dl-copy-area',
-      readonly: true
-    });
-    area.value = text;
-    (document.body || document.documentElement).appendChild(area);
-    area.select();
-    let copied = false;
-    try {
-      copied = document.execCommand('copy');
-    } catch {
-      copied = false;
-    }
-    area.remove();
-    return copied;
+    target.searchParams.set('url', getCleanWatchUrl(videoId));
+    target.searchParams.set('src', 'ytst');
+    if (fmt) target.searchParams.set('fmt', fmt);
+    if (auto) target.searchParams.set('auto', '1');
+    target.hash = 'youtube';
+    return target.toString();
   };
 
-  const openThirdParty = () => {
+  const openWeatStudio = (videoId, fmt = '', auto = false) => {
+    const targetUrl = buildWeatUrl(videoId, fmt, auto);
     if (typeof bridge.openExternal === 'function') {
-      bridge.openExternal(THIRD_PARTY_ORIGIN);
-      return;
+      bridge.openExternal(targetUrl);
+    } else {
+      globalThis.open(targetUrl, '_blank', 'noopener,noreferrer');
     }
-    globalThis.open(THIRD_PARTY_ORIGIN, '_blank', 'noopener,noreferrer');
-  };
-
-  const openThirdPartyWithLink = async (videoId) => {
-    const copied = await copyText(watchUrl(videoId));
-    toast?.show(copied ? UI_STRINGS.linkCopied : UI_STRINGS.copyFailed);
-    openThirdParty();
+    toast?.show(UI_STRINGS.weatOpened);
   };
 
   const stateLine = (text) => createElement('div', { className: 'ytst-dl-state', textContent: text });
 
-  const retryItem = () => createElement('button', {
+  const weatItem = ({ label, note, fmt = '', auto = false, badge = '↗' }) => createElement('button', {
     type: 'button',
     className: 'ytst-dl-item',
     role: 'menuitem',
-    dataset: { kind: 'companion-retry' },
-    textContent: UI_STRINGS.companionRetry
-  });
-
-  const companionSection = () => {
-    const children = [
-      createElement('div', { className: 'ytst-dl-section', textContent: UI_STRINGS.companion })
-    ];
-    const phase = companionView.phase;
-
-    if (phase === 'checking') {
-      children.push(stateLine(UI_STRINGS.companionChecking));
-      return children;
-    }
-
-    if (phase === 'loading') {
-      children.push(stateLine(UI_STRINGS.companionAnalyzing));
-      return children;
-    }
-
-    if (phase === 'ready') {
-      const options = companionView.analysis?.options || {};
-      const videos = Array.isArray(options.video) ? options.video : [];
-      const audio = Array.isArray(options.audio) ? options.audio : [];
-
-      children.push(createElement('div', { className: 'ytst-dl-section', textContent: UI_STRINGS.companionVideo }));
-      if (videos.length === 0) children.push(stateLine(UI_STRINGS.readFailed));
-      for (const item of videos) {
-        children.push(createElement('button', {
-          type: 'button',
-          className: 'ytst-dl-item',
-          role: 'menuitem',
-          dataset: { kind: 'companion-video', quality: item.quality }
-        }, [
-          createElement('span', { className: 'ytst-dl-item-main' }, [
-            createElement('span', { className: 'ytst-dl-item-title', textContent: `MP4 ${item.label}` }),
-            createElement('span', { className: 'ytst-dl-item-note', textContent: UI_TEXT.companionVideoNote })
-          ])
-        ]));
-      }
-
-      children.push(createElement('div', { className: 'ytst-dl-section', textContent: UI_STRINGS.companionAudio }));
-      for (const item of audio) {
-        children.push(createElement('button', {
-          type: 'button',
-          className: 'ytst-dl-item',
-          role: 'menuitem',
-          dataset: { kind: 'companion-audio', format: item.format }
-        }, [
-          createElement('span', { className: 'ytst-dl-item-main' }, [
-            createElement('span', { className: 'ytst-dl-item-title', textContent: item.label }),
-            createElement('span', { className: 'ytst-dl-item-note', textContent: UI_TEXT.companionAudioNote })
-          ])
-        ]));
-      }
-      return children;
-    }
-
-    if (phase === 'not-paired') {
-      children.push(stateLine(UI_STRINGS.companionNotPaired));
-      children.push(stateLine(UI_STRINGS.companionPairHint));
-      if (companionView.message) children.push(stateLine(companionView.message));
-
-      const input = createElement('input', {
-        className: 'ytst-dl-pair-input',
-        type: 'text',
-        maxlength: 12,
-        placeholder: 'ABCD-2345',
-        autocomplete: 'off',
-        autocapitalize: 'characters',
-        spellcheck: 'false',
-        'aria-label': UI_STRINGS.companionNotPaired
-      });
-      input.value = companionView.code || '';
-
-      const submit = createElement('button', {
-        type: 'submit',
-        className: 'ytst-dl-pair-button',
-        textContent: UI_STRINGS.companionPair
-      });
-
-      const form = createElement('form', { className: 'ytst-dl-pair' }, [input, submit]);
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        void submitPair(input.value, input, submit);
-      });
-      children.push(form);
-      return children;
-    }
-
-    if (phase === 'incompatible') {
-      children.push(stateLine(UI_STRINGS.companionIncompatible));
-      children.push(stateLine(UI_STRINGS.companionIncompatibleHint));
-      return children;
-    }
-
-    if (phase === 'missing') {
-      children.push(stateLine(UI_STRINGS.companionMissing));
-      children.push(stateLine(companionView.message || UI_STRINGS.companionMissingHint));
-      children.push(retryItem());
-      return children;
-    }
-
-    children.push(stateLine(companionView.message || UI_STRINGS.companionMissingHint));
-    children.push(retryItem());
-    return children;
-  };
+    dataset: { kind: 'weat', fmt, auto: auto ? '1' : '0' }
+  }, [
+    createElement('span', { className: 'ytst-dl-item-main' }, [
+      createElement('span', { className: 'ytst-dl-item-title', textContent: label }),
+      note ? createElement('span', { className: 'ytst-dl-item-note', textContent: note }) : null
+    ].filter(Boolean)),
+    createElement('span', { className: 'ytst-dl-item-meta', textContent: badge })
+  ]);
 
   const muxedItem = (muxed) => createElement('button', {
     type: 'button',
@@ -569,24 +415,10 @@ export function createDownloader({ bridge, toast, companion }) {
     createElement('span', { className: 'ytst-dl-item-meta', textContent: formatBytes(muxed.contentLength) })
   ]);
 
-  const fallbackItem = () => createElement('button', {
-    type: 'button',
-    className: 'ytst-dl-item',
-    role: 'menuitem',
-    dataset: { kind: 'route' }
-  }, [
-    createElement('span', { className: 'ytst-dl-item-main' }, [
-      createElement('span', { className: 'ytst-dl-item-title', textContent: UI_STRINGS.highQuality }),
-      createElement('span', { className: 'ytst-dl-item-note', textContent: UI_STRINGS.copiesLink })
-    ]),
-    createElement('span', { className: 'ytst-dl-item-meta', textContent: '↗' })
-  ]);
-
   const refreshMenu = () => {
     if (!menu) return;
     const children = [
       createElement('div', { className: 'ytst-dl-menu-head', textContent: UI_STRINGS.download }),
-      ...companionSection(),
       createElement('div', { className: 'ytst-dl-section', textContent: UI_STRINGS.directMp4 })
     ];
 
@@ -612,12 +444,17 @@ export function createDownloader({ bridge, toast, companion }) {
 
     children.push(createElement('div', {
       className: 'ytst-dl-section',
-      textContent: UI_TEXT.otherFormats(THIRD_PARTY_LABEL)
+      textContent: UI_STRINGS.weatSection
     }));
-    children.push(fallbackItem());
+    children.push(weatItem({ label: UI_STRINGS.weatBest, fmt: 'best', auto: true, badge: 'BEST' }));
+    children.push(weatItem({ label: UI_STRINGS.weat1080, fmt: '1080', auto: true, badge: 'FHD' }));
+    children.push(weatItem({ label: UI_STRINGS.weat4k, fmt: '2160', auto: true, badge: '4K' }));
+    children.push(weatItem({ label: UI_STRINGS.weatMp3, fmt: 'mp3', auto: true, badge: 'MP3' }));
+    children.push(weatItem({ label: UI_STRINGS.weatOpenStudio, fmt: '', auto: false, badge: '↗' }));
+
     children.push(createElement('div', {
       className: 'ytst-dl-menu-foot',
-      textContent: UI_TEXT.menuFoot(THIRD_PARTY_LABEL)
+      textContent: UI_STRINGS.weatFoot
     }));
 
     menu.replaceChildren(...children);
@@ -629,14 +466,6 @@ export function createDownloader({ bridge, toast, companion }) {
 
   const handleMenuChoice = (dataset) => {
     const kind = dataset.kind;
-
-    if (kind === 'companion-retry') {
-      companionView = { phase: 'checking' };
-      refreshMenu();
-      void inspectCompanion(menuVideoId, menuToken);
-      return;
-    }
-
     closeMenu();
 
     if (kind === 'direct') {
@@ -644,102 +473,8 @@ export function createDownloader({ bridge, toast, companion }) {
       return;
     }
 
-    if (kind === 'route') {
-      void openThirdPartyWithLink(menuVideoId);
-      return;
-    }
-
-    if (kind === 'companion-video') {
-      void startCompanion({ mode: 'video', quality: dataset.quality }, menuData?.title);
-      return;
-    }
-
-    if (kind === 'companion-audio') {
-      void startCompanion({ mode: 'audio', audioFormat: dataset.format }, menuData?.title);
-    }
-  };
-
-  const inspectCompanion = async (videoId, token) => {
-    if (!companion) {
-      if (token !== menuToken || !menu) return;
-      companionView = { phase: 'missing', message: UI_STRINGS.companionMissingHint };
-      refreshMenu();
-      return;
-    }
-
-    let result;
-    try {
-      result = await companion.status();
-    } catch (error) {
-      result = { state: 'error', error };
-    }
-
-    if (token !== menuToken || !menu) return;
-
-    if (result.state === 'not-running') {
-      companionView = { phase: 'missing', message: UI_STRINGS.companionMissingHint };
-      refreshMenu();
-      return;
-    }
-
-    if (result.state === 'incompatible') {
-      companionView = { phase: 'incompatible' };
-      refreshMenu();
-      return;
-    }
-
-    if (result.state === 'not-paired') {
-      companionView = { phase: 'not-paired' };
-      refreshMenu();
-      return;
-    }
-
-    if (result.state !== 'ready') {
-      companionView = { phase: 'error', message: companionIssueText(result.error) };
-      refreshMenu();
-      return;
-    }
-
-    companionView = { phase: 'loading' };
-    refreshMenu();
-
-    try {
-      const analysis = await companion.analyze(watchUrl(videoId));
-      if (token !== menuToken || !menu) return;
-      companionView = { phase: 'ready', analysis };
-    } catch (error) {
-      if (token !== menuToken || !menu) return;
-      companionView = error?.code === 'UNAUTHORIZED'
-        ? { phase: 'not-paired' }
-        : { phase: 'error', message: companionIssueText(error) };
-    }
-    refreshMenu();
-  };
-
-  const submitPair = async (value, input, submit) => {
-    if (!companion || !menu) return;
-    const code = String(value || '').replace(/[^A-Za-z0-9]/g, '');
-
-    if (code.length !== 8) {
-      companionView = { phase: 'not-paired', message: UI_TEXT.pairingInvalid, code: value };
-      refreshMenu();
-      return;
-    }
-
-    input.disabled = true;
-    submit.disabled = true;
-    submit.textContent = UI_STRINGS.companionPairing;
-
-    try {
-      await companion.pair(code);
-      if (!menu) return;
-      companionView = { phase: 'loading' };
-      refreshMenu();
-      void inspectCompanion(menuVideoId, menuToken);
-    } catch (error) {
-      if (!menu) return;
-      companionView = { phase: 'not-paired', message: pairIssueText(error), code: value };
-      refreshMenu();
+    if (kind === 'weat') {
+      openWeatStudio(menuVideoId, dataset.fmt || '', dataset.auto === '1');
     }
   };
 
@@ -748,19 +483,13 @@ export function createDownloader({ bridge, toast, companion }) {
     const job = {
       id: ++jobId,
       kind,
-      controller: kind === 'direct' ? new AbortController() : null,
-      companionId: null,
-      pollTimer: 0,
-      pollErrors: 0,
-      cancelling: false
+      controller: kind === 'direct' ? new AbortController() : null
     };
     activeJob = job;
     return job;
   };
 
   const endJob = (job) => {
-    clearTimeout(job.pollTimer);
-    job.pollTimer = 0;
     if (activeJob === job) activeJob = null;
   };
 
@@ -768,15 +497,9 @@ export function createDownloader({ bridge, toast, companion }) {
     const job = activeJob;
     if (!job) return;
     activeJob = null;
-    clearTimeout(job.pollTimer);
-    job.pollTimer = 0;
-
     if (job.kind === 'direct') {
       job.controller?.abort();
-      return;
     }
-
-    if (job.companionId && companion) companion.cancel(job.companionId).catch(() => {});
   };
 
   const startDirect = async (format, baseName) => {
@@ -806,177 +529,6 @@ export function createDownloader({ bridge, toast, companion }) {
     } catch (error) {
       failProgress(error);
     } finally {
-      endJob(job);
-    }
-  };
-
-  const updateCompanionProgress = (state) => {
-    const fraction = Number(state?.progress);
-    const value = Number.isFinite(fraction) ? fraction : 0;
-    setBar(value);
-    const details = [];
-    if (state?.speed) details.push(state.speed);
-    if (state?.eta) details.push(`ETA ${state.eta}`);
-    if (state?.totalBytes) details.push(formatBytes(state.totalBytes));
-    setStatus(UI_TEXT.companionProgress(Math.round(value * 100), details.join(' · ')));
-  };
-
-  const scheduleCompanionPoll = (job, delay) => {
-    clearTimeout(job.pollTimer);
-    job.pollTimer = setTimeout(() => {
-      void pollCompanion(job);
-    }, delay);
-  };
-
-  const pollCompanion = async (job) => {
-    if (activeJob !== job || !job.companionId || !companion) return;
-
-    let state;
-    try {
-      state = await companion.get(job.companionId);
-    } catch (error) {
-      if (activeJob !== job) return;
-      job.pollErrors += 1;
-      if (job.pollErrors >= 3 || error?.code === 'UNAUTHORIZED' || error?.code === 'NOT_PAIRED') {
-        if (error?.code === 'UNAUTHORIZED') companionView = { phase: 'not-paired' };
-        finishProgress(UI_TEXT.companionPollFailed(companionIssueText(error)), 'error', 9000);
-        toast?.show(UI_STRINGS.downloadFailedToast);
-        endJob(job);
-        return;
-      }
-      scheduleCompanionPoll(job, 1500);
-      return;
-    }
-
-    if (activeJob !== job) return;
-    job.pollErrors = 0;
-
-    if (state.state === 'completed') {
-      setBar(1);
-      finishProgress(UI_TEXT.companionSaved(state.outputPath || ''), 'done', 12000);
-      endJob(job);
-      return;
-    }
-
-    if (state.state === 'failed') {
-      finishProgress(UI_TEXT.downloadFailed(companionIssueText(state.error)), 'error', 9000);
-      toast?.show(UI_STRINGS.downloadFailedToast);
-      endJob(job);
-      return;
-    }
-
-    if (state.state === 'cancelled') {
-      finishProgress(UI_STRINGS.downloadCancelled, 'error', 1800);
-      endJob(job);
-      return;
-    }
-
-    updateCompanionProgress(state);
-    scheduleCompanionPoll(job, 700);
-  };
-
-  const startCompanion = async (options, title) => {
-    if (!companion) {
-      toast?.show(UI_STRINGS.companionMissing);
-      return;
-    }
-
-    const job = beginJob('companion');
-    if (!job) {
-      toast?.show(UI_STRINGS.downloadBusy);
-      return;
-    }
-
-    showProgress(UI_STRINGS.companionStarting);
-
-    const body = {
-      url: watchUrl(getVideoId()),
-      mode: options.mode,
-      title: cleanFileName(title) || undefined
-    };
-
-    if (options.mode === 'video') {
-      body.quality = options.quality;
-      body.container = 'mp4';
-    } else {
-      body.audioFormat = options.audioFormat;
-      body.audioQuality = 192;
-    }
-
-    try {
-      const created = await companion.start(body);
-
-      if (job.cancelling) {
-        job.companionId = created.id;
-        companion.cancel(created.id).catch(() => {});
-        finishProgress(UI_STRINGS.downloadCancelled, 'error', 1800);
-        endJob(job);
-        return;
-      }
-
-      if (activeJob !== job) {
-        companion.cancel(created.id).catch(() => {});
-        return;
-      }
-
-      job.companionId = created.id;
-      updateCompanionProgress(created);
-      scheduleCompanionPoll(job, 700);
-    } catch (error) {
-      if (activeJob !== job) return;
-      if (job.cancelling) {
-        finishProgress(UI_STRINGS.downloadCancelled, 'error', 1800);
-        endJob(job);
-        return;
-      }
-      if (error?.code === 'UNAUTHORIZED') companionView = { phase: 'not-paired' };
-      console.warn('YT SuperTool companion start failed:', error);
-      finishProgress(UI_TEXT.companionStartFailed(companionIssueText(error)), 'error', 9000);
-      toast?.show(UI_STRINGS.downloadFailedToast);
-      endJob(job);
-    }
-  };
-
-  const cancelCompanion = async () => {
-    const job = activeJob;
-
-    if (!job || job.kind !== 'companion') {
-      removeProgress();
-      return;
-    }
-
-    if (job.cancelling) return;
-    job.cancelling = true;
-    clearTimeout(job.pollTimer);
-    job.pollTimer = 0;
-
-    if (progress) {
-      progress.dataset.state = 'run';
-      setStatus(UI_STRINGS.companionCancelPending);
-    }
-
-    if (!job.companionId) return;
-
-    try {
-      const state = await companion.cancel(job.companionId);
-      if (activeJob !== job) return;
-
-      if (state.state === 'cancelled') {
-        finishProgress(UI_STRINGS.downloadCancelled, 'error', 1800);
-        endJob(job);
-        return;
-      }
-
-      scheduleCompanionPoll(job, 300);
-    } catch (error) {
-      if (activeJob !== job) return;
-
-      if (error?.status === 409 || error?.serverCode === 'JOB_FINISHED') {
-        scheduleCompanionPoll(job, 300);
-        return;
-      }
-
-      finishProgress(UI_TEXT.companionPollFailed(companionIssueText(error)), 'error', 9000);
       endJob(job);
     }
   };

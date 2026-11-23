@@ -119,7 +119,8 @@ export function createPanel({ settings, storage, toast, update, meta = {} }) {
     },
     onCategoriesChange: saveCategories,
     onNoticeChange: (value) => saveSponsorSetting('sponsorblockNotice', value),
-    onProgressChange: (value) => saveSponsorSetting('sponsorblockProgressBar', value)
+    onProgressChange: (value) => saveSponsorSetting('sponsorblockProgressBar', value),
+    onWeatBaseUrlChange: (value) => saveSponsorSetting('weatBaseUrl', value)
   });
 
   const ensureMounted = () => {

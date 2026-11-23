@@ -19,7 +19,8 @@ export function createSettingsTree({
   onChange,
   onCategoriesChange,
   onNoticeChange,
-  onProgressChange
+  onProgressChange,
+  onWeatBaseUrlChange
 } = {}) {
   const base = (name) => `${prefix}-${name}`;
   const rowClassName = rowClass || base('row');
@@ -28,6 +29,8 @@ export function createSettingsTree({
   const badgeClassName = badgeClass || base('badge-layer');
 
   const rows = new Map();
+  let weatUrlInput = null;
+  let weatUrlWrap = null;
   const tabs = new Map();
   const panels = new Map();
   const groupMeta = new Map();
@@ -148,6 +151,32 @@ export function createSettingsTree({
         sponsorAccordion = buildAccordion();
         list.appendChild(sponsorAccordion.element);
       }
+      if (feature.key === 'downloader') {
+        weatUrlInput = createElement('input', {
+          type: 'url',
+          id: `${prefix}-weat-url`,
+          className: base('input'),
+          placeholder: UI_STRINGS.weatBaseUrlPlaceholder,
+          style: 'width:100%;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:inherit;font-size:12px;margin-top:4px;box-sizing:border-box;'
+        });
+        weatUrlInput.addEventListener('change', () => {
+          const val = weatUrlInput.value.trim() || UI_STRINGS.weatBaseUrlPlaceholder;
+          weatUrlInput.value = val;
+          onWeatBaseUrlChange?.(val);
+        });
+        weatUrlWrap = createElement('div', {
+          className: base('row'),
+          style: 'display:flex;flex-direction:column;align-items:stretch;gap:2px;padding-top:4px;'
+        }, [
+          createElement('label', {
+            for: `${prefix}-weat-url`,
+            textContent: UI_STRINGS.weatBaseUrlLabel,
+            style: 'font-size:11px;opacity:0.75;'
+          }),
+          weatUrlInput
+        ]);
+        list.appendChild(weatUrlWrap);
+      }
     }
     wrapper.appendChild(list);
 
@@ -186,6 +215,12 @@ export function createSettingsTree({
     sponsorAccordion?.setCategories(values.sponsorblockCategories);
     sponsorAccordion?.setNotice(values.sponsorblockNotice);
     sponsorAccordion?.setProgress(values.sponsorblockProgressBar);
+    if (weatUrlInput) {
+      weatUrlInput.value = values.weatBaseUrl || UI_STRINGS.weatBaseUrlPlaceholder;
+    }
+    if (weatUrlWrap) {
+      weatUrlWrap.style.display = values.downloader ? 'flex' : 'none';
+    }
   };
 
   FEATURE_GROUPS.forEach((group) => {

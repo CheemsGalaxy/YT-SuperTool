@@ -8,9 +8,6 @@
     "build": "node scripts/build-all.mjs",
     "verify": "node scripts/verify-build.mjs",
     "test": "node --test test/",
-    "package:companion": "node scripts/package-companion.mjs",
-    "smoke:companion": "node scripts/package-smoke.mjs",
-    "smoke:install": "node scripts/install-smoke.mjs",
     "clean:code": "node scripts/strip-ai-traces.mjs",
     "build:verify": "npm run build && npm run verify",
     "dev": "vite"

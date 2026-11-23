@@ -257,7 +257,7 @@
       key: "downloader",
       group: "player",
       label: "Downloader",
-      description: "Download MP4 360p directly, or open ytmp3pc.com for other formats.",
+      description: "Download MP4 directly, or send to Wea-T Studio for 1080p, 4K and MP3.",
       icon: "download",
       default: true
     },
@@ -304,7 +304,8 @@
     sponsorblockCategories: null,
     sponsorblockNotice: true,
     sponsorblockProgressBar: true,
-    playbackSpeed: 1
+    playbackSpeed: 1,
+    weatBaseUrl: "https://cheemsgalaxy.github.io/wea-t/"
   };
   const DEFAULTS = Object.fromEntries([
     ...FEATURES.map((feature) => [feature.key, feature.default]),
@@ -353,25 +354,16 @@
     mp4Unavailable: "MP4 360p unavailable",
     noSingleStream: "No single-stream video for this one",
     highQuality: "MP4/MP3 (High Quality)",
-    copiesLink: "Copies the link, opens a new tab",
-    linkCopied: "Link copied — paste it on ytmp3pc.com",
-    copyFailed: "Could not copy the link",
-    companion: "Companion",
-    companionChecking: "Checking companion...",
-    companionMissing: "Companion not running",
-    companionMissingHint: "Start YT SuperTool Companion on this computer, then retry. Install it first if it is not on this machine.",
-    companionNotPaired: "Companion not paired",
-    companionPairHint: "Enter the pairing code shown in the companion window. Run the companion with --pair to print a new one.",
-    companionIncompatible: "Companion version is not supported",
-    companionIncompatibleHint: "Update YT SuperTool Companion to a version that supports API 1.",
-    companionAnalyzing: "Reading formats from the companion...",
-    companionVideo: "Companion · MP4",
-    companionAudio: "Companion · Audio",
-    companionRetry: "Retry",
-    companionPair: "Pair",
-    companionPairing: "Pairing...",
-    companionStarting: "Starting companion download...",
-    companionCancelPending: "Cancelling...",
+    weatSection: "Wea-T Studio",
+    weatBest: "Tải tốt nhất (Wea-T)",
+    weat1080: "1080p Full HD (Wea-T)",
+    weat4k: "4K UHD (Wea-T)",
+    weatMp3: "MP3 Âm thanh (Wea-T)",
+    weatOpenStudio: "Mở trong Wea-T Studio...",
+    weatOpened: "Đã chuyển sang Wea-T Studio",
+    weatFoot: "Mở Wea-T Studio để tải 1080p/4K/MP3 hoặc tùy chỉnh nâng cao.",
+    weatBaseUrlLabel: "Wea-T Studio URL",
+    weatBaseUrlPlaceholder: "https://cheemsgalaxy.github.io/wea-t/",
     downloadCancelled: "Download cancelled",
     downloadFailedToast: "Download failed",
     unknownError: "Unknown error",
@@ -394,25 +386,9 @@
     manifestTarget: (version) => `MV${version}`,
     speedPreset: (speed) => `${speed} speed`,
     skipped: (label, seconds) => `Skipped ${label} · ${seconds}s`,
-    otherFormats: (label) => `Fallback · ${label}`,
-    menuFoot: (label) => `Companion downloads need the desktop companion running. ${label} stays as a fallback for high quality MP4 and MP3.`,
     downloadFailed: (reason) => `Download failed: ${reason}`,
     downloadProgress: (percent, size) => `Downloading MP4 · ${percent}%${size ? ` · ${size}` : ""}`,
     savedFile: (fileName) => `Saved · ${fileName}`,
-    companionVideoNote: "Video + audio · saved by the companion",
-    companionAudioNote: "Audio only · saved by the companion",
-    companionProgress: (percent, detail) => `Companion download · ${percent}%${detail ? ` · ${detail}` : ""}`,
-    companionSaved: (filePath) => `Saved · ${filePath}`,
-    companionStartFailed: (reason) => `Could not start the companion download: ${reason}`,
-    companionPollFailed: (reason) => `Lost contact with the companion: ${reason}`,
-    pairingInvalid: "Pairing code does not match. Check the code and try again.",
-    pairingExpired: "Pairing code expired. Restart the companion to get a new code.",
-    pairingRateLimited: "Too many pairing attempts. Wait a minute and try again.",
-    companionTokenInvalid: "The pairing token is no longer valid. Pair the companion again.",
-    companionMissingBinaries: "The companion is missing yt-dlp or FFmpeg. Reinstall or restart it.",
-    companionQueueFull: "The companion queue is full. Wait for a running download.",
-    companionJobExists: "This video is already downloading in the companion.",
-    companionOutputInvalid: "Set a writable output folder inside your home directory in the companion.",
     upToDate: (version) => `Up to date · v${version}`,
     updateAvailable: (version) => `v${version} available`
   };
@@ -512,7 +488,8 @@
     onChange,
     onCategoriesChange,
     onNoticeChange,
-    onProgressChange
+    onProgressChange,
+    onWeatBaseUrlChange
   } = {}) {
     const base = (name) => `${prefix}-${name}`;
     const rowClassName = rowClass || base("row");
@@ -520,6 +497,8 @@
     const panelClassName = panelClass || base("tabpanel");
     const badgeClassName = badgeClass || base("badge-layer");
     const rows = /* @__PURE__ */ new Map();
+    let weatUrlInput = null;
+    let weatUrlWrap = null;
     const tabs = /* @__PURE__ */ new Map();
     const panels = /* @__PURE__ */ new Map();
     const groupMeta = /* @__PURE__ */ new Map();
@@ -628,6 +607,32 @@
           sponsorAccordion = buildAccordion();
           list.appendChild(sponsorAccordion.element);
         }
+        if (feature.key === "downloader") {
+          weatUrlInput = createElement("input", {
+            type: "url",
+            id: `${prefix}-weat-url`,
+            className: base("input"),
+            placeholder: UI_STRINGS.weatBaseUrlPlaceholder,
+            style: "width:100%;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:inherit;font-size:12px;margin-top:4px;box-sizing:border-box;"
+          });
+          weatUrlInput.addEventListener("change", () => {
+            const val = weatUrlInput.value.trim() || UI_STRINGS.weatBaseUrlPlaceholder;
+            weatUrlInput.value = val;
+            onWeatBaseUrlChange?.(val);
+          });
+          weatUrlWrap = createElement("div", {
+            className: base("row"),
+            style: "display:flex;flex-direction:column;align-items:stretch;gap:2px;padding-top:4px;"
+          }, [
+            createElement("label", {
+              for: `${prefix}-weat-url`,
+              textContent: UI_STRINGS.weatBaseUrlLabel,
+              style: "font-size:11px;opacity:0.75;"
+            }),
+            weatUrlInput
+          ]);
+          list.appendChild(weatUrlWrap);
+        }
       }
       wrapper.appendChild(list);
       panels.set(group.id, wrapper);
@@ -660,6 +665,12 @@
       sponsorAccordion?.setCategories(values.sponsorblockCategories);
       sponsorAccordion?.setNotice(values.sponsorblockNotice);
       sponsorAccordion?.setProgress(values.sponsorblockProgressBar);
+      if (weatUrlInput) {
+        weatUrlInput.value = values.weatBaseUrl || UI_STRINGS.weatBaseUrlPlaceholder;
+      }
+      if (weatUrlWrap) {
+        weatUrlWrap.style.display = values.downloader ? "flex" : "none";
+      }
     };
     FEATURE_GROUPS.forEach((group) => {
       rail.appendChild(buildTab(group));

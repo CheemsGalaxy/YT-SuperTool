@@ -21,7 +21,6 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_openInTab
 // @grant        unsafeWindow
-// @connect      127.0.0.1
 // @connect      returnyoutubedislikeapi.com
 // @connect      sponsor.ajay.app
 // @connect      raw.githubusercontent.com

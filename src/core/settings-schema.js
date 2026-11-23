@@ -84,7 +84,7 @@ export const FEATURES = [
     key: 'downloader',
     group: 'player',
     label: 'Downloader',
-    description: 'Download MP4 360p directly, or open ytmp3pc.com for other formats.',
+    description: 'Download MP4 directly, or send to Wea-T Studio for 1080p, 4K and MP3.',
     icon: 'download',
     default: true
   },
@@ -132,7 +132,8 @@ export const EXTRA_DEFAULTS = {
   sponsorblockCategories: null,
   sponsorblockNotice: true,
   sponsorblockProgressBar: true,
-  playbackSpeed: 1
+  playbackSpeed: 1,
+  weatBaseUrl: 'https://cheemsgalaxy.github.io/wea-t/'
 };
 
 export const DEFAULTS = Object.fromEntries([

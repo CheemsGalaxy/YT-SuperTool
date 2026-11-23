@@ -6,7 +6,6 @@ import { createPanel } from './ui/panel.js';
 import { createLauncher } from './ui/launcher.js';
 import { createToast } from './ui/toast.js';
 import { createUpdateChecker } from './update-check.js';
-import { createCompanionClient } from './companion/client.js';
 import { UI_STRINGS } from './ui/strings.js';
 import { createFeatures } from './features/index.js';
 import { MUTATION_FEATURES, PLAYER_FEATURES, CONTENT_FEATURES } from './settings-schema.js';
@@ -23,13 +22,7 @@ const start = async () => {
   await settings.load();
 
   const toast = createToast();
-  const companion = createCompanionClient({
-    transport: bridge.companion.request,
-    storage: bridge.storage,
-    clientName: bridge.env === 'mv2' || bridge.env === 'mv3' ? bridge.env : 'userscript',
-    clientVersion: bridge.version
-  });
-  const features = createFeatures({ bridge, settings, toast, companion });
+  const features = createFeatures({ bridge, settings, toast });
   const update = createUpdateChecker({ bridge, toast, currentVersion: bridge.version });
   const panel = createPanel({
     settings,

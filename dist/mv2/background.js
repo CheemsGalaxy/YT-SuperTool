@@ -1,44 +1,7 @@
 (function() {
   "use strict";
-  const COMPANION_BASE_URL = "http://127.0.0.1:47831";
-  const COMPANION_TOKEN_KEY = "companionToken";
-  const companionUrl = (path) => `${COMPANION_BASE_URL}${path}`;
-  const requestCompanionDirect = async ({ path, method = "GET", headers = {}, body, timeoutMs = 8e3 }) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetch(companionUrl(path), {
-        method,
-        headers: body === void 0 ? headers : { ...headers, "Content-Type": "application/json" },
-        body: body === void 0 ? void 0 : JSON.stringify(body),
-        signal: controller.signal,
-        credentials: "omit",
-        cache: "no-store"
-      });
-      const text = await response.text();
-      let data = null;
-      if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch {
-          data = text;
-        }
-      }
-      return { status: response.status, data };
-    } catch (error) {
-      return { status: 0, error: error?.name === "AbortError" ? "TIMEOUT" : "NOT_RUNNING" };
-    } finally {
-      clearTimeout(timer);
-    }
-  };
   const ALLOWED_FETCH_HOSTS = ["returnyoutubedislikeapi.com", "sponsor.ajay.app", "raw.githubusercontent.com"];
-  const ALLOWED_GITHUB_TARGETS = [
-    "https://github.com/CheemsGalaxy/YT-SuperTool/releases/"
-  ];
   const AD_RULESET_ID = "yt-adblock";
-  const COMPANION_PATH = /^\/api\/[A-Za-z0-9/_-]+$/;
-  const COMPANION_METHODS = ["GET", "POST", "PUT"];
-  const COMPANION_HEADERS = ["content-type", "x-ytst-token", "x-ytst-client", "x-ytst-client-version"];
   const ext$1 = globalThis.browser || globalThis.chrome;
   function setAdRuleset(enabled2) {
     try {
@@ -117,8 +80,8 @@
   const handleOpenUrl = (message, sendResponse) => {
     try {
       const target = new URL(message.url);
-      const githubAllowed = target.hostname === "github.com" && ALLOWED_GITHUB_TARGETS.some((allowed) => target.href.startsWith(allowed));
-      if (target.protocol !== "https:" || !githubAllowed) {
+      const isLocalHttp = target.protocol === "http:" && (target.hostname === "localhost" || target.hostname === "127.0.0.1");
+      if (target.protocol !== "https:" && !isLocalHttp) {
         throw new Error("URL is not allowed");
       }
       const creation = ext$1.tabs.create({ url: target.href });
@@ -130,63 +93,6 @@
     } catch (error) {
       sendResponse({ ok: false, error: error.message });
     }
-    return true;
-  };
-  const persistPairToken = async (token) => {
-    try {
-      const storage = ext$1?.storage?.local;
-      if (!storage?.set || typeof token !== "string" || token.length === 0) return;
-      await Promise.race([
-        storage.set({ [COMPANION_TOKEN_KEY]: token }),
-        new Promise((resolve) => setTimeout(resolve, 1500))
-      ]);
-    } catch {
-    }
-  };
-  const handleCompanion = (message, sendResponse) => {
-    const payload = message.payload || {};
-    const { path: targetPath, method = "GET", headers = {}, body, timeout = 8e3 } = payload;
-    if (typeof targetPath !== "string" || targetPath.length > 160 || !COMPANION_PATH.test(targetPath) || targetPath.includes("..")) {
-      sendResponse({ ok: false, status: 0, error: "INVALID_PATH" });
-      return false;
-    }
-    if (!COMPANION_METHODS.includes(method)) {
-      sendResponse({ ok: false, status: 0, error: "INVALID_METHOD" });
-      return false;
-    }
-    if (body !== void 0) {
-      let serialized;
-      try {
-        serialized = JSON.stringify(body);
-      } catch {
-        serialized = null;
-      }
-      if (typeof serialized !== "string" || serialized.length > 8192) {
-        sendResponse({ ok: false, status: 0, error: "INVALID_BODY" });
-        return false;
-      }
-    }
-    const cleanHeaders = {};
-    for (const [key, value] of Object.entries(headers || {})) {
-      if (!COMPANION_HEADERS.includes(key.toLowerCase())) continue;
-      if (typeof value !== "string" || value.length > 512) continue;
-      cleanHeaders[key] = value;
-    }
-    const timeoutMs = Math.min(Math.max(Number(timeout) || 8e3, 1e3), 4e4);
-    requestCompanionDirect({ path: targetPath, method, headers: cleanHeaders, body, timeoutMs }).then(async (result) => {
-      if (result.error) {
-        sendResponse({ ok: false, status: 0, error: result.error });
-        return;
-      }
-      if (targetPath === "/api/pair" && result.status === 200 && result.data?.token) {
-        await persistPairToken(result.data.token);
-      }
-      sendResponse({
-        ok: result.status >= 200 && result.status < 300,
-        status: result.status,
-        body: result.data
-      });
-    }).catch((error) => sendResponse({ ok: false, status: 0, error: error.message || "Companion request failed" }));
     return true;
   };
   const handleRuleset = (message, sendResponse) => {
@@ -216,7 +122,6 @@
     ext$1.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message?.type === "YT_SUPERTOOL_FETCH") return handleFetch(message, sendResponse);
       if (message?.type === "YT_SUPERTOOL_OPEN_URL") return handleOpenUrl(message, sendResponse);
-      if (message?.type === "YT_SUPERTOOL_COMPANION") return handleCompanion(message, sendResponse);
       if (message?.type === "YT_SUPERTOOL_DNR") return handleRuleset(message, sendResponse);
       return false;
     });

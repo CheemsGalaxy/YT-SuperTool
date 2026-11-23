@@ -2,11 +2,11 @@
 
 Last updated: 17 November 2026
 
-YT SuperTool is a Firefox extension that changes how YouTube pages look and behave. This policy covers the extension and the optional desktop companion. Settings stay on your device, and the developer does not collect or sell anything.
+YT SuperTool is a browser extension and userscript that changes how YouTube pages look and behave. Settings stay on your device, and the developer does not collect or sell anything.
 
 ## Data the extension stores
 
-The extension saves its settings in Firefox extension storage on your computer. This covers feature toggles, the time of the last update check, and the pairing token used for the companion. Removing the extension or clearing its storage deletes them.
+The extension saves its settings in browser extension storage on your computer. This covers feature toggles, the time of the last update check, and optional custom tool URLs. Removing the extension or clearing its storage deletes them.
 
 ## What leaves your device
 
@@ -18,17 +18,13 @@ Three services receive requests while you use the extension:
 - sponsor.ajay.app receives the video ID when SponsorBlock is enabled.
 - raw.githubusercontent.com receives a request for a public version file once per day, to check for updates. It gets no personal data.
 
+When you choose a Wea-T Studio download preset from the Download menu, the extension opens Wea-T Studio (`https://cheemsgalaxy.github.io/wea-t/` or your configured URL) in a new tab with the cleaned YouTube watch URL and chosen format parameter. Wea-T Studio runs client-side in your browser.
+
 Each service has its own privacy policy. The developer of YT SuperTool does not receive or store these requests.
-
-## Companion
-
-The companion is a separate desktop program that you install yourself. It is optional and is not part of the extension package. It listens on 127.0.0.1 and accepts requests only with the pairing token stored by the extension. It receives the YouTube URL you choose to save and writes the file to a folder you select on your computer. It uploads nothing.
-
-If you turn on YouTube cookies for the companion, which is off by default, you can choose a browser or a Netscape cookies.txt file. With a browser, yt-dlp reads cookies from the profile you select and the companion stores only the browser name. With a file, the companion stores only the file path inside your home folder and passes it to yt-dlp. Cookie values are not copied into logs or settings. You can turn this off at any time with the companion's cookie setup and the off option, and delete the file yourself.
 
 ## No tracking
 
-The extension and the companion contain no analytics, telemetry, advertising, or crash reporting. The developer runs no server and receives no data from users. Data is not sold or shared for advertising.
+The extension contains no analytics, telemetry, advertising, or crash reporting. The developer runs no server and receives no data from users. Data is not sold or shared for advertising.
 
 ## Children
 
