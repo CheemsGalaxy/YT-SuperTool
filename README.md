@@ -108,6 +108,8 @@ Bản extension thêm lớp mạng. MV3 chỉ bật ruleset `declarativeNetReque
 
 Nút Download nằm cạnh hàng nút Like, Share và Save trên trang xem. Menu có hai nhóm: MP4 tải trực tiếp và các tùy chọn **Wea-T Studio** (`Tải tốt nhất`, `1080p Full HD`, `4K UHD`, `MP3 Âm thanh`, `Mở trong Wea-T Studio...`).
 
+<img src="promo/downloader.png" alt="Nút Download cạnh Like và Share, menu mở với MP4 360p tải trực tiếp và các tùy chọn Wea-T Studio" width="360">
+
 - MP4 progressive tải trực tiếp: tool đọc MP4 progressive cao nhất trong `streamingData.formats`. Luồng này đã có hình và tiếng, nên file lưu thẳng về máy, không qua proxy và không cần ghép. Menu hiện độ phân giải thật, thường là 360p.
 - Tích hợp Wea-T Studio: bấm chọn preset (`1080p`, `4K`, `MP3`...) sẽ tự làm sạch URL YouTube hiện tại và mở [Wea-T Studio](https://cheemsgalaxy.github.io/wea-t/) (hoặc URL tùy chỉnh trong cài đặt Player) để tự động nhận link, chọn đúng định dạng và kích hoạt tải về.
 - Không giải mã chữ ký: tool không chạy player JS, không dùng `eval` hay `new Function`, không xử lý n-parameter, nên hợp lệ với CSP của Manifest V3.
@@ -327,6 +329,8 @@ Extension builds add a network layer. MV3 enables its `declarativeNetRequest` ru
 #### Video and audio downloads
 
 The Download button sits in the Like, Share, and Save row on watch pages. Its menu has two groups: a direct progressive MP4 and **Wea-T Studio** presets (`Tải tốt nhất`, `1080p Full HD`, `4K UHD`, `MP3 Âm thanh`, `Mở trong Wea-T Studio...`).
+
+<img src="promo/downloader.png" alt="Download button beside Like and Share, with the menu open on Direct MP4 and Wea-T Studio presets" width="360">
 
 - Direct progressive MP4: the tool reads the highest progressive MP4 from `streamingData.formats`. That stream already contains video and audio, so the file goes straight to disk without a proxy and without remuxing. The menu shows the actual resolution, usually 360p.
 - Wea-T Studio integration: choosing a preset (`1080p`, `4K`, `MP3`, etc.) cleans the current YouTube URL and opens [Wea-T Studio](https://cheemsgalaxy.github.io/wea-t/) (or your configured Player setting URL) to pre-fill the link, select the format, and start downloading.
