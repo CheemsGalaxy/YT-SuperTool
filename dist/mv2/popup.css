@@ -47,7 +47,7 @@ body {
 body {
   width: 360px;
   max-height: 600px;
-  overflow: hidden;
+  overflow: clip;
   background: var(--ytst-page);
   color: var(--ytst-text);
   font-family: var(--ytst-font);
@@ -216,6 +216,7 @@ input {
 }
 
 .popup-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -287,6 +288,8 @@ input {
 
 .popup-switch-input {
   position: absolute;
+  top: 50%;
+  right: 8px;
   width: 1px;
   height: 1px;
   margin: -1px;

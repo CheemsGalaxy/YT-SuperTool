@@ -552,6 +552,7 @@ html[data-ytst-no-shorts="on"] [class*="ytGridShelfViewModelGridShelfBottomButto
 }
 
 html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-brand-video-singleton-renderer),
+html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-brand-video-shelf-renderer),
 html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-statement-banner-renderer),
 html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-inline-survey-renderer),
 html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-live]),
@@ -564,6 +565,7 @@ html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href*="/feed/sto
 html[data-ytst-clean-home="on"] ytd-rich-section-renderer:has(a[href="/gaming"]),
 html[data-ytst-clean-home="on"] ytd-statement-banner-renderer,
 html[data-ytst-clean-home="on"] ytd-brand-video-singleton-renderer,
+html[data-ytst-clean-home="on"] ytd-brand-video-shelf-renderer,
 html[data-ytst-clean-home="on"] ytd-inline-survey-renderer,
 html[data-ytst-clean-home="on"] yt-mealbar-promo-renderer {
   display: none !important;

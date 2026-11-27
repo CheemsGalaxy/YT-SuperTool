@@ -78,7 +78,8 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   width: min(640px, 100%);
   height: min(520px, 100%);
-  overflow: hidden;
+  /* overflow: clip giữ bo góc nhưng chặn trình duyệt cuộn cả khung panel khi focus input ẩn */
+  overflow: clip;
   border: 1px solid var(--ytst-line);
   border-radius: var(--ytst-radius-panel);
   background: var(--ytst-surface);
@@ -320,6 +321,7 @@
 }
 
 .ytst-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--ytst-space-3);
@@ -392,6 +394,8 @@
 
 .ytst-switch-input {
   position: absolute;
+  top: 50%;
+  right: 10px;
   width: 1px;
   height: 1px;
   margin: -1px;

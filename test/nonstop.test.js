@@ -214,3 +214,50 @@ test('keeps unrelated snackbars', () => {
     uninstallDom();
   }
 });
+
+test('removes snackbar matching exact Vietnamese interruption text without gay', () => {
+  const document = createDocument();
+  installDom(document);
+  try {
+    const { notice } = mountSnackbar(document, 'Bạn đang gặp sự cố gián đoạn?');
+    const nonstop = createNonstop();
+    nonstop.init();
+    assert.equal(notice.parentNode, null);
+    nonstop.stop();
+  } finally {
+    uninstallDom();
+  }
+});
+
+test('removes tp-yt-paper-toast interruption notice', () => {
+  const document = createDocument();
+  installDom(document);
+  try {
+    const toast = createElement('tp-yt-paper-toast');
+    toast.textContent = 'Bạn đang gặp sự cố gián đoạn? Tìm hiểu lý do';
+    document.body.appendChild(toast);
+    const nonstop = createNonstop();
+    nonstop.init();
+    assert.equal(toast.parentNode, null);
+    nonstop.stop();
+  } finally {
+    uninstallDom();
+  }
+});
+
+test('removes interruption dialog without clicking its action button', () => {
+  const document = createDocument();
+  installDom(document);
+  try {
+    const { dialog, button } = mountPrompt(document, 'Bạn đang gặp sự cố gián đoạn?');
+    const { video } = mountPlayer(document);
+    const nonstop = createNonstop();
+    nonstop.init();
+    assert.equal(dialog.parentNode, null);
+    assert.equal(button.clicks, 0);
+    assert.equal(video.playCalls, 1);
+    nonstop.stop();
+  } finally {
+    uninstallDom();
+  }
+});

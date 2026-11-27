@@ -1,9 +1,13 @@
-import { ADBLOCK_HINT, ADBLOCK_TERMS_HINT } from '../../locale-patterns.js';
+import { ADBLOCK_HINT, ADBLOCK_TERMS_HINT, INTERRUPTION_HINT } from '../../locale-patterns.js';
 
 const WALL_SELECTOR = [
   'ytd-enforcement-message-view-model',
   'ytd-modal-with-title-and-button-renderer',
-  'tp-yt-paper-dialog'
+  'tp-yt-paper-dialog',
+  '.ytSnackbarContainerSnackbarContainer',
+  'tp-yt-paper-toast',
+  'ytd-notification-action-renderer',
+  'yt-notification-action-renderer'
 ].join(',');
 
 const OVERLAY_SELECTOR = 'tp-yt-iron-overlay-backdrop';
@@ -22,6 +26,12 @@ const isEnforcementWall = (element) => {
   if (!element) return false;
   if (element.tagName === 'YTD-ENFORCEMENT-MESSAGE-VIEW-MODEL') return true;
   const text = (element.innerText || element.textContent || '').slice(0, 4000);
+  if (INTERRUPTION_HINT.test(text)) {
+    return Boolean(element.closest('tp-yt-paper-dialog, ytd-popup-container, snackbar-container'))
+      || element.tagName.includes('DIALOG')
+      || element.tagName === 'TP-YT-PAPER-TOAST'
+      || element.classList?.contains('ytSnackbarContainerSnackbarContainer');
+  }
   if (!ADBLOCK_HINT.test(text) || !ADBLOCK_TERMS_HINT.test(text)) return false;
   return Boolean(element.closest('tp-yt-paper-dialog, ytd-popup-container')) || element.tagName.includes('DIALOG');
 };

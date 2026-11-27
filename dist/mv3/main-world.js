@@ -115,7 +115,10 @@
   ];
   const INTERRUPTION_PHRASES = [
     "experiencing interruptions",
+    "experiencing an interruption",
     "gặp sự cố gây gián đoạn",
+    "gặp sự cố gián đoạn",
+    "sự cố gián đoạn",
     "interrupciones",
     "interrupções",
     "interruptions",

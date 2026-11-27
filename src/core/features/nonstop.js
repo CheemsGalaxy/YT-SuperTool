@@ -7,9 +7,14 @@ const POPUP_SELECTORS = [
 ];
 const POPUP_SELECTOR = POPUP_SELECTORS.join(',');
 const NOTICE_SELECTORS = [
-  'snackbar-container.ytSnackbarContainerHost .ytSnackbarContainerSnackbarContainer',
+  '.ytSnackbarContainerSnackbarContainer',
+  'tp-yt-paper-toast',
   'ytd-notification-action-renderer',
-  'yt-notification-action-renderer'
+  'yt-notification-action-renderer',
+  'ytd-mealbar-promo-renderer',
+  'yt-mealbar-promo-renderer',
+  'ytd-enforcement-message-view-model',
+  'tp-yt-paper-dialog'
 ];
 const NOTICE_SELECTOR = NOTICE_SELECTORS.join(',');
 const CONFIRM_SELECTORS = [
@@ -122,9 +127,32 @@ export function createNonstop() {
     timers.add(timer);
   };
 
+  const clearOverlay = () => {
+    document.querySelectorAll('tp-yt-iron-overlay-backdrop').forEach((backdrop) => {
+      try {
+        backdrop.remove();
+      } catch {
+
+      }
+    });
+    document.body?.style?.removeProperty?.('overflow');
+    document.documentElement?.style?.removeProperty?.('overflow');
+  };
+
   const handlePrompt = (prompt) => {
     if (!enabled || !prompt || prompt.nodeType !== 1) return;
     if (!prompt.isConnected || !prompt.matches(POPUP_SELECTOR)) return;
+    if (hasInterruptionText(prompt)) {
+      const dialog = prompt.closest('tp-yt-paper-dialog') || prompt;
+      try {
+        dialog.remove();
+      } catch {
+
+      }
+      clearOverlay();
+      resumeVideo();
+      return;
+    }
     if (!hasPauseText(prompt) || !isVisible(prompt)) return;
     const now = Date.now();
     if (now - (handled.get(prompt) || 0) < HANDLE_COOLDOWN) return;
@@ -139,10 +167,15 @@ export function createNonstop() {
 
   const removeNotice = (notice) => {
     if (!enabled || !notice?.isConnected || !hasInterruptionText(notice)) return;
+    const isDialog = notice.tagName === 'TP-YT-PAPER-DIALOG' || notice.tagName === 'YTD-ENFORCEMENT-MESSAGE-VIEW-MODEL';
     try {
       notice.remove();
     } catch {
 
+    }
+    if (isDialog) {
+      clearOverlay();
+      resumeVideo();
     }
   };
 

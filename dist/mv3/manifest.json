@@ -50,7 +50,10 @@
     "https://*.moatads.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ]
   },
   "action": {
     "default_title": "YT SuperTool",
@@ -69,5 +72,11 @@
         "path": "rules/yt-adblock-dnr.json"
       }
     ]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "yt-supertool@cheemsgalaxy.github.io",
+      "strict_min_version": "128.0"
+    }
   }
 }
