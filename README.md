@@ -25,7 +25,6 @@ Phiên bản hiện tại: 2.5.0
 | Userscript | `yt-supertool.user.js` | [Cài nhanh](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
 | Chrome, Edge, Brave, Chromium khác | `yt-supertool-mv3.zip` | [Tải ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv3.zip) |
 | Firefox 109 trở lên, tự cài | `yt-supertool-mv2.zip` | [Tải ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv2.zip) |
-| Companion Windows x64 | `yt-supertool-companion-1.0.0-win32-x64.zip` | [Tải ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-companion-1.0.0-win32-x64.zip) · [SHA-256](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/SHA256SUMS.txt) |
 
 ### Cài đặt
 
@@ -161,11 +160,10 @@ YT SuperTool dùng một lõi và ba target build.
 | Lớp | Đường dẫn | Vai trò |
 |---|---|---|
 | Core | `src/core/` | Logic tính năng, cài đặt, vòng đời SPA và UI. Không gọi API của host. |
-| Adapters | `src/adapters/` | API lưu trữ, mạng, inject style, tab và companion cho userscript và extension. |
+| Adapters | `src/adapters/` | API lưu trữ, mạng, inject style và tab cho userscript và extension. |
 | Entries | `src/entries/` | Entry point cho userscript, content script, main world script, background MV2/MV3 và popup. |
 | Manifests | `src/manifests/` | Phần manifest dùng chung, MV2 và MV3. |
 | Rules | `src/rules/` | Bộ quy tắc `declarativeNetRequest` cho MV3. |
-| Companion | `companion/` | Dịch vụ desktop tùy chọn: pairing, job queue, tải theo range và ghép bằng FFmpeg. |
 | Build | `scripts/` | Bundle, ghép manifest, tạo archive và xác minh. |
 
 Vite build một IIFE cho mỗi entry target với `__TARGET__` đặt lúc build. MV2 không chạy được content script trong main world, nên `content.entry.js` inject `main-world.js` từ `web_accessible_resources` tại document-start. MV3 khai báo cùng file với `"world": "MAIN"`.
@@ -192,9 +190,6 @@ npm run build
 | `npm run verify` | Kiểm tra manifest, bundle, lớp adblock, quy tắc UI và archive. |
 | `npm run build:verify` | Chạy build rồi chạy xác minh. |
 | `npm test` | Chạy bộ test của extension. |
-| `npm run package:companion` | Đóng gói companion Windows x64 và file `.sha256`. |
-| `npm run smoke:companion` | Giải nén gói companion và chạy thử tải 360p. |
-| `npm run smoke:install` | Cài companion vào thư mục tạm, kiểm tra shortcut, pairing, khởi động lại và gỡ cài đặt. |
 
 #### Kết quả build
 
@@ -247,7 +242,6 @@ Current version: 2.5.0
 | Userscript | `yt-supertool.user.js` | [Quick install](https://raw.githubusercontent.com/CheemsGalaxy/YT-SuperTool/main/dist/userscript/yt-supertool.user.js) |
 | Chrome, Edge, Brave, other Chromium browsers | `yt-supertool-mv3.zip` | [Download ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv3.zip) |
 | Firefox 109 and newer, manual install | `yt-supertool-mv2.zip` | [Download ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-mv2.zip) |
-| Windows x64 companion | `yt-supertool-companion-1.0.0-win32-x64.zip` | [Download ZIP](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/yt-supertool-companion-1.0.0-win32-x64.zip) · [SHA-256](https://github.com/CheemsGalaxy/YT-SuperTool/releases/download/Release/SHA256SUMS.txt) |
 
 ### Installation
 
@@ -383,11 +377,10 @@ YT SuperTool uses one core and three build targets.
 | Layer | Path | Role |
 |---|---|---|
 | Core | `src/core/` | Feature logic, settings, SPA lifecycle, and UI. No host API calls. |
-| Adapters | `src/adapters/` | Storage, network, style injection, tab, and companion APIs for userscript and extension hosts. |
+| Adapters | `src/adapters/` | Storage, network, style injection, and tab APIs for userscript and extension hosts. |
 | Entries | `src/entries/` | Entry points for the userscript, content script, main world script, MV2/MV3 background, and popup. |
 | Manifests | `src/manifests/` | Shared, MV2, and MV3 manifest fragments. |
 | Rules | `src/rules/` | MV3 `declarativeNetRequest` ruleset. |
-| Companion | `companion/` | Optional desktop service: pairing, job queue, range downloads, and FFmpeg merges. |
 | Build | `scripts/` | Bundle, manifest assembly, archive creation, and verification. |
 
 Vite builds one IIFE per entry with `__TARGET__` set at build time. MV2 cannot run a content script in the main world, so `content.entry.js` injects `main-world.js` from `web_accessible_resources` at document-start. MV3 declares the same file with `"world": "MAIN"`.
@@ -414,9 +407,6 @@ npm run build
 | `npm run verify` | Check manifests, bundles, adblock layers, UI rules, and archives. |
 | `npm run build:verify` | Run the build, then run verification. |
 | `npm test` | Run the extension test suite. |
-| `npm run package:companion` | Build the Windows x64 companion zip and its `.sha256` file. |
-| `npm run smoke:companion` | Extract the companion zip and run the packaged 360p download smoke test. |
-| `npm run smoke:install` | Install the companion into temporary folders and test shortcuts, pairing, relaunch, and uninstall. |
 
 #### Build output
 

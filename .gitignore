@@ -1,5 +1,4 @@
 node_modules/
-companion/bin/
 .freebuff/
 .promo/
 coverage/
@@ -8,7 +7,6 @@ coverage/
 *.xpi
 *.zip
 !dist/*.zip
-companion/dist/
 *.log
 .env
 .env.*
